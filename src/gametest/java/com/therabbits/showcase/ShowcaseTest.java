@@ -88,6 +88,13 @@ public class ShowcaseTest implements FabricClientGameTest {
         }
         style(ctx, 0);
 
+        // skin changer: step through a few skins
+        for (int i = 0; i < 5; i++) {
+            ctx.runOnClient(mc -> com.therabbits.client.skin.SkinChanger.next());
+            frames(ctx, "bb_skin", 12);
+        }
+        ctx.runOnClient(mc -> com.therabbits.client.skin.SkinChanger.reset());
+
         cursor(ctx, w / 2.0 + 150, h / 2.0 + 60);
         ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(new RabbitsTitleScreen())));
         frames(ctx, "c_menu", 20);

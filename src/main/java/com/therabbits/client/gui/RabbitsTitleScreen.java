@@ -4,6 +4,7 @@ import com.therabbits.client.Config;
 import com.therabbits.client.ModuleManager;
 import com.therabbits.client.module.visual.MenuBackgroundModule;
 import com.therabbits.client.mixin.PlayerSkinWidgetAccessor;
+import com.therabbits.client.skin.SkinChanger;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.PlayerSkinWidget;
 import net.minecraft.client.gui.screens.Screen;
@@ -79,6 +80,8 @@ public class RabbitsTitleScreen extends Screen {
     private final Random random = new Random();
     private PlayerSkinWidget skinWidget;
     private long lastDrag;
+    private String skinMessage;
+    private long skinMessageTime;
 
     public RabbitsTitleScreen() {
         super(Component.literal("TheRabbits Client"));
@@ -107,11 +110,11 @@ public class RabbitsTitleScreen extends Screen {
     private boolean wide() { return width >= 460 && height >= 230; }
 
     /** Skin pixel size: the figure is 16 x 32 skin pixels. */
-    private int px() { return Mth.clamp((height - BAR_H - 70) / 32, 2, 8); }
+    private int px() { return Mth.clamp((height - BAR_H - 110) / 32, 2, 8); }
     private int figureW() { return 16 * px(); }
     private int figureH() { return 32 * px(); }
     private int figureCx() { return (int) (width * 0.28); }
-    private int figureCy() { return (height - BAR_H) / 2 - 2; }
+    private int figureCy() { return (height - BAR_H) / 2 - 14; }
 
     private int panelW() { return BTN_W + PANEL_PAD * 2; }
     private int panelH() { return HEADER + entries.size() * (BTN_H + GAP) - GAP + PANEL_PAD; }
@@ -335,6 +338,7 @@ public class RabbitsTitleScreen extends Screen {
             g.blit(RenderPipelines.GUI_TEXTURED, tex, nx + 5, ny + 4, 8, 8, 8, 8, 8, 8, 64, 64);   // face
             g.blit(RenderPipelines.GUI_TEXTURED, tex, nx + 5, ny + 4, 40, 8, 8, 8, 8, 8, 64, 64);  // hat layer
             Draw.text(g, name, nx + 17, ny + 4, Theme.TEXT);
+            drawSkinChanger(g, mouseX, mouseY, ny + 20);
         }
 
         drawPanel(g, in);
@@ -395,6 +399,58 @@ public class RabbitsTitleScreen extends Screen {
         for (int r = 0; r < rows.length; r++)
             for (int c = 0; c < rows[r].length(); c++)
                 if (rows[r].charAt(c) == '#') g.fill(x + c, y + r, x + c + 1, y + r + 1, color);
+    }
+
+    // ---------- skin changer ----------
+    private static final int SEL_W = 150, UP_W = 50, RS_W = 40, SC_H = 16, SC_GAP = 4;
+    private int scX() { return figureCx() - (SEL_W + UP_W + RS_W + SC_GAP * 2) / 2; }
+    private int scY;
+
+    private void drawSkinChanger(GuiGraphics g, int mx, int my, int y) {
+        scY = y;
+        int x = scX();
+        boolean hs = Draw.inside(mx, my, x, y, SEL_W, SC_H);
+        Draw.rect(g, x, y, SEL_W, SC_H, hs ? 0xE0262626 : 0xC0101010);
+        Draw.outline(g, x, y, SEL_W, SC_H, hs ? 0x80FFFFFF : 0x40FFFFFF);
+        Draw.rect(g, x, y, 2, SC_H, 0xFFFFFFFF);
+        Draw.text(g, "\u2039", x + 6, y + 4, Theme.TEXT);
+        Draw.text(g, "\u203A", x + SEL_W - 9, y + 4, Theme.TEXT);
+        String label = SkinChanger.currentName();
+        if (Draw.font().width(label) > SEL_W - 28) label = Draw.font().plainSubstrByWidth(label, SEL_W - 34) + "..";
+        Draw.centered(g, label, x + SEL_W / 2, y + 4, Theme.TEXT);
+
+        int ux = x + SEL_W + SC_GAP;
+        boolean hu = Draw.inside(mx, my, ux, y, UP_W, SC_H);
+        Draw.rect(g, ux, y, UP_W, SC_H, hu ? 0xFFD0D0D0 : 0xFFFFFFFF);
+        Draw.centered(g, "Upload", ux + UP_W / 2, y + 4, 0xFF000000);
+
+        int rx = ux + UP_W + SC_GAP;
+        boolean hr = Draw.inside(mx, my, rx, y, RS_W, SC_H);
+        Draw.rect(g, rx, y, RS_W, SC_H, hr ? 0xE0262626 : 0xC0101010);
+        Draw.outline(g, rx, y, RS_W, SC_H, hr ? 0x80FFFFFF : 0x40FFFFFF);
+        Draw.centered(g, "Reset", rx + RS_W / 2, y + 4, Theme.TEXT_DIM);
+
+        if (skinMessage != null && System.currentTimeMillis() - skinMessageTime < 4000)
+            Draw.centered(g, skinMessage, figureCx(), y + SC_H + 4, 0xFFFF8080);
+    }
+
+    private boolean clickSkinChanger(double mx, double my) {
+        if (!wide() || skinWidget == null) return false;
+        int x = scX(), ux = x + SEL_W + SC_GAP, rx = ux + UP_W + SC_GAP;
+        if (Draw.inside(mx, my, x, scY, SEL_W, SC_H)) {
+            if (mx < x + SEL_W / 2.0) SkinChanger.previous(); else SkinChanger.next();
+            return true;
+        }
+        if (Draw.inside(mx, my, ux, scY, UP_W, SC_H)) {
+            skinMessage = SkinChanger.upload();
+            skinMessageTime = System.currentTimeMillis();
+            return true;
+        }
+        if (Draw.inside(mx, my, rx, scY, RS_W, SC_H)) {
+            SkinChanger.reset();
+            return true;
+        }
+        return false;
     }
 
     /** "What's new" card in the top-right corner. */
@@ -461,6 +517,7 @@ public class RabbitsTitleScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0 && clickSkinChanger(event.x(), event.y())) return true;
         if (Draw.inside(event.x(), event.y(), BG_X, BG_Y, BG_W, BG_H)) {
             MenuBackgroundModule bg = ModuleManager.get(MenuBackgroundModule.class);
             // left half / left click = previous, right half = next

@@ -12,6 +12,8 @@ public final class SkinDraw {
     private SkinDraw() {}
 
     public static PlayerSkin skin() {
+        PlayerSkin chosen = com.therabbits.client.skin.SkinChanger.override();
+        if (chosen != null) return chosen;
         Minecraft mc = Minecraft.getInstance();
         return mc.getSkinManager().createLookup(mc.getGameProfile(), false).get();
     }

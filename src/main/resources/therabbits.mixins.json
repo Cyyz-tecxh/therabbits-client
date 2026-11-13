@@ -10,7 +10,9 @@
     "ClientPacketListenerMixin",
     "EntityMixin",
     "CameraMixin",
-    "PlayerSkinWidgetAccessor"
+    "PlayerSkinWidgetAccessor",
+    "DefaultPlayerSkinAccessor",
+    "AbstractClientPlayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
