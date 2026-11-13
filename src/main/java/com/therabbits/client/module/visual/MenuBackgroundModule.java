@@ -33,7 +33,7 @@ public class MenuBackgroundModule extends Module {
     public static final int COUNT = IMAGES.length + ANIMATED.length;
 
     public final NumberSetting style = add(new NumberSetting("Background", IMAGES.length, 0, COUNT - 1, 1));
-    public final BoolSetting grain = add(new BoolSetting("Film Grain", true));
+    public final BoolSetting grain = add(new BoolSetting("Film Grain", false));
     public final BoolSetting pan = add(new BoolSetting("Slow Camera Pan", true));
     public final BoolSetting lightning = add(new BoolSetting("Lightning", true));
     public final BoolSetting glow = add(new BoolSetting("Glow", true));

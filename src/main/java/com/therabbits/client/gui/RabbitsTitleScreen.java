@@ -136,7 +136,7 @@ public class RabbitsTitleScreen extends Screen {
             g.blit(RenderPipelines.GUI_TEXTURED, GLOW, figureCx() - gs / 2, figureCy() - gs / 2, 0, 0, gs, gs, 256, 256, 256, 256);
         }
         // darken: lighter over images so the scene stays visible
-        int dark = img != null ? 95 : 190;
+        int dark = img != null ? 40 : 190;
         g.fill(0, 0, width, height, ((int) (dark - (dark / 2f) * flash) << 24));
 
         if (wide() && bg.lightning.on()) drawLightning(g, now);
