@@ -13,21 +13,21 @@ public class MenuBackgroundModule extends Module {
     }
 
     public static final Image[] IMAGES = {
-            new Image("Moonlit Lake", "moonlit_lake", 1307, 480),
-            new Image("Sakura Temple", "sakura_temple", 1295, 480),
-            new Image("Mono Pagoda", "mono_pagoda", 864, 480),
-            new Image("Dark Cathedral", "dark_cathedral", 1307, 480),
-            new Image("Sky Castle", "sky_castle", 1295, 480),
-            new Image("Bamboo Shrine", "bamboo_shrine", 1299, 480),
-            new Image("End Isles", "end_isles", 1299, 480),
-            new Image("Floating Isles", "floating_isles", 858, 480),
-            new Image("Void Castle", "void_castle", 858, 480),
-            new Image("Violet Ruins", "violet_ruins", 866, 480),
-            new Image("Blood Moon", "blood_moon", 864, 480),
-            new Image("Sunset Pagoda", "sunset_pagoda", 864, 480),
-            new Image("Frozen Peaks", "frozen_peaks", 864, 480),
-            new Image("Emerald Ruins", "emerald_ruins", 866, 480),
-            new Image("Bamboo Night", "bamboo_night", 860, 480),
+            new Image("Moonlit Lake", "moonlit_lake", 2942, 1080),
+            new Image("Sakura Temple", "sakura_temple", 2913, 1080),
+            new Image("Mono Pagoda", "mono_pagoda", 1944, 1080),
+            new Image("Dark Cathedral", "dark_cathedral", 2942, 1080),
+            new Image("Sky Castle", "sky_castle", 2913, 1080),
+            new Image("Bamboo Shrine", "bamboo_shrine", 2922, 1080),
+            new Image("End Isles", "end_isles", 2922, 1080),
+            new Image("Floating Isles", "floating_isles", 1931, 1080),
+            new Image("Void Castle", "void_castle", 1931, 1080),
+            new Image("Violet Ruins", "violet_ruins", 1948, 1080),
+            new Image("Blood Moon", "blood_moon", 1944, 1080),
+            new Image("Sunset Pagoda", "sunset_pagoda", 1944, 1080),
+            new Image("Frozen Peaks", "frozen_peaks", 1944, 1080),
+            new Image("Emerald Ruins", "emerald_ruins", 1948, 1080),
+            new Image("Bamboo Night", "bamboo_night", 1935, 1080),
     };
     public static final String[] ANIMATED = {"Grid", "Starfield", "Rain", "Snow", "Plain"};
     public static final int COUNT = IMAGES.length + ANIMATED.length;
