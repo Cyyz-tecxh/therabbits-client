@@ -36,18 +36,65 @@ public class ShowcaseTest implements FabricClientGameTest {
         ctx.getInput().setCursorPos(guiX * scale, guiY * scale);
     }
 
-    @Override
-    public void runTest(ClientGameTestContext ctx) {
+    private void bigWindow(ClientGameTestContext ctx) {
         ctx.getInput().resizeWindow(1280, 720);
         ctx.runOnClient(mc -> {
             mc.options.guiScale().set(2);
             mc.resizeDisplay();
         });
         ctx.waitTicks(5);
+    }
+
+    @Override
+    public void runTest(ClientGameTestContext ctx) {
+        // World first, while the window is small (world loading is slow on CI's software graphics).
+        try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
+                p.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+                p.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.DIAMOND_LEGGINGS));
+                p.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.DIAMOND_BOOTS));
+                p.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_SWORD));
+            });
+            sp.getClientWorld().waitForChunksRender();
+            ctx.runOnClient(mc -> {
+                ModuleManager.get(DirectionModule.class).setEnabled(true);
+                ModuleManager.get(CoordinatesModule.class).setEnabled(true);
+                mc.setScreen(null);
+            });
+            bigWindow(ctx);
+            sp.getClientWorld().waitForChunksRender();
+            int w = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledWidth());
+            int h = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledHeight());
+            frames(ctx, "c_world", 12);
+            ctx.getInput().holdKey(o -> o.keyUp);
+            frames(ctx, "c_world", 20);
+            ctx.getInput().releaseKey(o -> o.keyUp);
+            ctx.getInput().holdKey(o -> o.keyLeft);
+            frames(ctx, "c_world", 10);
+            ctx.getInput().releaseKey(o -> o.keyLeft);
+            ctx.getInput().holdKey(o -> o.keyJump);
+            frames(ctx, "c_world", 6);
+            ctx.getInput().releaseKey(o -> o.keyJump);
+            frames(ctx, "c_world", 8);
+
+            cursor(ctx, w / 2.0 + 150, h / 2.0 + 60);
+            ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
+            frames(ctx, "d_worldmenu", 25);
+
+            cursor(ctx, w / 2.0, h / 2.0);
+            ctx.runOnClient(mc -> mc.setScreen(new HudEditorScreen(null)));
+            frames(ctx, "e_editor", 25);
+            ctx.runOnClient(mc -> mc.setScreen(null));
+            frames(ctx, "f_world", 8);
+        }
+
+        bigWindow(ctx);
         int w = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledWidth());
         int h = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledHeight());
 
-        // 1. Title screen intro, then sweep the cursor down the buttons
+        // Title screen intro, then sweep the cursor down the buttons
         cursor(ctx, w - 5, h - 30);
         ctx.runOnClient(mc -> mc.setScreen(new RabbitsTitleScreen()));
         frames(ctx, "a_title", 40);
@@ -60,44 +107,9 @@ public class ShowcaseTest implements FabricClientGameTest {
             ctx.takeScreenshot(String.format("a_title_%03d", shot++));
         }
 
-        // 2. Mod menu over the title background
+        // Mod menu over the title background
         cursor(ctx, w / 2.0 + 150, h / 2.0 + 60);
         ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(new RabbitsTitleScreen())));
-        frames(ctx, "b_menu", 15);
-        ctx.runOnClient(mc -> ModuleManager.get(DirectionModule.class).setEnabled(true));
-        frames(ctx, "b_menu", 10);
-        ctx.runOnClient(mc -> ModuleManager.get(CoordinatesModule.class).setEnabled(true));
-        frames(ctx, "b_menu", 15);
-
-        // 3. In a world with armor, HUD and keystrokes
-        try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
-            sp.getServer().runOnServer(server -> {
-                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
-                p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
-                p.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
-                p.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.DIAMOND_LEGGINGS));
-                p.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.DIAMOND_BOOTS));
-                p.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_SWORD));
-            });
-            sp.getClientWorld().waitForChunksRender();
-            ctx.runOnClient(mc -> mc.setScreen(null));
-            frames(ctx, "c_world", 15);
-            ctx.getInput().holdKey(o -> o.keyUp);
-            frames(ctx, "c_world", 20);
-            ctx.getInput().releaseKey(o -> o.keyUp);
-            ctx.getInput().holdKey(o -> o.keyLeft);
-            frames(ctx, "c_world", 10);
-            ctx.getInput().releaseKey(o -> o.keyLeft);
-            ctx.getInput().holdKey(o -> o.keyJump);
-            frames(ctx, "c_world", 6);
-            ctx.getInput().releaseKey(o -> o.keyJump);
-            frames(ctx, "c_world", 10);
-
-            cursor(ctx, w / 2.0, h / 2.0);
-            ctx.runOnClient(mc -> mc.setScreen(new HudEditorScreen(null)));
-            frames(ctx, "e_editor", 25);
-            ctx.runOnClient(mc -> mc.setScreen(null));
-            frames(ctx, "f_world", 10);
-        }
+        frames(ctx, "b_menu", 30);
     }
 }
