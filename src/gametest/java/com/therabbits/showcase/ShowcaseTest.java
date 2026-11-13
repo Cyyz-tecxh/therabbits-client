@@ -21,7 +21,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -66,12 +66,12 @@ public class ShowcaseTest implements FabricClientGameTest {
     }
 
     /** Spawns a frozen zombie 3 blocks in front of the player. */
-    private static Zombie zombieAhead(ServerPlayer p, boolean totem) {
+    private static Mob zombieAhead(ServerPlayer p, boolean totem) {
         ServerLevel level = (ServerLevel) p.level();
         Vec3 look = p.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0, look.z).normalize();
         Vec3 pos = p.position().add(flat.scale(3.2));
-        Zombie z = EntityType.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+        Mob z = EntityType.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
         z.setPos(pos.x, p.getY(), pos.z);
         z.setYRot(p.getYRot() + 180);
         z.setYHeadRot(p.getYRot() + 180);
@@ -153,7 +153,7 @@ public class ShowcaseTest implements FabricClientGameTest {
             // 5. Totem pops: a zombie holding a totem takes lethal damage twice
             sp.getServer().runOnServer(server -> {
                 server.overworld().getEntities(EntityType.ZOMBIE, z -> true).forEach(z -> z.discard());
-                Zombie z = zombieAhead(server.getPlayerList().getPlayers().get(0), true);
+                Mob z = zombieAhead(server.getPlayerList().getPlayers().get(0), true);
                 z.setCustomName(net.minecraft.network.chat.Component.literal("Rival"));
             });
             frames(ctx, "c05totem", 6);
