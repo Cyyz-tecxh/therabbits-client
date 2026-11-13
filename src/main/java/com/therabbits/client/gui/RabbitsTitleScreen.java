@@ -30,6 +30,7 @@ import java.util.Random;
 public class RabbitsTitleScreen extends Screen {
     private static final Identifier GLOW = Identifier.fromNamespaceAndPath("therabbits", "textures/gui/glow.png");
     private static final Identifier VIGNETTE = Identifier.fromNamespaceAndPath("therabbits", "textures/gui/vignette.png");
+    private static final Identifier GRAIN = Identifier.fromNamespaceAndPath("therabbits", "textures/gui/grain.png");
 
     private static final int BTN_W = 210, BTN_H = 26, GAP = 5, BAR_H = 14, PANEL_PAD = 14, HEADER = 62;
     private static final String[] NEWS = {
@@ -118,8 +119,12 @@ public class RabbitsTitleScreen extends Screen {
         g.fillGradient(0, 0, width, height, 0xFF000000, 0xFF0B0B0B);
 
         MenuBackgroundModule bg = ModuleManager.get(MenuBackgroundModule.class);
-        int style = bg.style.i();
-        if (style == 0) {
+        MenuBackgroundModule.Image img = bg.image();
+        int style = bg.animated();
+
+        if (img != null) {
+            drawImage(g, img, t, bg.pan.on());
+        } else if (style == 0) {
             int off = (int) (t / 60 % 24);
             for (int x = -24 + off; x < width; x += 24) g.fill(x, 0, x + 1, height, 0x08FFFFFF);
             for (int y = -24 + off; y < height; y += 24) g.fill(0, y, width, y + 1, 0x08FFFFFF);
@@ -130,7 +135,9 @@ public class RabbitsTitleScreen extends Screen {
             int gs = (int) (figureH() * (1.5f + 0.08f * Mth.sin(t / 900f)));
             g.blit(RenderPipelines.GUI_TEXTURED, GLOW, figureCx() - gs / 2, figureCy() - gs / 2, 0, 0, gs, gs, 256, 256, 256, 256);
         }
-        g.fill(0, 0, width, height, ((int) (190 - 90 * flash) << 24));
+        // darken: lighter over images so the scene stays visible
+        int dark = img != null ? 95 : 190;
+        g.fill(0, 0, width, height, ((int) (dark - (dark / 2f) * flash) << 24));
 
         if (wide() && bg.lightning.on()) drawLightning(g, now);
 
@@ -142,7 +149,25 @@ public class RabbitsTitleScreen extends Screen {
             default -> { }
         }
 
+        if (bg.grain.on()) {
+            // re-randomise the grain every frame like real film
+            int ox = -random.nextInt(128), oy = -random.nextInt(128);
+            for (int gx = ox; gx < width; gx += 128)
+                for (int gy = oy; gy < height; gy += 128)
+                    g.blit(RenderPipelines.GUI_TEXTURED, GRAIN, gx, gy, 0, 0, 128, 128, 128, 128, 128, 128);
+        }
+
         g.blit(RenderPipelines.GUI_TEXTURED, VIGNETTE, 0, 0, 0, 0, width, height, 256, 256, 256, 256);
+    }
+
+    /** Image scaled to cover the screen, drifting slowly side to side like a camera pan. */
+    private void drawImage(GuiGraphics g, MenuBackgroundModule.Image img, long t, boolean pan) {
+        float scale = Math.max((float) width / img.width(), (float) height / img.height()) * (pan ? 1.10f : 1.0f);
+        int dw = (int) Math.ceil(img.width() * scale), dh = (int) Math.ceil(img.height() * scale);
+        float drift = pan ? Mth.sin(t / 14000f) : 0;
+        int x = (width - dw) / 2 + (int) (drift * (dw - width) / 2f);
+        int y = (height - dh) / 2 + (int) (Mth.cos(t / 19000f) * (pan ? (dh - height) / 3f : 0));
+        g.blit(RenderPipelines.GUI_TEXTURED, img.texture(), x, y, 0, 0, dw, dh, img.width(), img.height(), img.width(), img.height());
     }
 
     private void specks(GuiGraphics g, long t) {
@@ -348,7 +373,7 @@ public class RabbitsTitleScreen extends Screen {
         }
     }
 
-    private static final int BG_X = 8, BG_Y = 36, BG_W = 92, BG_H = 14;
+    private static final int BG_X = 8, BG_Y = 36, BG_W = 120, BG_H = 14;
 
     /** Small button under the clock that cycles the background style. */
     private void drawBackgroundButton(GuiGraphics g, int mouseX, int mouseY) {
@@ -356,7 +381,8 @@ public class RabbitsTitleScreen extends Screen {
         boolean hover = Draw.inside(mouseX, mouseY, BG_X, BG_Y, BG_W, BG_H);
         Draw.rect(g, BG_X, BG_Y, BG_W, BG_H, hover ? 0xFFFFFFFF : 0xC0101010);
         Draw.outline(g, BG_X, BG_Y, BG_W, BG_H, hover ? 0xFFFFFFFF : Theme.BORDER);
-        Draw.text(g, "BG: " + bg.styleName() + "  \u203A", BG_X + 5, BG_Y + 3, hover ? 0xFF000000 : Theme.TEXT_DIM);
+        Draw.text(g, "\u2039 " + bg.styleName(), BG_X + 5, BG_Y + 3, hover ? 0xFF000000 : Theme.TEXT_DIM);
+        Draw.text(g, "\u203A", BG_X + BG_W - 9, BG_Y + 3, hover ? 0xFF000000 : Theme.TEXT_DIM);
     }
 
     /** Clock + date in the top-left corner. */
@@ -387,8 +413,10 @@ public class RabbitsTitleScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        if (event.button() == 0 && Draw.inside(event.x(), event.y(), BG_X, BG_Y, BG_W, BG_H)) {
-            ModuleManager.get(MenuBackgroundModule.class).next();
+        if (Draw.inside(event.x(), event.y(), BG_X, BG_Y, BG_W, BG_H)) {
+            MenuBackgroundModule bg = ModuleManager.get(MenuBackgroundModule.class);
+            // left half / left click = previous, right half = next
+            if (event.button() == 1 || event.x() < BG_X + BG_W / 2.0) bg.previous(); else bg.next();
             Config.save();
             return true;
         }
