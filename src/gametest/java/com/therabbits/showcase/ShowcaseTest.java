@@ -5,6 +5,7 @@ import com.therabbits.client.RabbitsClient;
 import com.therabbits.client.gui.HudEditorScreen;
 import com.therabbits.client.gui.ModMenuScreen;
 import com.therabbits.client.gui.RabbitsTitleScreen;
+import com.therabbits.client.module.combat.CrosshairModule;
 import com.therabbits.client.module.hud.ClockModule;
 import com.therabbits.client.module.hud.CoordinatesModule;
 import com.therabbits.client.module.hud.DirectionModule;
@@ -13,14 +14,22 @@ import com.therabbits.client.module.visual.MenuBackgroundModule;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.Vec3;
+import org.lwjgl.glfw.GLFW;
 
-/** Opens each screen and saves numbered screenshots for the showcase video. */
+/**
+ * Feature showcase. Screenshot names start with a scene tag; the video script turns tags into captions.
+ */
 public class ShowcaseTest implements FabricClientGameTest {
     private int shot = 0;
 
@@ -28,7 +37,7 @@ public class ShowcaseTest implements FabricClientGameTest {
         for (int i = 0; i < count; i++) {
             ctx.waitTick();
             sleep(35);
-            ctx.takeScreenshot(String.format("%s_%03d", scene, shot++));
+            ctx.takeScreenshot(String.format("%s_%04d", scene, shot++));
         }
     }
 
@@ -41,6 +50,12 @@ public class ShowcaseTest implements FabricClientGameTest {
         ctx.getInput().setCursorPos(guiX * scale, guiY * scale);
     }
 
+    private static void click(ClientGameTestContext ctx, double guiX, double guiY) {
+        cursor(ctx, guiX, guiY);
+        ctx.waitTick();
+        ctx.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+    }
+
     private void bigWindow(ClientGameTestContext ctx) {
         ctx.getInput().resizeWindow(1280, 720);
         ctx.runOnClient(mc -> {
@@ -50,58 +65,31 @@ public class ShowcaseTest implements FabricClientGameTest {
         ctx.waitTicks(5);
     }
 
-    private void style(ClientGameTestContext ctx, int s) {
-        ctx.runOnClient(mc -> ModuleManager.get(MenuBackgroundModule.class).style.set((double) s));
+    /** Spawns a frozen zombie 3 blocks in front of the player. */
+    private static Zombie zombieAhead(ServerPlayer p, boolean totem) {
+        ServerLevel level = (ServerLevel) p.level();
+        Vec3 look = p.getLookAngle();
+        Vec3 flat = new Vec3(look.x, 0, look.z).normalize();
+        Vec3 pos = p.position().add(flat.scale(3.2));
+        Zombie z = EntityType.ZOMBIE.create(level, EntitySpawnReason.COMMAND);
+        z.setPos(pos.x, p.getY(), pos.z);
+        z.setYRot(p.getYRot() + 180);
+        z.setYHeadRot(p.getYRot() + 180);
+        z.setNoAi(true);
+        z.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+        if (totem) z.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.TOTEM_OF_UNDYING));
+        level.addFreshEntity(z);
+        return z;
     }
 
     @Override
     public void runTest(ClientGameTestContext ctx) {
         ctx.runOnClient(mc -> {
-            mc.options.renderDistance().set(5);
+            mc.options.renderDistance().set(3);
             mc.options.simulationDistance().set(5);
         });
 
-        // ---- Start menu first ----
-        bigWindow(ctx);
-        int w = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledWidth());
-        int h = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledHeight());
-
-        cursor(ctx, w - 5, h - 30);
-        style(ctx, 0);
-        ctx.runOnClient(mc -> mc.setScreen(new RabbitsTitleScreen()));
-        frames(ctx, "a_title", 40);
-        int panelX = (int) (w * 0.64) - 119 + 20;
-        for (int i = 0; i < 50; i++) {
-            double y = h * 0.36 + (h * 0.45) * i / 50.0;
-            cursor(ctx, panelX + 140, y);
-            ctx.waitTick();
-            sleep(35);
-            ctx.takeScreenshot(String.format("a_title_%03d", shot++));
-        }
-        // a tour of the backgrounds: some images, then the animated ones
-        int[] tour = {1, 3, 4, 7, 10, 12, 14,
-                MenuBackgroundModule.IMAGES.length + 1, MenuBackgroundModule.IMAGES.length + 3};
-        cursor(ctx, 120, 43);
-        for (int s : tour) {
-            style(ctx, s);
-            frames(ctx, "b_bg", 14);
-        }
-        style(ctx, 0);
-
-        // skin changer: step through a few skins
-        for (int i = 0; i < 5; i++) {
-            ctx.runOnClient(mc -> com.therabbits.client.skin.SkinChanger.next());
-            frames(ctx, "bb_skin", 12);
-        }
-        ctx.runOnClient(mc -> com.therabbits.client.skin.SkinChanger.reset());
-
-        cursor(ctx, w / 2.0 + 150, h / 2.0 + 60);
-        ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(new RabbitsTitleScreen())));
-        frames(ctx, "c_menu", 20);
-
-        // ---- World ----
-        ctx.getInput().resizeWindow(854, 480);
-        ctx.waitTicks(3);
+        // ================= In-game features (world first: it loads faster in a small window) =================
         try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
             sp.getServer().runOnServer(server -> {
                 ServerPlayer p = server.getPlayerList().getPlayers().get(0);
@@ -110,8 +98,10 @@ public class ShowcaseTest implements FabricClientGameTest {
                 p.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.DIAMOND_LEGGINGS));
                 p.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.DIAMOND_BOOTS));
                 p.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.DIAMOND_SWORD));
-                p.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 95, 1));
-                p.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 45, 0));
+                p.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 300, 1));
+                p.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 240, 0));
+                p.setXRot(0);
+                server.overworld().setDayTime(1000);
             });
             sp.getClientWorld().waitForChunksRender();
             ctx.runOnClient(mc -> {
@@ -122,47 +112,128 @@ public class ShowcaseTest implements FabricClientGameTest {
             });
             bigWindow(ctx);
             sp.getClientWorld().waitForChunksRender();
+            int w = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledWidth());
+            int h = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledHeight());
 
-            frames(ctx, "d_world", 8);
+            // 1. HUD + keystrokes
+            frames(ctx, "c01hud", 8);
             ctx.getInput().holdKey(o -> o.keyUp);
-            frames(ctx, "d_world", 14);
+            frames(ctx, "c01hud", 12);
             ctx.getInput().releaseKey(o -> o.keyUp);
+            ctx.getInput().holdKey(o -> o.keyLeft);
+            frames(ctx, "c01hud", 6);
+            ctx.getInput().releaseKey(o -> o.keyLeft);
             ctx.getInput().holdKey(o -> o.keyJump);
-            frames(ctx, "d_world", 6);
+            frames(ctx, "c01hud", 5);
             ctx.getInput().releaseKey(o -> o.keyJump);
-            frames(ctx, "d_world", 4);
+            frames(ctx, "c01hud", 5);
 
-            // Freelook: hold Left Alt and swing the camera around the player
+            // 2. Crosshair styles
+            for (int s = 0; s <= 2; s++) {
+                final double style = s;
+                ctx.runOnClient(mc -> ModuleManager.get(CrosshairModule.class).style.set(style));
+                frames(ctx, "c02cross", 10);
+            }
+            ctx.runOnClient(mc -> ModuleManager.get(CrosshairModule.class).style.set(0.0));
+
+            // 3. Zoom
+            ctx.getInput().holdKey(o -> RabbitsClient.zoomKey);
+            frames(ctx, "c03zoom", 16);
+            ctx.getInput().releaseKey(o -> RabbitsClient.zoomKey);
+            frames(ctx, "c03zoom", 6);
+
+            // 4. Reach: hit a zombie standing 3 blocks away
+            sp.getServer().runOnServer(server -> zombieAhead(server.getPlayerList().getPlayers().get(0), false));
+            frames(ctx, "c04reach", 6);
+            for (int i = 0; i < 3; i++) {
+                ctx.getInput().pressKey(o -> o.keyAttack);
+                frames(ctx, "c04reach", 8);
+            }
+
+            // 5. Totem pops: a zombie holding a totem takes lethal damage twice
+            sp.getServer().runOnServer(server -> {
+                server.overworld().getEntities(EntityType.ZOMBIE, z -> true).forEach(z -> z.discard());
+                Zombie z = zombieAhead(server.getPlayerList().getPlayers().get(0), true);
+                z.setCustomName(net.minecraft.network.chat.Component.literal("Rival"));
+            });
+            frames(ctx, "c05totem", 6);
+            for (int i = 0; i < 2; i++) {
+                sp.getServer().runOnServer(server -> server.overworld().getEntities(EntityType.ZOMBIE, z -> true).forEach(z -> {
+                    z.setItemSlot(EquipmentSlot.OFFHAND, new ItemStack(Items.TOTEM_OF_UNDYING));
+                    z.hurtServer(server.overworld(), server.overworld().damageSources().generic(), 1000f);
+                }));
+                frames(ctx, "c05totem", 14);
+            }
+            sp.getServer().runOnServer(server -> server.overworld().getEntities(EntityType.ZOMBIE, z -> true).forEach(z -> z.discard()));
+
+            // 6. Freelook
             ctx.getInput().holdKey(o -> RabbitsClient.freelookKey);
             ctx.waitTicks(2);
-            for (int i = 0; i < 28; i++) {
-                ctx.getInput().moveCursor(20, i < 14 ? -3 : 3);
+            for (int i = 0; i < 30; i++) {
+                ctx.getInput().moveCursor(20, i < 15 ? -3 : 3);
                 ctx.waitTick();
                 sleep(35);
-                ctx.takeScreenshot(String.format("e_freelook_%03d", shot++));
+                ctx.takeScreenshot(String.format("c06free_%04d", shot++));
             }
             ctx.getInput().releaseKey(o -> RabbitsClient.freelookKey);
-            frames(ctx, "e_freelook", 4);
+            frames(ctx, "c06free", 4);
 
-            // Night, then Fullbright on
+            // 7. Fullbright at night
             sp.getServer().runOnServer(server -> server.overworld().setDayTime(18000));
-            frames(ctx, "f_night", 12);
+            frames(ctx, "c07bright", 12);
             ctx.runOnClient(mc -> ModuleManager.get(FullbrightModule.class).setEnabled(true));
-            frames(ctx, "f_night", 14);
+            frames(ctx, "c07bright", 14);
             ctx.runOnClient(mc -> ModuleManager.get(FullbrightModule.class).setEnabled(false));
-            sp.getServer().runOnServer(server -> server.overworld().setDayTime(6000));
+            sp.getServer().runOnServer(server -> server.overworld().setDayTime(1000));
 
-            int ww = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledWidth());
-            int hh = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledHeight());
-            cursor(ctx, ww / 2.0 + 150, hh / 2.0 + 60);
+            // 8. Mod menu: click through each category
             ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
-            frames(ctx, "g_worldmenu", 18);
+            frames(ctx, "c08menu", 10);
+            int mw = Math.min(480, w - 10), mh = Math.min(300, h - 10);
+            int left = w / 2 - mw / 2, top = h / 2 - mh / 2;
+            for (int c = 1; c < 4; c++) {
+                click(ctx, left + 40, top + 86 + c * 22 + 9);
+                cursor(ctx, w / 2.0 + 150, h / 2.0 + 120);
+                frames(ctx, "c08menu", 14);
+            }
 
-            cursor(ctx, ww / 2.0, hh / 2.0);
+            // 9. HUD editor
+            cursor(ctx, w / 2.0, h / 2.0);
             ctx.runOnClient(mc -> mc.setScreen(new HudEditorScreen(null)));
-            frames(ctx, "h_editor", 18);
+            frames(ctx, "c09editor", 18);
             ctx.runOnClient(mc -> mc.setScreen(null));
-            frames(ctx, "i_world", 6);
+            frames(ctx, "c09editor", 4);
         }
+
+        // ================= Start menu =================
+        bigWindow(ctx);
+        int w = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledWidth());
+        int h = ctx.computeOnClient(mc -> mc.getWindow().getGuiScaledHeight());
+        cursor(ctx, w - 5, h - 30);
+        ctx.runOnClient(mc -> {
+            ModuleManager.get(MenuBackgroundModule.class).style.set(0.0);
+            mc.setScreen(new RabbitsTitleScreen());
+        });
+        frames(ctx, "a00title", 36);
+        int panelX = (int) (w * 0.64) - 119 + 20;
+        for (int i = 0; i < 40; i++) {
+            cursor(ctx, panelX + 140, h * 0.36 + (h * 0.45) * i / 40.0);
+            ctx.waitTick();
+            sleep(35);
+            ctx.takeScreenshot(String.format("a00title_%04d", shot++));
+        }
+        for (int s : new int[]{3, 10, 12, 14}) {
+            final double style = s;
+            ctx.runOnClient(mc -> ModuleManager.get(MenuBackgroundModule.class).style.set(style));
+            frames(ctx, "a01bg", 12);
+        }
+        for (int i = 0; i < 4; i++) {
+            ctx.runOnClient(mc -> com.therabbits.client.skin.SkinChanger.next());
+            frames(ctx, "a02skin", 10);
+        }
+        ctx.runOnClient(mc -> {
+            com.therabbits.client.skin.SkinChanger.reset();
+            ModuleManager.get(MenuBackgroundModule.class).style.set(0.0);
+        });
     }
 }
