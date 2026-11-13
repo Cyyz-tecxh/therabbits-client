@@ -32,7 +32,7 @@ jobs:
         id: showcase
         continue-on-error: true
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb mesa-utils > /dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb mesa-utils ffmpeg > /dev/null
           xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClientGameTest --stacktrace 2>&1 | tee showcase.log; exit ${PIPESTATUS[0]}
       - name: Publish screenshots and logs
         if: always() && github.event_name == 'push'
@@ -41,7 +41,8 @@ jobs:
         run: |
           mkdir -p out
           find . -path ./out -prune -o -name '*.png' -path '*screenshot*' -print -exec cp {} out/ \; || true
-          (cd out && zip -q ../screenshots.zip *.png) || true
+          (cd out && for f in *.png; do ffmpeg -loglevel error -y -i "$f" -q:v 2 "${f%.png}.jpg" && rm "$f"; done; zip -q ../screenshots.zip *.jpg) || true
+          ls -la screenshots.zip || true
           find . -name latest.log -path '*run*' -exec cp {} out-latest.log \; || true
           gh release delete showcase --yes --cleanup-tag || true
           gh release create showcase --title "Showcase run" --notes "Automated showcase" --prerelease \
