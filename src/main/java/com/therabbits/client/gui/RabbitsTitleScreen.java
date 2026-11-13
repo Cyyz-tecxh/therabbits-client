@@ -312,12 +312,6 @@ public class RabbitsTitleScreen extends Screen {
     private void drawPanel(GuiGraphics g, float in) {
         int a = (int) (ease(in) * 255);
         int px = panelX(), py = panelY(), pw = panelW(), ph = panelH();
-        Draw.rect(g, px, py, pw, ph, withAlpha(0x0A0A0A, (int) (a * 0.75f)));
-        Draw.outline(g, px, py, pw, ph, withAlpha(0xFFFFFF, (int) (a * 0.12f)));
-        int c = withAlpha(0xFFFFFF, a);
-        g.fill(px - 1, py - 1, px + 10, py, c); g.fill(px - 1, py - 1, px, py + 10, c);
-        g.fill(px + pw - 10, py + ph, px + pw + 1, py + ph + 1, c); g.fill(px + pw, py + ph - 10, px + pw + 1, py + ph + 1, c);
-
         // TRLH logo on top of the title
         int ls = 40;
         Draw.logo(g, px + PANEL_PAD - 4, py + 6, ls);
