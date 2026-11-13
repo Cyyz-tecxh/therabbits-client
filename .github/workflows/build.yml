@@ -15,7 +15,8 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - run: chmod +x gradlew && ./gradlew build --stacktrace
+      - name: Build
+        run: chmod +x gradlew && ./gradlew build --stacktrace 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
       - uses: actions/upload-artifact@v4
         with:
           name: TheRabbits-Client
@@ -27,3 +28,21 @@ jobs:
         run: |
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest build/libs/*.jar --title "TheRabbits Client (latest build)" --notes "Built automatically from ${GITHUB_SHA::7}"
+      - name: Run in-game showcase
+        id: showcase
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb mesa-utils > /dev/null
+          xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClientGameTest --stacktrace 2>&1 | tee showcase.log; exit ${PIPESTATUS[0]}
+      - name: Publish screenshots and logs
+        if: always() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out
+          find . -path ./out -prune -o -name '*.png' -path '*screenshot*' -print -exec cp {} out/ \; || true
+          (cd out && zip -q ../screenshots.zip *.png) || true
+          find . -name latest.log -path '*run*' -exec cp {} out-latest.log \; || true
+          gh release delete showcase --yes --cleanup-tag || true
+          gh release create showcase --title "Showcase run" --notes "Automated showcase" --prerelease \
+            $(ls screenshots.zip build.log showcase.log out-latest.log 2>/dev/null)

@@ -35,3 +35,13 @@ java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "therabbits-showcase"
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+    }
+}

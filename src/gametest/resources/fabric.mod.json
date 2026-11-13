@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "therabbits-showcase",
+  "version": "1.0.0",
+  "name": "TheRabbits Showcase Test",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["com.therabbits.showcase.ShowcaseTest"]
+  },
+  "depends": { "therabbits": "*" }
+}
