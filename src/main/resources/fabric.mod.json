@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "therabbits",
+  "version": "${version}",
+  "name": "TheRabbits Client",
+  "description": "A black & white PvP client by TheRabbits.",
+  "authors": ["TheRabbits"],
+  "license": "All-Rights-Reserved",
+  "icon": "assets/therabbits/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.therabbits.client.RabbitsClient"]
+  },
+  "mixins": ["therabbits.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
