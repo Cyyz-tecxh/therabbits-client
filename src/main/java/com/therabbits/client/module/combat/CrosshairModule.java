@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /** Replaces the vanilla crosshair (drawn from GuiMixin). */
 public class CrosshairModule extends Module {
-    private final NumberSetting style = add(new NumberSetting("Style (0 Cross, 1 Dot, 2 Box)", 0, 0, 2, 1));
+    public final NumberSetting style = add(new NumberSetting("Style (0 Cross, 1 Dot, 2 Box)", 0, 0, 2, 1));
     private final NumberSetting size = add(new NumberSetting("Size", 5, 1, 12, 1));
     private final NumberSetting gap = add(new NumberSetting("Gap", 2, 0, 8, 1));
     private final NumberSetting thickness = add(new NumberSetting("Thickness", 1, 1, 4, 1));
