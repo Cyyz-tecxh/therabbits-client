@@ -85,11 +85,15 @@ public class RabbitsTitleScreen extends Screen {
     }
 
     // ---------- layout ----------
-    private boolean wide() { return width >= 440 && height >= 240; }
+    private boolean wide() { return width >= 440 && height >= 230; }
 
-    private int logoSize() { return wide() ? Math.min(230, height - 60) : Math.min(110, height / 2 - 30); }
+    private int logoSize() {
+        if (wide()) return Math.min(230, height - 60);
+        int buttons = entries.size() * (BTN_H + GAP) - GAP;
+        return Mth.clamp(height - BAR_H - buttons - 12 - 10 - 8, 24, 110);
+    }
     private int logoCx() { return wide() ? (int) (width * 0.30) : width / 2; }
-    private int logoCy() { return wide() ? (height - BAR_H) / 2 : 12 + logoSize() / 2; }
+    private int logoCy() { return wide() ? (height - BAR_H) / 2 : 8 + logoSize() / 2; }
 
     private int panelW() { return BTN_W + PANEL_PAD * 2; }
     private int panelH() { return 44 + entries.size() * (BTN_H + GAP) - GAP + 14 + 48 + PANEL_PAD; }

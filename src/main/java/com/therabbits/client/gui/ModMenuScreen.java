@@ -20,7 +20,8 @@ import java.util.List;
  * Click a module's switch to toggle it, click its name to open its settings.
  */
 public class ModMenuScreen extends Screen {
-    private static final int W = 420, H = 260, SIDEBAR = 110, ROW = 30, SETTING_ROW = 18;
+    private static final int SIDEBAR = 110, ROW = 30, SETTING_ROW = 18;
+    private int W = 420, H = 260;
 
     private final Screen parent;
     private Category selected = Category.HUD;
@@ -36,6 +37,12 @@ public class ModMenuScreen extends Screen {
     public ModMenuScreen(Screen parent) {
         super(Component.literal("TheRabbits Menu"));
         this.parent = parent;
+    }
+
+    @Override
+    protected void init() {
+        W = Math.min(420, width - 10);
+        H = Math.min(260, height - 10);
     }
 
     private int left() { return width / 2 - W / 2; }

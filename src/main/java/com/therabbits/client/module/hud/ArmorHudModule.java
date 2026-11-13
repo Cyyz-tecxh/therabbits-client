@@ -18,7 +18,7 @@ public class ArmorHudModule extends HudModule {
     private final BoolSetting durability = add(new BoolSetting("Durability Text", true));
     private final BoolSetting mainHand = add(new BoolSetting("Held Item", true));
 
-    public ArmorHudModule() { super("Armor HUD", "Shows your armor and its durability", true, 4, 160); }
+    public ArmorHudModule() { super("Armor HUD", "Shows your armor and its durability", true, 4, 172); }
 
     @Override public int width() { return durability.on() ? 50 : 18; }
     @Override public int height() { return 18 * (mainHand.on() ? 5 : 4); }
