@@ -96,9 +96,9 @@ public class RabbitsTitleScreen extends Screen {
         skinWidget = null;
         if (wide()) {
             // real 3D player model (same widget as vanilla's Skin Customization screen); drag to spin
-            int h = figureH() + 20, w = (int) (h * 0.62f);
+            int h = (int) (figureH() * 0.88f), w = (int) (h * 0.62f);
             skinWidget = new PlayerSkinWidget(w, h, minecraft.getEntityModels(), SkinDraw::skin);
-            skinWidget.setPosition(figureCx() - w / 2, figureCy() - h / 2);
+            skinWidget.setPosition(figureCx() - w / 2, figureCy() + figureH() / 2 + 10 - h);
             addRenderableWidget(skinWidget);
         }
     }
@@ -325,7 +325,7 @@ public class RabbitsTitleScreen extends Screen {
             if (now - lastDrag > 1500) acc.therabbits$setRotationY(acc.therabbits$getRotationY() + dt * 18f);
             int bob = (int) (Mth.sin((now - opened) / 1200f) * 2);
             int lift = (int) ((1 - ease(in)) * 14);
-            skinWidget.setY(figureCy() - skinWidget.getHeight() / 2 + bob + lift);
+            skinWidget.setY(figureCy() + figureH() / 2 + 10 - skinWidget.getHeight() + bob + lift);
             String name = minecraft.getUser().getName();
             int nw = Draw.font().width(name) + 26;
             int nx = figureCx() - nw / 2, ny = sy + 14;
