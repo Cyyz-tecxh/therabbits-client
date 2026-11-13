@@ -7,7 +7,9 @@ import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import com.therabbits.client.module.visual.NoHurtCamModule;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
@@ -15,5 +17,10 @@ public class GameRendererMixin {
     private void therabbits$zoom(Camera camera, float partialTick, boolean useFovSetting, CallbackInfoReturnable<Float> cir) {
         double f = ModuleManager.get(ZoomModule.class).factor();
         if (f != 1) cir.setReturnValue((float) (cir.getReturnValue() / f));
+    }
+
+    @Inject(method = "bobHurt", at = @At("HEAD"), cancellable = true)
+    private void therabbits$noHurtCam(CallbackInfo ci) {
+        if (ModuleManager.get(NoHurtCamModule.class).enabled()) ci.cancel();
     }
 }

@@ -4,7 +4,12 @@
   "package": "com.therabbits.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "GameRendererMixin"
+    "GameRendererMixin",
+    "GuiMixin",
+    "OptionInstanceMixin",
+    "ClientPacketListenerMixin",
+    "EntityMixin",
+    "CameraMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,5 +1,6 @@
 {
   "key.category.therabbits.main": "TheRabbits Client",
   "key.therabbits.menu": "Open TheRabbits Menu",
-  "key.therabbits.zoom": "Zoom"
+  "key.therabbits.zoom": "Zoom",
+  "key.therabbits.freelook": "Freelook (hold)"
 }

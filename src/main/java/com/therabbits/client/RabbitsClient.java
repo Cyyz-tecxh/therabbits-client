@@ -5,7 +5,10 @@ import com.therabbits.client.gui.ModMenuScreen;
 import com.therabbits.client.gui.RabbitsTitleScreen;
 import com.therabbits.client.hud.HudRenderer;
 import com.therabbits.client.module.Module;
+import com.therabbits.client.module.hud.ReachModule;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.minecraft.world.InteractionResult;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -26,6 +29,7 @@ public class RabbitsClient implements ClientModInitializer {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
     public static KeyMapping menuKey;
     public static KeyMapping zoomKey;
+    public static KeyMapping freelookKey;
 
     @Override
     public void onInitializeClient() {
@@ -36,6 +40,14 @@ public class RabbitsClient implements ClientModInitializer {
                 "key.therabbits.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, CATEGORY));
         zoomKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.therabbits.zoom", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, CATEGORY));
+
+        freelookKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.therabbits.freelook", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY));
+
+        AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
+            if (level.isClientSide()) ReachModule.onAttack(player, entity);
+            return InteractionResult.PASS;
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(RabbitsClient::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(c -> Config.save());
