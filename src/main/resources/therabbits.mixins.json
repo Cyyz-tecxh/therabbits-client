@@ -9,7 +9,8 @@
     "OptionInstanceMixin",
     "ClientPacketListenerMixin",
     "EntityMixin",
-    "CameraMixin"
+    "CameraMixin",
+    "PlayerSkinWidgetAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -3,7 +3,9 @@ package com.therabbits.client.gui;
 import com.therabbits.client.Config;
 import com.therabbits.client.ModuleManager;
 import com.therabbits.client.module.visual.MenuBackgroundModule;
+import com.therabbits.client.mixin.PlayerSkinWidgetAccessor;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerSkinWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
@@ -75,6 +77,8 @@ public class RabbitsTitleScreen extends Screen {
     private long nextBolt = opened + 1200;
     private final List<Bolt> bolts = new ArrayList<>();
     private final Random random = new Random();
+    private PlayerSkinWidget skinWidget;
+    private long lastDrag;
 
     public RabbitsTitleScreen() {
         super(Component.literal("TheRabbits Client"));
@@ -89,6 +93,14 @@ public class RabbitsTitleScreen extends Screen {
                 new Entry("Options", "Settings", ICON_GEAR, () -> minecraft.setScreen(new OptionsScreen(this, minecraft.options))),
                 new Entry("Quit", "Close game", ICON_POWER, () -> minecraft.stop())
         );
+        skinWidget = null;
+        if (wide()) {
+            // real 3D player model (same widget as vanilla's Skin Customization screen); drag to spin
+            int h = figureH() + 20, w = (int) (h * 0.62f);
+            skinWidget = new PlayerSkinWidget(w, h, minecraft.getEntityModels(), SkinDraw::skin);
+            skinWidget.setPosition(figureCx() - w / 2, figureCy() - h / 2);
+            addRenderableWidget(skinWidget);
+        }
     }
 
     // ---------- layout ----------
@@ -140,6 +152,7 @@ public class RabbitsTitleScreen extends Screen {
         g.fill(0, 0, width, height, ((int) (dark - (dark / 2f) * flash) << 24));
 
         if (wide() && bg.lightning.on()) drawLightning(g, now);
+        if (wide()) drawStage(g, t);
 
         switch (style) {
             case 0 -> specks(g, t);
@@ -158,6 +171,33 @@ public class RabbitsTitleScreen extends Screen {
         }
 
         g.blit(RenderPipelines.GUI_TEXTURED, VIGNETTE, 0, 0, 0, 0, width, height, 256, 256, 256, 256);
+    }
+
+    /** Spotlight cone + glowing ring the 3D player stands on. */
+    private void drawStage(GuiGraphics g, long t) {
+        int cx = figureCx();
+        int top = figureCy() - figureH() / 2 - 40;
+        int feet = figureCy() + figureH() / 2 + 4;
+        // spotlight: widens towards the feet
+        for (int y = top; y < feet; y += 2) {
+            float p = (y - top) / (float) (feet - top);
+            int half = (int) (figureW() * (0.25f + 0.55f * p));
+            int a = (int) (26 * p);
+            g.fill(cx - half, y, cx + half, y + 2, (a << 24) | 0xFFFFFF);
+        }
+        // ring on the floor
+        float pulse = 0.75f + 0.25f * Mth.sin(t / 700f);
+        int rx = (int) (figureW() * 0.75f), ry = Math.max(4, rx / 4);
+        for (int i = 0; i < 180; i++) {
+            double ang = i * Math.PI * 2 / 180;
+            int x = cx + (int) (Math.cos(ang) * rx), y = feet + (int) (Math.sin(ang) * ry);
+            int a = (int) ((ang > Math.PI ? 110 : 200) * pulse);
+            g.fill(x, y, x + 2, y + 1, (a << 24) | 0xFFFFFF);
+        }
+        for (int k = 1; k <= 3; k++) {          // inner glow
+            int r2 = rx - k * 5, ry2 = Math.max(2, r2 / 4);
+            g.fill(cx - r2, feet - ry2 / 2, cx + r2, feet + ry2 / 2, ((int) (14 * pulse) << 24) | 0xFFFFFF);
+        }
     }
 
     /** Image scaled to cover the screen, drifting slowly side to side like a camera pan. */
@@ -278,15 +318,23 @@ public class RabbitsTitleScreen extends Screen {
         lastFrame = now;
         float in = intro();
 
-        if (wide()) {
-            float flash = flashAmount(now);
-            int shake = flash > 0.6f ? random.nextInt(3) - 1 : 0;
-            int bob = (int) (Mth.sin((now - opened) / 1200f) * 3);
-            int fx = figureCx() - figureW() / 2 + shake;
-            int fy = figureCy() - figureH() / 2 + (int) ((1 - ease(in)) * 14) + bob;
-            float swing = Mth.sin((now - opened) / 600f) * 0.8f;
-            SkinDraw.draw(g, fx, fy, px(), swing);
-            Draw.centered(g, minecraft.getUser().getName(), figureCx(), figureCy() + figureH() / 2 + 10, Theme.TEXT_DIM);
+        if (wide() && skinWidget != null) {
+            int sy = figureCy() + figureH() / 2 + 4;
+            // slow idle turn unless the player is dragging it
+            PlayerSkinWidgetAccessor acc = (PlayerSkinWidgetAccessor) skinWidget;
+            if (now - lastDrag > 1500) acc.therabbits$setRotationY(acc.therabbits$getRotationY() + dt * 18f);
+            int bob = (int) (Mth.sin((now - opened) / 1200f) * 2);
+            int lift = (int) ((1 - ease(in)) * 14);
+            skinWidget.setY(figureCy() - skinWidget.getHeight() / 2 + bob + lift);
+            String name = minecraft.getUser().getName();
+            int nw = Draw.font().width(name) + 26;
+            int nx = figureCx() - nw / 2, ny = sy + 14;
+            Draw.rect(g, nx, ny, nw, 16, 0xB0000000);
+            Draw.rect(g, nx, ny, 2, 16, 0xFFFFFFFF);
+            var tex = SkinDraw.skin().body().texturePath();
+            g.blit(RenderPipelines.GUI_TEXTURED, tex, nx + 5, ny + 4, 8, 8, 8, 8, 8, 8, 64, 64);   // face
+            g.blit(RenderPipelines.GUI_TEXTURED, tex, nx + 5, ny + 4, 40, 8, 8, 8, 8, 8, 64, 64);  // hat layer
+            Draw.text(g, name, nx + 17, ny + 4, Theme.TEXT);
         }
 
         drawPanel(g, in);
@@ -404,6 +452,12 @@ public class RabbitsTitleScreen extends Screen {
     private static int withAlpha(int rgb, int a) { return (Mth.clamp(a, 0, 255) << 24) | (rgb & 0xFFFFFF); }
 
     private static float ease(float t) { return t * t * (3 - 2 * t); }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        lastDrag = System.currentTimeMillis();
+        return super.mouseDragged(event, dx, dy);
+    }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
