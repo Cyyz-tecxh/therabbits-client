@@ -51,7 +51,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         }
     }
 
-    static void draw(PoseStack pose, SubmitNodeCollector out, int light, CosmeticModel m, ModelPart part) {
+    public static void draw(PoseStack pose, SubmitNodeCollector out, int light, CosmeticModel m, ModelPart part) {
         out.submitModelPart(part, pose, RenderTypes.entityCutoutNoCull(m.currentTexture()), light, OverlayTexture.NO_OVERLAY, null);
         Identifier g = m.currentGlow();
         if (g != null)
