@@ -86,6 +86,8 @@ public class ShowcaseTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext ctx) {
+        // Apply every mixin now so a broken hook fails loudly in CI
+        org.spongepowered.asm.mixin.MixinEnvironment.getCurrentEnvironment().audit();
         ctx.runOnClient(mc -> {
             mc.options.renderDistance().set(3);
             mc.options.simulationDistance().set(5);
