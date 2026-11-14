@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.therabbits.client.module.visual.NoHurtCamModule;
+import com.therabbits.client.module.visual.NoTotemAnimationModule;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
@@ -17,6 +18,11 @@ public class GameRendererMixin {
     private void therabbits$zoom(Camera camera, float partialTick, boolean useFovSetting, CallbackInfoReturnable<Float> cir) {
         double f = ModuleManager.get(ZoomModule.class).factor();
         if (f != 1) cir.setReturnValue((float) (cir.getReturnValue() / f));
+    }
+
+    @Inject(method = "displayItemActivation", at = @At("HEAD"), cancellable = true)
+    private void therabbits$noTotemAnimation(CallbackInfo ci) {
+        if (ModuleManager.get(NoTotemAnimationModule.class).enabled()) ci.cancel();
     }
 
     @Inject(method = "bobHurt", at = @At("HEAD"), cancellable = true)

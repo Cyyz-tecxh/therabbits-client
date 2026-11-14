@@ -15,6 +15,8 @@ public final class HudRenderer {
         if (mc.options.hideGui || mc.player == null) return;
         if (mc.screen instanceof HudEditorScreen) return; // the editor draws them itself
         CpsTracker.update();
+        var low = ModuleManager.get(com.therabbits.client.module.visual.LowHealthWarningModule.class);
+        if (low.enabled()) low.draw(g);
         for (HudModule h : ModuleManager.hud()) {
             if (h.enabled()) draw(g, h, false);
         }

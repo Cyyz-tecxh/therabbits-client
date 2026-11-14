@@ -126,17 +126,17 @@ public class ModMenuScreen extends Screen {
                 int tx = x + w - 26;
                 Draw.toggle(g, tx, y + 4, b.on());
                 addClipped(tx - 4, y, 30, SETTING_ROW, areaY, areaH, b::toggle);
-            } else if (s instanceof ModeSetting m) {
+            } else if (s instanceof ModeSetting ms) {
                 int bw = 120, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 1, bw, SETTING_ROW - 2);
                 Draw.rect(g, bx, y + 1, bw, SETTING_ROW - 2, hover ? Theme.HOVER : 0xFF101010);
                 Draw.outline(g, bx, y + 1, bw, SETTING_ROW - 2, Theme.BORDER);
                 Draw.text(g, "\u2039", bx + 4, y + 5, Theme.TEXT_DIM);
                 Draw.text(g, "\u203A", bx + bw - 8, y + 5, Theme.TEXT_DIM);
-                String label = m.mode();
+                String label = ms.mode();
                 int lw = Draw.font().width(label);
                 int lx = bx + bw / 2 - lw / 2;
-                if (m.isColor() && !label.equals("Global")) {
+                if (ms.isColor() && !label.equals("Global")) {
                     int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(label);
                     int sw = 0xFF000000 | HudColors.rgb(idx, 0);
                     lx += 5;
@@ -145,9 +145,8 @@ public class ModMenuScreen extends Screen {
                 } else {
                     Draw.text(g, label, lx, y + 5, Theme.TEXT);
                 }
-                final int fbx = bx, fbw = bw;
-                addClipped(bx, y, bw / 2, SETTING_ROW, areaY, areaH, m::previous);
-                addClipped(bx + bw / 2, y, bw - bw / 2, SETTING_ROW, areaY, areaH, m::next);
+                addClipped(bx, y, bw / 2, SETTING_ROW, areaY, areaH, ms::previous);
+                addClipped(bx + bw / 2, y, bw - bw / 2, SETTING_ROW, areaY, areaH, ms::next);
             } else if (s instanceof NumberSetting n) {
                 int sw = 120, sx = x + w - sw - 40;
                 Draw.rect(g, sx, y + 8, sw, 2, Theme.OFF);

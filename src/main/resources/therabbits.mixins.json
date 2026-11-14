@@ -12,7 +12,9 @@
     "CameraMixin",
     "PlayerSkinWidgetAccessor",
     "DefaultPlayerSkinAccessor",
-    "AbstractClientPlayerMixin"
+    "AbstractClientPlayerMixin",
+    "ScreenEffectRendererMixin",
+    "BossHealthOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1

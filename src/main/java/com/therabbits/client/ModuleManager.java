@@ -11,7 +11,7 @@ import com.therabbits.client.module.utility.FreelookModule;
 import com.therabbits.client.module.visual.FullbrightModule;
 import com.therabbits.client.module.visual.HideScoreboardModule;
 import com.therabbits.client.module.visual.MenuBackgroundModule;
-import com.therabbits.client.module.visual.NoHurtCamModule;
+import com.therabbits.client.module.visual.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +35,11 @@ public final class ModuleManager {
         add(new ClockModule());
         add(new ServerIpModule());
         add(new MemoryModule());
+        add(new SpeedModule());
+        add(new BiomeModule());
+        add(new AngleModule());
+        add(new SessionTimeModule());
+        add(new ItemCounterModule());
         // PvP
         add(new ToggleSprintModule());
         add(new ZoomModule());
@@ -42,10 +47,16 @@ public final class ModuleManager {
         add(new ReachModule());
         add(new TotemPopModule());
         add(new CpsModule());
+        add(new ComboModule());
         // Visual
         add(new FullbrightModule());
         add(new NoHurtCamModule());
         add(new HideScoreboardModule());
+        add(new HideFireModule());
+        add(new NoTotemAnimationModule());
+        add(new HideBossBarModule());
+        add(new HideVignetteModule());
+        add(new LowHealthWarningModule());
         add(new MenuBackgroundModule());
         // Utility
         add(new FreelookModule());

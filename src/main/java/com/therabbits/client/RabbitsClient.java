@@ -45,7 +45,10 @@ public class RabbitsClient implements ClientModInitializer {
                 "key.therabbits.freelook", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY));
 
         AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
-            if (level.isClientSide()) ReachModule.onAttack(player, entity);
+            if (level.isClientSide()) {
+                ReachModule.onAttack(player, entity);
+                com.therabbits.client.module.hud.ComboModule.onHit();
+            }
             return InteractionResult.PASS;
         });
 

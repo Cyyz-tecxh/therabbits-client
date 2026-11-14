@@ -4,6 +4,7 @@ import com.therabbits.client.ModuleManager;
 import com.therabbits.client.module.combat.CrosshairModule;
 import com.therabbits.client.module.visual.HideScoreboardModule;
 import com.therabbits.client.module.hud.PotionEffectsModule;
+import com.therabbits.client.module.visual.HideVignetteModule;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -28,6 +29,11 @@ public class GuiMixin {
     @Inject(method = "displayScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void therabbits$hideScoreboard(CallbackInfo ci) {
         if (ModuleManager.get(HideScoreboardModule.class).enabled()) ci.cancel();
+    }
+
+    @Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true)
+    private void therabbits$hideVignette(CallbackInfo ci) {
+        if (ModuleManager.get(HideVignetteModule.class).enabled()) ci.cancel();
     }
 
     /** Hide vanilla's top-right effect icons when our potion HUD replaces them. */

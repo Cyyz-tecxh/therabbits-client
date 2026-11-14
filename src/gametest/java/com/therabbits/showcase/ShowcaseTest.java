@@ -103,6 +103,11 @@ public class ShowcaseTest implements FabricClientGameTest {
                 p.addEffect(new MobEffectInstance(MobEffects.SPEED, 20 * 300, 1));
                 p.addEffect(new MobEffectInstance(MobEffects.STRENGTH, 20 * 240, 0));
                 p.setXRot(0);
+                p.getInventory().add(new ItemStack(Items.TOTEM_OF_UNDYING, 1));
+                p.getInventory().add(new ItemStack(Items.GOLDEN_APPLE, 16));
+                p.getInventory().add(new ItemStack(Items.ENDER_PEARL, 12));
+                p.getInventory().add(new ItemStack(Items.EXPERIENCE_BOTTLE, 32));
+                p.getInventory().add(new ItemStack(Items.ARROW, 48));
                 server.overworld().setDayTime(1000);
             });
             sp.getClientWorld().waitForChunksRender();
@@ -110,6 +115,8 @@ public class ShowcaseTest implements FabricClientGameTest {
                 ModuleManager.get(DirectionModule.class).setEnabled(true);
                 ModuleManager.get(CoordinatesModule.class).setEnabled(true);
                 ModuleManager.get(ClockModule.class).setEnabled(true);
+                ModuleManager.get(com.therabbits.client.module.hud.SpeedModule.class).setEnabled(true);
+                ModuleManager.get(com.therabbits.client.module.hud.BiomeModule.class).setEnabled(true);
                 mc.setScreen(null);
             });
             bigWindow(ctx);
@@ -157,6 +164,11 @@ public class ShowcaseTest implements FabricClientGameTest {
             cursor(ctx, w / 2.0 + 200, h / 2.0 + 130);
             frames(ctx, "c11stylemenu", 18);
             ctx.runOnClient(mc -> mc.setScreen(null));
+
+            // 1c. Low health warning
+            sp.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0).setHealth(5f));
+            frames(ctx, "c12lowhp", 22);
+            sp.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0).setHealth(20f));
 
             // 2. Crosshair styles
             for (int s = 0; s <= 2; s++) {
