@@ -69,6 +69,7 @@ public final class ModuleManager {
         add(new TitleTweakerModule());
         add(new HitboxesModule());
         add(new MenuBackgroundModule());
+        add(new ClientFontModule());
         // Utility
         add(new FreelookModule());
         add(new com.therabbits.client.module.utility.MouseTweaksModule());

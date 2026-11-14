@@ -330,7 +330,7 @@ public class RabbitsTitleScreen extends Screen {
             int lift = (int) ((1 - ease(in)) * 14);
             skinWidget.setY(figureCy() + figureH() / 2 + 10 - skinWidget.getHeight() + bob + lift);
             String name = com.therabbits.client.module.utility.AltHiderModule.displayName();
-            int nw = Draw.font().width(name) + 26;
+            int nw = Draw.width(name) + 26;
             int nx = figureCx() - nw / 2, ny = sy + 14;
             Draw.rect(g, nx, ny, nw, 16, 0xB0000000);
             Draw.rect(g, nx, ny, 2, 16, 0xFFFFFFFF);
@@ -390,7 +390,7 @@ public class RabbitsTitleScreen extends Screen {
 
         icon(g, e.icon, x + 10 + (int) (2 * h), y + (BTN_H - 9) / 2, withAlpha(dark ? 0x000000 : 0xFFFFFF, alpha));
         Draw.text(g, e.label, x + 26 + (int) (3 * h), ty, withAlpha(dark ? 0x000000 : 0xF2F2F2, alpha));
-        int hintW = Draw.font().width(e.hint);
+        int hintW = Draw.width(e.hint);
         Draw.text(g, e.hint, x + BTN_W - hintW - 14, ty, withAlpha(dark ? 0x505050 : 0x5A5A5A, alpha));
         Draw.text(g, "›", x + BTN_W - 8 + (int) (2 * h), ty, withAlpha(dark ? 0x000000 : 0x5A5A5A, alpha));
     }
@@ -416,7 +416,7 @@ public class RabbitsTitleScreen extends Screen {
         Draw.text(g, "\u2039", x + 6, y + 4, Theme.TEXT);
         Draw.text(g, "\u203A", x + SEL_W - 9, y + 4, Theme.TEXT);
         String label = SkinChanger.currentName();
-        if (Draw.font().width(label) > SEL_W - 28) label = Draw.font().plainSubstrByWidth(label, SEL_W - 34) + "..";
+        if (Draw.width(label) > SEL_W - 28) label = Draw.trim(label, SEL_W - 34 + 6);
         Draw.centered(g, label, x + SEL_W / 2, y + 4, Theme.TEXT);
 
         int ux = x + SEL_W + SC_GAP;
@@ -500,7 +500,7 @@ public class RabbitsTitleScreen extends Screen {
         g.fill(0, y, width, y + 1, 0x22FFFFFF);
         Draw.text(g, "TheRabbits Client  v1.1", 6, y + 3, Theme.TEXT_DIM);
         String right = "Minecraft 1.21.11";
-        Draw.text(g, right, width - Draw.font().width(right) - 6, y + 3, Theme.TEXT_MUTED);
+        Draw.text(g, right, width - Draw.width(right) - 6, y + 3, Theme.TEXT_MUTED);
         if (width >= 380)
             Draw.centered(g, "Signed in as " + com.therabbits.client.module.utility.AltHiderModule.displayName(), width / 2, y + 3, Theme.TEXT_MUTED);
     }

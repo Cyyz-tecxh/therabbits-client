@@ -109,7 +109,7 @@ public class WaypointsModule extends HudModule {
             if ((HudStyle.bg() >>> 24) > 0) Draw.rect(g, 0, y, width(), 11, HudStyle.bg());
             HudStyle.text(g, r[0], 3, y + 2, HudStyle.text(y / 60f));
             HudStyle.text(g, r[1], 14, y + 2, HudStyle.text(y / 60f));
-            HudStyle.text(g, r[2], width() - 3 - Draw.font().width(r[2]), y + 2, HudStyle.dim());
+            HudStyle.text(g, r[2], width() - 3 - Draw.width(r[2]), y + 2, HudStyle.dim());
             y += 12;
         }
     }

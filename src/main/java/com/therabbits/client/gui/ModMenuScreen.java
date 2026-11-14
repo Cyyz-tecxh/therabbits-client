@@ -150,7 +150,7 @@ public class ModMenuScreen extends Screen {
         searchBox.visible = settingsFor == null && !presetsPage;
         if (settingsFor == null) { editing = null; textEdit.visible = false; }
         if (toast != null && now - toastTime < 2000) {
-            int tw = Draw.font().width(toast) + 20;
+            int tw = Draw.width(toast) + 20;
             Draw.rect(g, width / 2 - tw / 2, top() - 22 + 0, tw, 16, 0xF0FFFFFF);
             Draw.centered(g, toast, width / 2, top() - 18, 0xFF000000);
         }
@@ -185,7 +185,7 @@ public class ModMenuScreen extends Screen {
             Category c = i < 0 ? null : cats[i];
             String label = c == null ? "All" : c.label();
             String[] icon = c == null ? ICON_ALL : icon(c);
-            int w = Draw.font().width(label) + 28;
+            int w = Draw.width(label) + 28;
             boolean sel = !presetsPage && filter == c;
             boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
             Draw.rect(g, tx, y, w, TABS_H, sel ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF151515);
@@ -198,7 +198,7 @@ public class ModMenuScreen extends Screen {
         }
         // Presets pill (right side)
         String label = "Presets";
-        int w = Draw.font().width(label) + 28, px = x + W - 24 - w;
+        int w = Draw.width(label) + 28, px = x + W - 24 - w;
         boolean hover = Draw.inside(mx, my, px, y, w, TABS_H);
         Draw.rect(g, px, y, w, TABS_H, presetsPage ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF151515);
         if (!presetsPage) Draw.outline(g, px, y, w, TABS_H, 0x30FFFFFF);
@@ -226,10 +226,10 @@ public class ModMenuScreen extends Screen {
             int fg = active ? 0xFF000000 : 0xFFFFFFFF, sub = active ? 0xFF404040 : 0xFF7A7A7A;
             Draw.text(g, p.name(), cx + 8, cy + 8, fg);
             String d = p.description();
-            if (Draw.font().width(d) > cw - 14) d = Draw.font().plainSubstrByWidth(d, cw - 20) + "..";
+            if (Draw.width(d) > cw - 14) d = Draw.trim(d, cw - 20 + 6);
             Draw.text(g, d, cx + 8, cy + 20, sub);
             Draw.text(g, Presets.count(p) + " features", cx + 8, cy + ch - 14, sub);
-            Draw.text(g, active ? "ACTIVE" : "LOAD \u203A", cx + cw - 8 - Draw.font().width(active ? "ACTIVE" : "LOAD \u203A"), cy + ch - 14, fg);
+            Draw.text(g, active ? "ACTIVE" : "LOAD \u203A", cx + cw - 8 - Draw.width(active ? "ACTIVE" : "LOAD \u203A"), cy + ch - 14, fg);
             hits.add(new Hit(cx, cy, cw, ch, () -> { Presets.apply(p); toast("Loaded " + p.name()); }));
         }
 
@@ -322,7 +322,7 @@ public class ModMenuScreen extends Screen {
             Draw.text(g, m.name(), textX, by + 2, blend(0xFF9A9A9A, 0xFFFFFFFF, on));
             String d = m.description();
             int maxW = tw - (textX - tx) - 8;
-            if (Draw.font().width(d) > maxW) d = Draw.font().plainSubstrByWidth(d, maxW - 6) + "..";
+            if (Draw.width(d) > maxW) d = Draw.trim(d, maxW - 6 + 6);
             Draw.text(g, d, textX, by + 13, 0xFF6A6A6A);
 
             // status bar along the bottom
@@ -421,7 +421,7 @@ public class ModMenuScreen extends Screen {
                 Draw.text(g, "‹", bx + 4, y + 6, 0xFF8A8A8A);
                 Draw.text(g, "›", bx + bw - 8, y + 6, 0xFF8A8A8A);
                 String label = ms.mode();
-                int lx = bx + bw / 2 - Draw.font().width(label) / 2;
+                int lx = bx + bw / 2 - Draw.width(label) / 2;
                 if (ms.isColor() && !label.equals("Global")) {
                     int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(label);
                     int sw = 0xFF000000 | HudColors.rgb(idx, 0);
@@ -443,7 +443,7 @@ public class ModMenuScreen extends Screen {
                     textEdit.visible = y >= areaY && y + SETTING_ROW <= areaY + areaH;
                 } else {
                     String v = ts.get();
-                    if (Draw.font().width(v) > bw - 10) v = Draw.font().plainSubstrByWidth(v, bw - 16) + "..";
+                    if (Draw.width(v) > bw - 10) v = Draw.trim(v, bw - 16 + 6);
                     Draw.text(g, v.isEmpty() ? "click to type" : v, bx + 4, y + 6, v.isEmpty() ? 0xFF5A5A5A : 0xFFFFFFFF);
                 }
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> {
@@ -468,7 +468,7 @@ public class ModMenuScreen extends Screen {
                 Draw.rect(g, sx, cy - 1, kx - sx, 2, 0xFFFFFFFF);
                 Draw.rect(g, kx - 3, cy - 4, 7, 8, 0xFFFFFFFF);
                 String v = n.display();
-                Draw.text(g, v, x + w - 8 - Draw.font().width(v), y + 6, 0xFFFFFFFF);
+                Draw.text(g, v, x + w - 8 - Draw.width(v), y + 6, 0xFFFFFFFF);
                 addClipped(sx - 4, y, sw + 8, SETTING_ROW, areaY, areaH, () -> {
                     draggingSlider = n; sliderX = sx; sliderW = sw;
                 });
@@ -494,7 +494,7 @@ public class ModMenuScreen extends Screen {
 
         long on = ModuleManager.all().stream().filter(Module::enabled).count();
         String info = on + " / " + ModuleManager.all().size() + " enabled";
-        Draw.text(g, info, x + W - 12 - Draw.font().width(info), by + 4, 0xFF7A7A7A);
+        Draw.text(g, info, x + W - 12 - Draw.width(info), by + 4, 0xFF7A7A7A);
         Draw.centered(g, "Right Shift", x + W / 2, by + 4, 0xFF4A4A4A);
     }
 

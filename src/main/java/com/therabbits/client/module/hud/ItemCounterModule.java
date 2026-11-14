@@ -50,7 +50,7 @@ public class ItemCounterModule extends HudModule {
             Draw.rect(g, 0, y, width(), 17, HudStyle.bg());
             g.renderItem(e.icon(), 1, y);
             String c = String.valueOf(e.count());
-            HudStyle.text(g, c, width() - 3 - Draw.font().width(c), y + 5, HudStyle.text(y / 80f));
+            HudStyle.text(g, c, width() - 3 - Draw.width(c), y + 5, HudStyle.text(y / 80f));
             y += 18;
         }
     }

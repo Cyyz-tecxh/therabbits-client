@@ -30,7 +30,9 @@ public final class HudRenderer {
         g.pose().translate((float) x, (float) y);
         g.pose().scale(h.effectiveScale(), h.effectiveScale());
         HudStyle.current = h;
+        com.therabbits.client.gui.Draw.hudContext = true;
         h.render(g, editing);
+        com.therabbits.client.gui.Draw.hudContext = false;
         HudStyle.current = null;
         g.pose().popMatrix();
     }

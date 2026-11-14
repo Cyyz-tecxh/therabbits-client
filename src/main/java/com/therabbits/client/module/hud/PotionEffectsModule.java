@@ -80,7 +80,7 @@ public class PotionEffectsModule extends HudModule {
 
             HudStyle.text(g, r.name(), 27, y + 4, (a << 24) | (HudStyle.text(y / 80f) & 0xFFFFFF));
             String t = time(r);
-            HudStyle.text(g, t, W - 5 - Draw.font().width(t), y + 4, (a << 24) | (ending ? 0xFF8080 : (HudStyle.dim() & 0xFFFFFF)));
+            HudStyle.text(g, t, W - 5 - Draw.width(t), y + 4, (a << 24) | (ending ? 0xFF8080 : (HudStyle.dim() & 0xFFFFFF)));
 
             if (bars.on()) {
                 int bx = 27, bw = W - 27 - 5, by = y + 17;

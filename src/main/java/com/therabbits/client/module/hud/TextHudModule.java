@@ -19,14 +19,14 @@ public abstract class TextHudModule extends HudModule {
 
     private String last = "";
 
-    @Override public int width() { return Math.max(40, Draw.font().width(last) + 10); }
+    @Override public int width() { return Math.max(40, Draw.width(last) + 10); }
     @Override public int height() { return 16; }
 
     @Override
     public void render(GuiGraphics g, boolean editing) {
         last = text(editing);
         if (background.on()) Draw.rect(g, 0, 0, width(), height(), HudStyle.bg());
-        int tx = width() / 2 - Draw.font().width(last) / 2;
+        int tx = width() / 2 - Draw.width(last) / 2;
         HudStyle.text(g, last, tx, 4, HudStyle.text());
     }
 }

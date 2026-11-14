@@ -48,7 +48,7 @@ public class TotemPopModule extends HudModule {
         for (var e : m.entrySet()) {
             HudStyle.text(g, e.getKey(), 4, y, HudStyle.text(y / 60f));
             String c = "x" + e.getValue();
-            HudStyle.text(g, c, width() - 4 - Draw.font().width(c), y, HudStyle.text(y / 60f));
+            HudStyle.text(g, c, width() - 4 - Draw.width(c), y, HudStyle.text(y / 60f));
             y += 10;
         }
     }

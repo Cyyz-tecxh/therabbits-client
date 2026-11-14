@@ -76,6 +76,7 @@ public final class ModuleIcons {
         ITEMS.put("Hitboxes", Items.SCAFFOLDING);
         ITEMS.put("Mouse Tweaks", Items.HOPPER);
         ITEMS.put("Alt Hider", Items.CARVED_PUMPKIN);
+        ITEMS.put("Client Font", Items.WRITABLE_BOOK);
     }
 
     private static final Path DIR = FabricLoader.getInstance().getConfigDir().resolve("therabbits/icons");
