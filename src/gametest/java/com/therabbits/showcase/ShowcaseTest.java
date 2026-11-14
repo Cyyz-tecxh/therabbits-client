@@ -172,12 +172,12 @@ public class ShowcaseTest implements FabricClientGameTest {
             sp.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0).setHealth(20f));
 
             // 2. Crosshair styles
-            for (int s = 0; s <= 2; s++) {
-                final double style = s;
+            for (int s = 0; s <= 6; s++) {
+                final int style = s;
                 ctx.runOnClient(mc -> ModuleManager.get(CrosshairModule.class).style.set(style));
-                frames(ctx, "c02cross", 10);
+                frames(ctx, "c02cross", 4);
             }
-            ctx.runOnClient(mc -> ModuleManager.get(CrosshairModule.class).style.set(0.0));
+            ctx.runOnClient(mc -> ModuleManager.get(CrosshairModule.class).style.set(0));
 
             // 3. Zoom
             ctx.getInput().holdKey(o -> RabbitsClient.zoomKey);
