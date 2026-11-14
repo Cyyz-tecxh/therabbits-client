@@ -8,7 +8,7 @@
 // "serverId", and this worker asks Mojang (hasJoined) which account that was. Nobody can set
 // someone else's cape. KV binding name: CAPES.
 
-const CAPES = ["none", "trlh_black", "trlh_white", "lightning", "moonlit"];
+const CAPES = ["none", "sheen_black", "sheen_white", "pulse", "scanline"];
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
