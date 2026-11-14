@@ -17,8 +17,8 @@ A small Cloudflare Worker for TheRabbits Client. It runs on Cloudflare's free pl
 7. Copy the worker's URL (looks like `https://therabbits-cosmetics.<you>.workers.dev`).
 
 ## Connect the client
-In game: **Right Shift -> Cosmetics -> Capes -> gear -> Server URL**, paste the URL.
-To make it automatic for everyone, put the URL as the default in `CapesModule` before building.
+In game: **Right Shift -> Cosmetics -> Online & Codes -> Server URL**, paste the URL. It is used for every cosmetic (capes, hats, arms, shields, auras), codes, friends and parties.
+To make it automatic for everyone, put the URL as the default in `AccountModule` before building.
 
 ## Make codes (admin panel)
 Open `https://therabbits-cosmetics.<you>.workers.dev/admin`, paste your `ADMIN_KEY`, click **Connect**.

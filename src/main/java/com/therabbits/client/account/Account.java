@@ -6,7 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.therabbits.client.RabbitsClient;
-import com.therabbits.client.module.cosmetics.CapesModule;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 
@@ -51,8 +50,7 @@ public final class Account {
     static { load(); }
 
     public static String serverUrl() {
-        CapesModule c = CapesModule.get();
-        String u = c == null ? "" : c.serverUrl.get().trim();
+        String u = com.therabbits.client.module.cosmetics.AccountModule.url();
         while (u.endsWith("/")) u = u.substring(0, u.length() - 1);
         return u;
     }
@@ -154,7 +152,7 @@ public final class Account {
 
     /** Proves to the server who you are (Mojang session check) and gets a token. */
     public static CompletableFuture<String> login() {
-        if (!hasServer()) return CompletableFuture.completedFuture("Set the Server URL first (Cosmetics -> Capes)");
+        if (!hasServer()) return CompletableFuture.completedFuture("Set the Server URL first (Account & Codes)");
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Minecraft mc = Minecraft.getInstance();

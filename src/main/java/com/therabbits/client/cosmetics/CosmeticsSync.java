@@ -121,7 +121,7 @@ public final class CosmeticsSync {
 
     /** Publish your cape choice. Completes with a short status message for the menu. */
     public static CompletableFuture<String> publish(String serverUrl, String cape, String hat, String arms, String shield, String aura) {
-        if (serverUrl == null || serverUrl.isBlank()) return CompletableFuture.completedFuture("Set the Server URL first");
+        if (serverUrl == null || serverUrl.isBlank()) return CompletableFuture.completedFuture("Set the Server URL first (Account & Codes)");
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Minecraft mc = Minecraft.getInstance();

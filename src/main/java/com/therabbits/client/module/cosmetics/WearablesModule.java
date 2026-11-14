@@ -21,7 +21,6 @@ public class WearablesModule extends Module {
     private static String lockLabel(String name, String id) { return name + (Account.isLocked(id) ? " (locked)" : ""); }
     private static String unlocked(String id) { return Account.isLocked(id) ? "none" : id; }
     public final ModeSetting aura = add(new ModeSetting("Aura", 0, false, Wearables.AURA_NAMES).labels(i -> lockLabel(Wearables.AURA_NAMES[i], Wearables.AURA_IDS[i])));
-    public final BoolSetting showOthers = add(new BoolSetting("Show Others' Cosmetics", true));
 
     public WearablesModule() {
         super("Hats & Arms", "Hats, claws, shields, auras", Category.COSMETICS, true);
@@ -43,19 +42,19 @@ public class WearablesModule extends Module {
     public static String hatFor(Player p) {
         if (instance == null) return null;
         if (isMe(p)) return instance.hatId();
-        return instance.enabled() && instance.showOthers.on() ? CosmeticsSync.hatOf(p.getUUID()) : null;
+        return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.hatOf(p.getUUID()) : null;
     }
 
     public static String shieldFor(Player p) {
         if (instance == null) return null;
         if (isMe(p)) return instance.shieldId();
-        return instance.enabled() && instance.showOthers.on() ? CosmeticsSync.shieldOf(p.getUUID()) : null;
+        return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.shieldOf(p.getUUID()) : null;
     }
 
     public static String auraFor(Player p) {
         if (instance == null) return null;
         if (isMe(p)) return instance.auraId();
-        return instance.enabled() && instance.showOthers.on() ? CosmeticsSync.auraOf(p.getUUID()) : null;
+        return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.auraOf(p.getUUID()) : null;
     }
 
     public static String ownShield() { return instance == null ? null : instance.shieldId(); }
@@ -63,6 +62,6 @@ public class WearablesModule extends Module {
     public static String armsFor(Player p) {
         if (instance == null) return null;
         if (isMe(p)) return instance.armsId();
-        return instance.enabled() && instance.showOthers.on() ? CosmeticsSync.armsOf(p.getUUID()) : null;
+        return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.armsOf(p.getUUID()) : null;
     }
 }
