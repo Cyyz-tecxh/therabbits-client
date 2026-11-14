@@ -320,11 +320,18 @@ public class ShowcaseTest implements FabricClientGameTest {
                 frames(ctx, "c19cape", 8);
             }
             // 12. 3D cosmetics: front view, every hat, then claws
-            ctx.runOnClient(mc -> mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+            ctx.runOnClient(mc -> {
+                mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
+                mc.options.fov().set(30);
+            });
             sp.getServer().runOnServer(server -> {
                 ServerPlayer p = server.getPlayerList().getPlayers().get(0);
-                p.connection.teleport(p.getX(), p.getY(), p.getZ(), p.getYRot(), 18f);
+                p.removeAllEffects();
+                for (var slot : net.minecraft.world.entity.EquipmentSlot.values())
+                    p.setItemSlot(slot, net.minecraft.world.item.ItemStack.EMPTY);
+                p.connection.teleport(p.getX(), p.getY(), p.getZ(), p.getYRot(), 12f);
             });
+            frames(ctx, "skip", 0);
             for (int hat = 1; hat < com.therabbits.client.cosmetics.Wearables.HAT_IDS.length; hat++) {
                 final int hh = hat;
                 ctx.runOnClient(mc -> {
@@ -335,7 +342,7 @@ public class ShowcaseTest implements FabricClientGameTest {
                     final float yaw = i * 7.5f - 40f;
                     sp.getServer().runOnServer(server -> {
                         ServerPlayer p = server.getPlayerList().getPlayers().get(0);
-                        p.connection.teleport(p.getX(), p.getY(), p.getZ(), yaw, 18f);
+                        p.connection.teleport(p.getX(), p.getY(), p.getZ(), yaw, 12f);
                     });
                     frames(ctx, "c20hat" + hh, 1);
                 }
@@ -344,14 +351,17 @@ public class ShowcaseTest implements FabricClientGameTest {
                 var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
                 wm.hat.set(2); wm.arms.set(1);
             });
-            ctx.getInput().holdKey(o -> o.keyUp);
-            frames(ctx, "c21claws", 8);
-            ctx.getInput().releaseKey(o -> o.keyUp);
-            for (int i = 0; i < 6; i++) {
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.connection.teleport(p.getX(), p.getY(), p.getZ(), -25f, 12f);
+            });
+            frames(ctx, "c21claws", 6);
+            for (int i = 0; i < 8; i++) {
                 ctx.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
                 frames(ctx, "c21claws", 2);
             }
             ctx.runOnClient(mc -> {
+                mc.options.fov().set(70);
                 mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
                 mc.options.hideGui = false;
                 mc.setScreen(new ModMenuScreen(null));
