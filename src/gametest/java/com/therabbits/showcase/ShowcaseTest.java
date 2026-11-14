@@ -250,6 +250,57 @@ public class ShowcaseTest implements FabricClientGameTest {
             frames(ctx, "c14pvp", 14);
             ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
 
+            // 10. New features batch
+            ctx.runOnClient(mc -> {
+                mc.setScreen(null);
+                ModuleManager.get(com.therabbits.client.module.hud.CustomTextModule.class).setEnabled(true);
+                ModuleManager.get(com.therabbits.client.module.hud.InventoryHudModule.class).setEnabled(true);
+                ModuleManager.get(com.therabbits.client.module.visual.HitboxesModule.class).setEnabled(true);
+                var bo = ModuleManager.get(com.therabbits.client.module.visual.BlockOutlineModule.class);
+                bo.setEnabled(true); bo.color.set(12); bo.width.set(5.0);
+                var vm = ModuleManager.get(com.therabbits.client.module.visual.ViewModelModule.class);
+                vm.setEnabled(true); vm.scale.set(0.7); vm.y.set(0.1);
+                var ah = ModuleManager.get(com.therabbits.client.module.utility.AltHiderModule.class);
+                ah.alias.set("TheRabbit"); ah.setEnabled(true);
+            });
+            // look down at the block in front so the outline shows, drop items for item physics
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.connection.teleport(p.getX(), p.getY(), p.getZ(), p.getYRot(), 55f);
+                for (int i = 0; i < 3; i++) {
+                    net.minecraft.world.entity.item.ItemEntity it = new net.minecraft.world.entity.item.ItemEntity(server.overworld(),
+                            p.getX() + 1.2 + i * 0.6, p.getY() + 0.5, p.getZ() + 1.5, new ItemStack(i == 0 ? Items.DIAMOND : i == 1 ? Items.GOLDEN_APPLE : Items.ENDER_PEARL));
+                    it.setNoPickUpDelay(); it.setPickUpDelay(32767);
+                    server.overworld().addFreshEntity(it);
+                }
+            });
+            sp.getServer().runOnServer(server -> zombieAhead(server.getPlayerList().getPlayers().get(0), false));
+            frames(ctx, "c15new", 18);
+            // waypoints: drop two and walk away
+            ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.hud.WaypointsModule.class).addHere());
+            ctx.getInput().holdKey(o -> o.keyLeft);
+            frames(ctx, "c16way", 10);
+            ctx.getInput().releaseKey(o -> o.keyLeft);
+            ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.hud.WaypointsModule.class).addHere());
+            ctx.getInput().holdKey(o -> o.keyDown);
+            frames(ctx, "c16way", 12);
+            ctx.getInput().releaseKey(o -> o.keyDown);
+            // cooldowns: throw a pearl-style cooldown and swing
+            sp.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0).getCooldowns().addCooldown(new ItemStack(Items.ENDER_PEARL), 200));
+            ctx.getInput().pressKey(o -> o.keyAttack);
+            frames(ctx, "c17cool", 14);
+            // tab list with Alt Hider
+            ctx.getInput().holdKey(o -> o.keyPlayerList);
+            frames(ctx, "c18alt", 10);
+            ctx.getInput().releaseKey(o -> o.keyPlayerList);
+            ctx.runOnClient(mc -> {
+                ModuleManager.get(com.therabbits.client.module.visual.HitboxesModule.class).setEnabled(false);
+                ModuleManager.get(com.therabbits.client.module.visual.ViewModelModule.class).setEnabled(false);
+                ModuleManager.get(com.therabbits.client.module.hud.InventoryHudModule.class).setEnabled(false);
+            });
+            sp.getServer().runOnServer(server -> server.overworld().getEntities(EntityType.ZOMBIE, z -> true).forEach(z -> z.discard()));
+            ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
+
             // 9. HUD editor
             cursor(ctx, w / 2.0, h / 2.0);
             ctx.runOnClient(mc -> mc.setScreen(new HudEditorScreen(null)));
