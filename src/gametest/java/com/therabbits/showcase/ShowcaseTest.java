@@ -400,6 +400,31 @@ public class ShowcaseTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> {
                 mc.options.hideGui = false;
                 ModuleManager.get(com.therabbits.client.module.utility.ClientSettingsModule.class).accent.set(1);
+                try {   // a tiny test pack with a purple totem, picked in the mixer and applied
+                    var dir = mc.getResourcePackDirectory().resolve("Test Purple Totem");
+                    var tex = dir.resolve("assets/minecraft/textures/item/totem_of_undying.png");
+                    java.nio.file.Files.createDirectories(tex.getParent());
+                    java.nio.file.Files.writeString(dir.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":75,\"description\":\"test\"}}");
+                    var img = new java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    for (int x = 3; x < 13; x++) for (int y = 1; y < 15; y++) img.setRGB(x, y, 0xFF9B5CFF);
+                    javax.imageio.ImageIO.write(img, "png", tex.toFile());
+                    com.therabbits.client.pack.PackMixer.scan();
+                    com.therabbits.client.pack.PackMixer.choose(com.therabbits.client.pack.PackMixer.CATEGORIES.get(0), "Test Purple Totem");
+                    int files = com.therabbits.client.pack.PackMixer.build();
+                    com.therabbits.client.RabbitsClient.LOG.info("SHOWCASE pack mixer copied {} files", files);
+                    var repo = mc.getResourcePackRepository();
+                    repo.reload();
+                    var sel = new java.util.ArrayList<>(repo.getSelectedIds());
+                    sel.add("file/" + com.therabbits.client.pack.PackMixer.MIX_NAME);
+                    repo.setSelected(sel);
+                    mc.options.updateResourcePacks(repo);
+                } catch (Exception e) {
+                    com.therabbits.client.RabbitsClient.LOG.warn("SHOWCASE pack mixer test failed", e);
+                }
+            });
+            ctx.waitTicks(60);
+            ctx.runOnClient(mc -> {
+                mc.player.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.TOTEM_OF_UNDYING));
                 mc.setScreen(new com.therabbits.client.gui.PackCustomizerScreen(null));
             });
             frames(ctx, "c30packs", 3);
