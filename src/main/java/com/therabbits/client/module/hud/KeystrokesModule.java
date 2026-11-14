@@ -3,6 +3,7 @@ package com.therabbits.client.module.hud;
 import com.therabbits.client.gui.Draw;
 import com.therabbits.client.gui.Theme;
 import com.therabbits.client.hud.CpsTracker;
+import com.therabbits.client.hud.HudStyle;
 import com.therabbits.client.module.HudModule;
 import com.therabbits.client.setting.BoolSetting;
 import net.minecraft.client.KeyMapping;
@@ -42,14 +43,16 @@ public class KeystrokesModule extends HudModule {
         }
         if (space.on()) {
             boolean down = o.keyJump.isDown();
-            Draw.rect(g, 0, y, width(), 10, down ? Theme.ON : Theme.HUD_BG);
-            Draw.rect(g, width() / 2 - 10, y + 4, 20, 1, down ? 0xFF000000 : Theme.TEXT);
+            Draw.rect(g, 0, y, width(), 10, down ? HudStyle.text() : HudStyle.bg());
+            Draw.rect(g, width() / 2 - 10, y + 4, 20, 1, down ? 0xFF000000 : HudStyle.text());
         }
     }
 
     private void key(GuiGraphics g, int x, int y, int w, int h, String label, KeyMapping key) {
         boolean down = key.isDown();
-        Draw.rect(g, x, y, w, h, down ? Theme.ON : Theme.HUD_BG);
-        Draw.centered(g, label, x + w / 2, y + h / 2 - 4, down ? 0xFF000000 : Theme.TEXT);
+        Draw.rect(g, x, y, w, h, down ? HudStyle.text() : HudStyle.bg());
+        int tx = x + w / 2 - Draw.font().width(label) / 2;
+        if (down) Draw.text(g, label, tx, y + h / 2 - 4, 0xFF000000);
+        else HudStyle.text(g, label, tx, y + h / 2 - 4, HudStyle.text());
     }
 }

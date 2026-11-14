@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 import com.therabbits.client.gui.Draw;
-import com.therabbits.client.gui.Theme;
+import com.therabbits.client.hud.HudStyle;
 import com.therabbits.client.module.HudModule;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.Entity;
@@ -42,13 +42,13 @@ public class TotemPopModule extends HudModule {
     public void render(GuiGraphics g, boolean editing) {
         Map<String, Integer> m = shown(editing);
         if (m.isEmpty() && !editing) return;
-        Draw.rect(g, 0, 0, width(), height(), Theme.HUD_BG);
-        Draw.textShadow(g, "Totem Pops", 4, 3, Theme.TEXT_DIM);
+        Draw.rect(g, 0, 0, width(), height(), HudStyle.bg());
+        HudStyle.text(g, "Totem Pops", 4, 3, HudStyle.dim());
         int y = 14;
         for (var e : m.entrySet()) {
-            Draw.textShadow(g, e.getKey(), 4, y, Theme.TEXT);
+            HudStyle.text(g, e.getKey(), 4, y, HudStyle.text(y / 60f));
             String c = "x" + e.getValue();
-            Draw.textShadow(g, c, width() - 4 - Draw.font().width(c), y, Theme.TEXT);
+            HudStyle.text(g, c, width() - 4 - Draw.font().width(c), y, HudStyle.text(y / 60f));
             y += 10;
         }
     }

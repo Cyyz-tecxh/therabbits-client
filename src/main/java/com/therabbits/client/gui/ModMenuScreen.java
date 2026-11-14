@@ -4,7 +4,9 @@ import com.therabbits.client.Config;
 import com.therabbits.client.ModuleManager;
 import com.therabbits.client.module.Category;
 import com.therabbits.client.module.Module;
+import com.therabbits.client.hud.HudColors;
 import com.therabbits.client.setting.BoolSetting;
+import com.therabbits.client.setting.ModeSetting;
 import com.therabbits.client.setting.NumberSetting;
 import com.therabbits.client.setting.Setting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -124,6 +126,28 @@ public class ModMenuScreen extends Screen {
                 int tx = x + w - 26;
                 Draw.toggle(g, tx, y + 4, b.on());
                 addClipped(tx - 4, y, 30, SETTING_ROW, areaY, areaH, b::toggle);
+            } else if (s instanceof ModeSetting m) {
+                int bw = 120, bx = x + w - bw - 8;
+                boolean hover = Draw.inside(mx, my, bx, y + 1, bw, SETTING_ROW - 2);
+                Draw.rect(g, bx, y + 1, bw, SETTING_ROW - 2, hover ? Theme.HOVER : 0xFF101010);
+                Draw.outline(g, bx, y + 1, bw, SETTING_ROW - 2, Theme.BORDER);
+                Draw.text(g, "\u2039", bx + 4, y + 5, Theme.TEXT_DIM);
+                Draw.text(g, "\u203A", bx + bw - 8, y + 5, Theme.TEXT_DIM);
+                String label = m.mode();
+                int lw = Draw.font().width(label);
+                int lx = bx + bw / 2 - lw / 2;
+                if (m.isColor() && !label.equals("Global")) {
+                    int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(label);
+                    int sw = 0xFF000000 | HudColors.rgb(idx, 0);
+                    lx += 5;
+                    Draw.rect(g, lx - 11, y + 5, 7, 7, sw);
+                    Draw.text(g, label, lx, y + 5, sw);
+                } else {
+                    Draw.text(g, label, lx, y + 5, Theme.TEXT);
+                }
+                final int fbx = bx, fbw = bw;
+                addClipped(bx, y, bw / 2, SETTING_ROW, areaY, areaH, m::previous);
+                addClipped(bx + bw / 2, y, bw - bw / 2, SETTING_ROW, areaY, areaH, m::next);
             } else if (s instanceof NumberSetting n) {
                 int sw = 120, sx = x + w - sw - 40;
                 Draw.rect(g, sx, y + 8, sw, 2, Theme.OFF);

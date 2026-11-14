@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 import com.therabbits.client.gui.Draw;
-import com.therabbits.client.gui.Theme;
+import com.therabbits.client.hud.HudStyle;
 import com.therabbits.client.module.HudModule;
 import com.therabbits.client.setting.BoolSetting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -41,7 +41,7 @@ public class ArmorHudModule extends HudModule {
         g.renderItemDecorations(Draw.font(), stack, 0, y);
         if (durability.on() && stack.isDamageableItem()) {
             int left = stack.getMaxDamage() - stack.getDamageValue();
-            Draw.textShadow(g, String.valueOf(left), 20, y + 5, Theme.TEXT);
+            HudStyle.text(g, String.valueOf(left), 20, y + 5, HudStyle.text());
         }
     }
 }

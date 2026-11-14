@@ -9,6 +9,8 @@ import com.therabbits.client.module.combat.CrosshairModule;
 import com.therabbits.client.module.hud.ClockModule;
 import com.therabbits.client.module.hud.CoordinatesModule;
 import com.therabbits.client.module.hud.DirectionModule;
+import com.therabbits.client.module.hud.FpsModule;
+import com.therabbits.client.module.hud.HudStyleModule;
 import com.therabbits.client.module.visual.FullbrightModule;
 import com.therabbits.client.module.visual.MenuBackgroundModule;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -127,6 +129,34 @@ public class ShowcaseTest implements FabricClientGameTest {
             frames(ctx, "c01hud", 5);
             ctx.getInput().releaseKey(o -> o.keyJump);
             frames(ctx, "c01hud", 5);
+
+            // 1b. HUD style: colors and size
+            ctx.runOnClient(mc -> {
+                HudStyleModule st = ModuleManager.get(HudStyleModule.class);
+                st.textColor.set(8);   // Aqua
+                st.textSize.set(1.15);
+            });
+            frames(ctx, "c10style", 14);
+            ctx.runOnClient(mc -> {
+                ModuleManager.get(HudStyleModule.class).textColor.set(12);  // Chroma
+                ModuleManager.get(FpsModule.class).textColor.set(4);        // FPS: Red (index 3 + Global)
+            });
+            frames(ctx, "c10style", 20);
+            ctx.runOnClient(mc -> {
+                HudStyleModule st = ModuleManager.get(HudStyleModule.class);
+                st.textColor.set(0); st.textSize.set(1.0);
+                ModuleManager.get(FpsModule.class).textColor.set(0);
+            });
+            // style settings in the mod menu (HUD tab, first row = HUD Style)
+            ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
+            ctx.waitTicks(3);
+            {
+                int mw = Math.min(480, w - 10), mh = Math.min(300, h - 10);
+                click(ctx, w / 2 - mw / 2 + 120 + 40, h / 2 - mh / 2 + 18);
+            }
+            cursor(ctx, w / 2.0 + 200, h / 2.0 + 130);
+            frames(ctx, "c11stylemenu", 18);
+            ctx.runOnClient(mc -> mc.setScreen(null));
 
             // 2. Crosshair styles
             for (int s = 0; s <= 2; s++) {

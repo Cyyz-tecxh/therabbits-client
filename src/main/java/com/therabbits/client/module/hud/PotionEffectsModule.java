@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 import com.therabbits.client.gui.Draw;
-import com.therabbits.client.gui.Theme;
+import com.therabbits.client.hud.HudStyle;
 import com.therabbits.client.module.HudModule;
 import com.therabbits.client.setting.BoolSetting;
 import net.minecraft.client.gui.Gui;
@@ -72,15 +72,15 @@ public class PotionEffectsModule extends HudModule {
             int a = (int) (alpha * 255);
             int accent = r.good() ? 0xFFFFFF : 0xFF5A5A;
 
-            Draw.rect(g, 0, y, W, ROW, 0xA0000000);
+            Draw.rect(g, 0, y, W, ROW, HudStyle.bg());
             Draw.rect(g, 0, y, 2, ROW, (a << 24) | accent);
 
             // vanilla effect icon
             g.blitSprite(RenderPipelines.GUI_TEXTURED, Gui.getMobEffectSprite(r.effect()), 5, y + 4, 18, 18);
 
-            Draw.textShadow(g, r.name(), 27, y + 4, (a << 24) | 0xF2F2F2);
+            HudStyle.text(g, r.name(), 27, y + 4, (a << 24) | (HudStyle.text(y / 80f) & 0xFFFFFF));
             String t = time(r);
-            Draw.textShadow(g, t, W - 5 - Draw.font().width(t), y + 4, (a << 24) | (ending ? 0xFF8080 : 0xB0B0B0));
+            HudStyle.text(g, t, W - 5 - Draw.font().width(t), y + 4, (a << 24) | (ending ? 0xFF8080 : (HudStyle.dim() & 0xFFFFFF)));
 
             if (bars.on()) {
                 int bx = 27, bw = W - 27 - 5, by = y + 17;

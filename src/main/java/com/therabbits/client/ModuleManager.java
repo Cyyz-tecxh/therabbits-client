@@ -23,6 +23,7 @@ public final class ModuleManager {
 
     static void init() {
         // HUD
+        add(new HudStyleModule());
         add(new FpsModule());
         add(new PingModule());
         add(new CoordinatesModule());

@@ -26,8 +26,10 @@ public final class HudRenderer {
         double y = Math.max(0, Math.min(h.y, g.guiHeight() - h.scaledHeight()));
         g.pose().pushMatrix();
         g.pose().translate((float) x, (float) y);
-        g.pose().scale(h.scale.f(), h.scale.f());
+        g.pose().scale(h.effectiveScale(), h.effectiveScale());
+        HudStyle.current = h;
         h.render(g, editing);
+        HudStyle.current = null;
         g.pose().popMatrix();
     }
 }
