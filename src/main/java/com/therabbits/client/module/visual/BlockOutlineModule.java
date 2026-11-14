@@ -13,7 +13,7 @@ public class BlockOutlineModule extends Module {
     public final NumberSetting opacity = add(new NumberSetting("Opacity %", 80, 10, 100, 5));
     public final NumberSetting width = add(new NumberSetting("Thickness", 3, 1, 8, 0.5));
 
-    public BlockOutlineModule() { super("Block Outline", "Custom color and thickness for the block outline", Category.VISUAL, true); instance = this; }
+    public BlockOutlineModule() { super("Block Outline", "Block outline colour", Category.VISUAL, true); instance = this; }
 
     public static BlockOutlineModule get() { return instance; }
 

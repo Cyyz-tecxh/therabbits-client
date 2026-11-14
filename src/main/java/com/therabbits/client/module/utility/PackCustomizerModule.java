@@ -8,7 +8,7 @@ import com.therabbits.client.setting.ActionSetting;
 /** Turn resource packs on/off and reorder them from the TheRabbits menu. */
 public class PackCustomizerModule extends Module {
     public PackCustomizerModule() {
-        super("Pack Customizer", "Search, turn on/off and reorder resource packs", Category.UTILITY, true);
+        super("Pack Customizer", "Manage resource packs", Category.UTILITY, true);
         add(new ActionSetting("Resource Packs", "Open", () -> mc.setScreen(new PackCustomizerScreen(mc.screen))));
     }
 }

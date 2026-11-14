@@ -10,7 +10,7 @@ public class EnchantGlintModule extends Module {
     private final NumberSetting strength = add(new NumberSetting("Strength %", 75, 0, 100, 5));
     private double oldSpeed = -1, oldStrength = -1;
 
-    public EnchantGlintModule() { super("Enchant Glint", "Change glint speed and strength", Category.VISUAL, false); }
+    public EnchantGlintModule() { super("Enchant Glint", "Glint speed & strength", Category.VISUAL, false); }
 
     @Override
     protected void onEnable() {

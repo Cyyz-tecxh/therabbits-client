@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 public class BiomeModule extends TextHudModule {
-    public BiomeModule() { super("Biome", "Shows the biome you are in", false, 300, 58); }
+    public BiomeModule() { super("Biome", "Current biome", false, 300, 58); }
 
     @Override
     protected String text(boolean editing) {

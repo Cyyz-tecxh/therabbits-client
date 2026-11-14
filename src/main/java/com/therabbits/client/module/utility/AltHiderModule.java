@@ -10,7 +10,7 @@ public class AltHiderModule extends Module {
     private static AltHiderModule instance;
     public final TextSetting alias = add(new TextSetting("Show As", "Player", 16));
 
-    public AltHiderModule() { super("Alt Hider", "Hide your username (tab list, messages, menus)", Category.UTILITY, false); instance = this; }
+    public AltHiderModule() { super("Alt Hider", "Hide your username", Category.UTILITY, false); instance = this; }
 
     public static boolean active() { return instance != null && instance.enabled() && !instance.alias.get().isBlank(); }
 

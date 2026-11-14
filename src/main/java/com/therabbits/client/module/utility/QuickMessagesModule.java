@@ -17,7 +17,7 @@ public class QuickMessagesModule extends Module {
     private long lastSent;
 
     public QuickMessagesModule() {
-        super("Quick Messages", "Press a key to send a message or command", Category.UTILITY, true);
+        super("Quick Messages", "Send chat with a key", Category.UTILITY, true);
         for (int i = 0; i < SLOTS; i++) {
             keys[i] = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.therabbits.quick" + (i + 1),
                     InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), RabbitsClient.CATEGORY));

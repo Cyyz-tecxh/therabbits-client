@@ -23,7 +23,7 @@ public class CrosshairModule extends Module {
 
     private static final int[] COLORS = {0xFFFFFF, 0x000000, 0xFF3B3B, 0x4CFF6A, 0x3BE6FF, 0xFFE23B, 0xFF6EC7, 0xB46BFF, 0xFF9A2E};
 
-    public CrosshairModule() { super("Crosshair", "Custom crosshair: style, colour, size", Category.COMBAT, true); }
+    public CrosshairModule() { super("Crosshair", "Custom crosshair", Category.COMBAT, true); }
 
     public boolean visibleNow() { return mc.options.getCameraType().isFirstPerson() || thirdPerson.on(); }
 

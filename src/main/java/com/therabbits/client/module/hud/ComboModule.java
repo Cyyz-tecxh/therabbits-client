@@ -5,7 +5,7 @@ public class ComboModule extends TextHudModule {
     private static int combo;
     private static long last;
 
-    public ComboModule() { super("Combo Counter", "Hits in a row without being hit", true, 4, 322); }
+    public ComboModule() { super("Combo Counter", "Hits in a row", true, 4, 322); }
 
     public static void onHit() { combo++; last = System.currentTimeMillis(); }
 

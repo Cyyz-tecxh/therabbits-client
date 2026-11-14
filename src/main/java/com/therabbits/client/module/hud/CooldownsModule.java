@@ -18,7 +18,7 @@ public class CooldownsModule extends HudModule {
             new ItemStack(Items.WIND_CHARGE), new ItemStack(Items.GOAT_HORN), new ItemStack(Items.TRIDENT)};
     private final BoolSetting attack = add(new BoolSetting("Attack Cooldown", true));
 
-    public CooldownsModule() { super("Cooldowns", "Pearl, shield, wind charge and attack cooldowns", true, 4, 358); }
+    public CooldownsModule() { super("Cooldowns", "Pearl, shield, attack timers", true, 4, 358); }
 
     private record Row(ItemStack icon, float progress) {}
 

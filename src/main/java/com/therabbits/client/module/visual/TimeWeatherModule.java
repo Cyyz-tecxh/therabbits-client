@@ -14,7 +14,7 @@ public class TimeWeatherModule extends Module {
     public final BoolSetting cycle = add(new BoolSetting("Let Time Move", false));
     public final ModeSetting weather = add(new ModeSetting("Weather", 1, false, "Server", "Clear", "Rain", "Thunder"));
 
-    public TimeWeatherModule() { super("Time & Weather", "Set your own time of day and weather", Category.VISUAL, false); instance = this; }
+    public TimeWeatherModule() { super("Time & Weather", "Your own time & weather", Category.VISUAL, false); instance = this; }
 
     public static TimeWeatherModule get() { return instance; }
 

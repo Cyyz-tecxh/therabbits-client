@@ -5,7 +5,7 @@ public class SpeedModule extends TextHudModule {
     private double lastX, lastZ, speed;
     private boolean has;
 
-    public SpeedModule() { super("Speed", "Your speed in blocks per second", false, 4, 304); }
+    public SpeedModule() { super("Speed", "Blocks per second", false, 4, 304); }
 
     @Override
     public void onTick() {

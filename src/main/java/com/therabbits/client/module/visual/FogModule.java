@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.fog.FogRenderer;
 
 /** Turns world fog off while enabled. */
 public class FogModule extends Module {
-    public FogModule() { super("No Fog", "Remove distance and environment fog", Category.VISUAL, false); }
+    public FogModule() { super("No Fog", "Remove fog", Category.VISUAL, false); }
 
     @Override
     public void onTick() { if (FogRendererAccessor.therabbits$fogEnabled()) FogRenderer.toggleFog(); }

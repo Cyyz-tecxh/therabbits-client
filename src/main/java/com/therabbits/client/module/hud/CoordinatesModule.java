@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 public class CoordinatesModule extends TextHudModule {
-    public CoordinatesModule() { super("Coordinates", "Shows your X Y Z position", false, 4, 40); }
+    public CoordinatesModule() { super("Coordinates", "X Y Z position", false, 4, 40); }
 
     @Override
     protected String text(boolean editing) {

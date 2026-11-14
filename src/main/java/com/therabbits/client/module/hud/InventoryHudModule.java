@@ -12,7 +12,7 @@ import net.minecraft.world.item.Items;
 public class InventoryHudModule extends HudModule {
     private final BoolSetting slotOutlines = add(new BoolSetting("Slot Outlines", true));
 
-    public InventoryHudModule() { super("Inventory HUD", "See your inventory on screen", false, 220, 290); }
+    public InventoryHudModule() { super("Inventory HUD", "Inventory on screen", false, 220, 290); }
 
     @Override public int width() { return 9 * 18 + 4; }
     @Override public int height() { return 3 * 18 + 4; }

@@ -16,7 +16,7 @@ public class FreelookModule extends Module {
     private CameraType previous;
 
     public FreelookModule() {
-        super("Freelook", "Hold Left Alt to look around freely", Category.UTILITY, true);
+        super("Freelook", "Hold Alt to look around", Category.UTILITY, true);
         instance = this;
     }
 

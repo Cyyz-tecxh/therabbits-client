@@ -19,7 +19,7 @@ public class ClientSettingsModule extends Module {
     private int appliedScale = -1;
 
     public ClientSettingsModule() {
-        super("Client Settings", "Menu animations, F3 screen and GUI scale", Category.UTILITY, true);
+        super("Client Settings", "Animations, F3, GUI scale", Category.UTILITY, true);
         instance = this;
     }
 

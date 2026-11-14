@@ -10,7 +10,7 @@ public class FullbrightModule extends Module {
     private static FullbrightModule instance;
 
     public FullbrightModule() {
-        super("Fullbright", "See clearly in caves and at night", Category.VISUAL, false);
+        super("Fullbright", "See in the dark", Category.VISUAL, false);
         instance = this;
     }
 

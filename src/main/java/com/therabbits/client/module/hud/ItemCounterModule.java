@@ -19,7 +19,7 @@ public class ItemCounterModule extends HudModule {
             {Items.SPLASH_POTION}, {Items.EXPERIENCE_BOTTLE}, {Items.ARROW, Items.SPECTRAL_ARROW, Items.TIPPED_ARROW}};
     private final BoolSetting hideZero = add(new BoolSetting("Hide Empty", true));
 
-    public ItemCounterModule() { super("Item Counter", "Counts totems, gapples, pearls, pots, XP, arrows", true, 60, 172); }
+    public ItemCounterModule() { super("Item Counter", "Count totems, pearls, pots", true, 60, 172); }
 
     private record Entry(ItemStack icon, int count) {}
 

@@ -9,7 +9,7 @@ public class ItemPhysicsModule extends Module {
     private static ItemPhysicsModule instance;
     public final BoolSetting flat = add(new BoolSetting("Lie Flat", true));
 
-    public ItemPhysicsModule() { super("Item Physics", "Dropped items lie flat instead of spinning", Category.VISUAL, false); instance = this; }
+    public ItemPhysicsModule() { super("Item Physics", "Items lie flat on ground", Category.VISUAL, false); instance = this; }
 
     public static ItemPhysicsModule get() { return instance; }
 }

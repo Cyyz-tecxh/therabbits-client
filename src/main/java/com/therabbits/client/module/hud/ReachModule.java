@@ -9,7 +9,7 @@ public class ReachModule extends TextHudModule {
     private static double last = -1;
     private static long lastTime;
 
-    public ReachModule() { super("Reach Display", "Distance of your last hit", true, 4, 268); }
+    public ReachModule() { super("Reach Display", "Last hit distance", true, 4, 268); }
 
     public static void onAttack(Entity attacker, Entity target) {
         Vec3 eye = attacker.getEyePosition();

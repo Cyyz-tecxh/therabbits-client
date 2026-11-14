@@ -15,7 +15,7 @@ public class ViewModelModule extends Module {
     public final NumberSetting rotY = add(new NumberSetting("Rotate Y", 0, -180, 180, 5));
     public final NumberSetting rotZ = add(new NumberSetting("Rotate Z", 0, -180, 180, 5));
 
-    public ViewModelModule() { super("ViewModel", "Move, scale and rotate your hand items", Category.VISUAL, false); instance = this; }
+    public ViewModelModule() { super("ViewModel", "Move your hand items", Category.VISUAL, false); instance = this; }
 
     public static ViewModelModule get() { return instance; }
 }

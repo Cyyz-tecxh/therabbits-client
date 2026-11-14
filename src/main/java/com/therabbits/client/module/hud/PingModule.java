@@ -3,7 +3,7 @@ package com.therabbits.client.module.hud;
 import net.minecraft.client.multiplayer.PlayerInfo;
 
 public class PingModule extends TextHudModule {
-    public PingModule() { super("Ping", "Shows your connection latency", true, 4, 22); }
+    public PingModule() { super("Ping", "Connection latency", true, 4, 22); }
 
     @Override
     protected String text(boolean editing) {

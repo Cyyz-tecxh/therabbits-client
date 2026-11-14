@@ -32,7 +32,7 @@ public class PotionEffectsModule extends HudModule {
 
     private record Row(Holder<MobEffect> effect, String name, int ticks, boolean infinite, boolean good) {}
 
-    public PotionEffectsModule() { super("Potion Effects", "Effect cards with icons and time bars", true, 500, 24); }
+    public PotionEffectsModule() { super("Potion Effects", "Effect cards with timers", true, 500, 24); }
 
     private List<Row> rows(boolean editing) {
         List<Row> out = new ArrayList<>();

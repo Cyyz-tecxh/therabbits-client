@@ -246,6 +246,20 @@ def paint(mat, face, w, h):
             img[int(3.5 * v):int(5.5 * v), int(0.6 * u):int(3.4 * u), :3] = (196, 200, 208) if face == 'front' else img[int(3.5 * v):int(5.5 * v), int(0.6 * u):int(3.4 * u), :3]
             img[int(9.6 * v):, :, :3] = (60, 66, 80)
         bevel(img, face, 0.12)
+    elif mat == 'electric':
+        img[..., :3] = 0
+        xx = np.arange(w)
+        core = (h - 1) / 2 + np.sin(xx / max(1, w) * 18 + rng.random() * 6) * h * 0.18 + (rng.random(w) - 0.5) * h * 0.25
+        yy = np.arange(h)[:, None]
+        d = np.abs(yy - core[None, :])
+        v = np.clip(1.3 - d / max(1.0, h * 0.22), 0, 1.3)
+        img[..., 0] = np.clip(60 * v + 140 * np.clip(v - 0.9, 0, 1), 0, 255)
+        img[..., 1] = np.clip(170 * v + 80 * np.clip(v - 0.9, 0, 1), 0, 255)
+        img[..., 2] = np.clip(255 * v, 0, 255)
+        glow = img.copy()
+    elif mat == 'spark':
+        img[..., :3] = (150, 215, 255)
+        glow = img.copy()
     elif mat == 'skin':
         base((214, 168, 134)); img[..., :3] *= (1 + fine(h, w, 0.04))[..., None]
     elif mat == 'face':
@@ -482,6 +496,24 @@ for (x, y) in ((0, -6.5), (0, 6.5), (-3.6, 0), (3.6, 0)):
 sd += [box_c('post_t', 0, -3.6, 1.35, 1.2, 1.2, 1.2, 'gunmetal'), box_c('post_b', 0, 2.4, 1.35, 1.2, 1.2, 1.2, 'gunmetal'),
        box_c('grip', 0, -3.6, 2.3, 1.6, 7.2, 0.9, 'purple_metal')]
 MODELS['neon_shield'] = dict(attach='shield', parts=sd)
+
+
+# Electric Aura - swirling blue energy rings + rising sparks around the body (animated in-game)
+au = []
+for k, (y, r, n, tilt) in enumerate(((22.5, 9.0, 12, 8), (13.0, 8.0, 11, -10), (3.0, 7.5, 10, 6))):
+    ring = 'ring%d' % k
+    au.append(P(ring, (-0.01, -0.01, -0.01), (0.02, 0.02, 0.02), 'spark', pivot=(0, y, 0), rot=(tilt, 0, tilt / 2)))
+    for i in range(n):
+        a = i / n * 2 * math.pi
+        jy = math.sin(i * 2.7 + k) * 1.2
+        au.append(P('%s_s%d' % (ring, i), (-2.0, -0.35, -0.12), (4.0, 0.7, 0.24), 'electric',
+                    pivot=(math.cos(a) * r, jy, math.sin(a) * r), rot=(0, -math.degrees(a) - 90, math.sin(i * 1.9) * 25), parent=ring))
+for i in range(16):
+    a = (i * 137.5) % 360
+    rr = 5.5 + (i * 37 % 50) / 10
+    au.append(P('p%d' % i, (-0.2, -0.2, -0.2), (0.4, 0.4, 0.4), 'spark',
+                pivot=(math.cos(math.radians(a)) * rr, 24, math.sin(math.radians(a)) * rr)))
+MODELS['aura'] = dict(attach='aura', parts=au)
 
 # Rabbit Ears — two-segment furry ears that flop back at the tip, pink inner
 e = []

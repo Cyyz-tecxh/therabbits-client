@@ -25,7 +25,7 @@ import java.util.List;
 /** Cosmetics locker: tabs for capes / hats / arms / shields / codes, picture cards, live player preview. */
 public class CosmeticsScreen extends Screen {
     private enum Tab {
-        CAPES("Capes"), HATS("Hats"), ARMS("Arms"), SHIELDS("Shields"), CODES("Codes");
+        CAPES("Capes"), HATS("Hats"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), CODES("Codes");
         final String label;
         Tab(String l) { label = l; }
     }
@@ -141,6 +141,7 @@ public class CosmeticsScreen extends Screen {
             case HATS -> { for (int i = 0; i < Wearables.HAT_IDS.length; i++) out.add(new Item(Wearables.HAT_IDS[i], Wearables.HAT_NAMES[i], w.hat, i, false)); }
             case ARMS -> { for (int i = 0; i < Wearables.ARM_IDS.length; i++) out.add(new Item(Wearables.ARM_IDS[i], Wearables.ARM_NAMES[i], w.arms, i, false)); }
             case SHIELDS -> { for (int i = 0; i < Wearables.SHIELD_IDS.length; i++) out.add(new Item(Wearables.SHIELD_IDS[i], Wearables.SHIELD_NAMES[i], w.shield, i, false)); }
+            case AURAS -> { for (int i = 0; i < Wearables.AURA_IDS.length; i++) out.add(new Item(Wearables.AURA_IDS[i], Wearables.AURA_NAMES[i], w.aura, i, false)); }
             case CODES -> {}
         }
         String q = search == null ? "" : search.getValue().trim().toLowerCase(java.util.Locale.ROOT);
@@ -194,6 +195,7 @@ public class CosmeticsScreen extends Screen {
         if (!w.hatId().equals("none")) parts.add(Wearables.HAT_NAMES[w.hat.get()]);
         if (!w.armsId().equals("none")) parts.add(Wearables.ARM_NAMES[w.arms.get()]);
         if (!w.shieldId().equals("none")) parts.add(Wearables.SHIELD_NAMES[w.shield.get()]);
+        if (!w.auraId().equals("none")) parts.add(Wearables.AURA_NAMES[w.aura.get()]);
         return parts.isEmpty() ? "Nothing equipped" : String.join(" · ", parts);
     }
 

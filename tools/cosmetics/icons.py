@@ -9,7 +9,7 @@ for key, m in gen.MODELS.items():
     parts = m['parts']
     if m['attach'] == 'arms':
         yaw, pitch = -35, 8
-    elif m['attach'] == 'shield':
+    elif m['attach'] in ('shield', 'aura'):
         yaw, pitch = -28, 6
     else:
         yaw, pitch = -30, 22

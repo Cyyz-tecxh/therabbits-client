@@ -6,7 +6,7 @@ import com.therabbits.client.setting.TextSetting;
 public class CustomTextModule extends TextHudModule {
     private final TextSetting text = add(new TextSetting("Text", "TheRabbits on top", 64));
 
-    public CustomTextModule() { super("Custom Text", "Your own text on the HUD ({fps} {ping} {name} {time})", false, 300, 112); }
+    public CustomTextModule() { super("Custom Text", "Your own HUD text", false, 300, 112); }
 
     @Override
     protected String text(boolean editing) {

@@ -26,6 +26,8 @@ import java.util.Map;
 public final class CosmeticModel {
     public final String id;
     public final boolean arms;
+    /** "head", "arms", "shield" or "aura". */
+    public final String attach;
     public final ModelPart root;
     /** Mirrored copy for the left arm (arm pieces only). */
     public final ModelPart mirrored;
@@ -38,7 +40,8 @@ public final class CosmeticModel {
 
     private CosmeticModel(String id, JsonObject js) {
         this.id = id;
-        this.arms = "arms".equals(js.get("attach").getAsString());
+        this.attach = js.get("attach").getAsString();
+        this.arms = "arms".equals(attach);
         JsonArray ts = js.getAsJsonArray("texture");
         int tw = ts.get(0).getAsInt(), th = ts.get(1).getAsInt();
         this.root = build(js.getAsJsonArray("parts"), tw, th, false);

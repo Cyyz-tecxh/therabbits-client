@@ -23,7 +23,7 @@ public class HitboxesModule extends Module {
     public final BoolSetting projectiles = add(new BoolSetting("Arrows & Projectiles", true));
     public final BoolSetting other = add(new BoolSetting("Everything Else", false));
 
-    public HitboxesModule() { super("Hitboxes", "Show hitboxes, pick which entities", Category.COMBAT, false); instance = this; }
+    public HitboxesModule() { super("Hitboxes", "Show entity hitboxes", Category.COMBAT, false); instance = this; }
 
     public static HitboxesModule get() { return instance; }
 

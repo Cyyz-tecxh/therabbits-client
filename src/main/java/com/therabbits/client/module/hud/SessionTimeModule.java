@@ -5,7 +5,7 @@ public class SessionTimeModule extends TextHudModule {
     private Object level;
     private long start = System.currentTimeMillis();
 
-    public SessionTimeModule() { super("Session Time", "Time spent in this world or server", false, 300, 94); }
+    public SessionTimeModule() { super("Session Time", "Time played this session", false, 300, 94); }
 
     @Override
     public void onTick() {

@@ -5,7 +5,7 @@ import net.minecraft.util.Mth;
 public class DirectionModule extends TextHudModule {
     private static final String[] NAMES = {"S", "SW", "W", "NW", "N", "NE", "E", "SE"};
 
-    public DirectionModule() { super("Direction", "Shows which way you are facing", false, 4, 58); }
+    public DirectionModule() { super("Direction", "Facing direction", false, 4, 58); }
 
     @Override
     protected String text(boolean editing) {

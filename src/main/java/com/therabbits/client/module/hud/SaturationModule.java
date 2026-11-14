@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 public class SaturationModule extends TextHudModule {
-    public SaturationModule() { super("Saturation", "Shows your hidden food saturation", false, 4, 232); }
+    public SaturationModule() { super("Saturation", "Hidden food saturation", false, 4, 232); }
 
     @Override
     protected String text(boolean editing) {

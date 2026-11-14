@@ -1,7 +1,7 @@
 package com.therabbits.client.module.hud;
 
 public class MemoryModule extends TextHudModule {
-    public MemoryModule() { super("Memory", "Shows how much RAM the game uses", false, 300, 40); }
+    public MemoryModule() { super("Memory", "RAM usage", false, 300, 40); }
 
     @Override
     protected String text(boolean editing) {

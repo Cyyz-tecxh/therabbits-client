@@ -11,7 +11,7 @@ public class TitleTweakerModule extends Module {
     public final NumberSetting scale = add(new NumberSetting("Title Scale", 0.6, 0.2, 1.5, 0.05));
     public final BoolSetting hide = add(new BoolSetting("Hide Titles", false));
 
-    public TitleTweakerModule() { super("Title Tweaker", "Shrink or hide big on-screen titles", Category.VISUAL, false); instance = this; }
+    public TitleTweakerModule() { super("Title Tweaker", "Shrink or hide titles", Category.VISUAL, false); instance = this; }
 
     public static TitleTweakerModule get() { return instance; }
 }

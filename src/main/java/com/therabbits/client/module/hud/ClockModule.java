@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter;
 public class ClockModule extends TextHudModule {
     private static final DateTimeFormatter F = DateTimeFormatter.ofPattern("HH:mm");
 
-    public ClockModule() { super("Clock", "Shows the real time", false, 300, 4); }
+    public ClockModule() { super("Clock", "Real time", false, 300, 4); }
 
     @Override protected String text(boolean editing) { return LocalTime.now().format(F); }
 }

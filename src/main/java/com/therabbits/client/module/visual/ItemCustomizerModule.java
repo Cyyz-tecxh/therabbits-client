@@ -14,7 +14,7 @@ public class ItemCustomizerModule extends Module {
     public final BoolSetting lowShield = add(new BoolSetting("Low Shield", false));
     public final NumberSetting shieldDrop = add(new NumberSetting("Low Shield Amount", 0.15, 0, 0.5, 0.01));
 
-    public ItemCustomizerModule() { super("Item Customizer", "Change the size of held and dropped items", Category.VISUAL, true); instance = this; }
+    public ItemCustomizerModule() { super("Item Customizer", "Held & dropped item size", Category.VISUAL, true); instance = this; }
 
     public static ItemCustomizerModule get() { return instance; }
 }

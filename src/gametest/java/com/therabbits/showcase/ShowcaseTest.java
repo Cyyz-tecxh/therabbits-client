@@ -381,6 +381,16 @@ public class ShowcaseTest implements FabricClientGameTest {
                 frames(ctx, "c27fpclaws", 2);
             }
             ctx.runOnClient(mc -> mc.options.hideGui = true);
+            // 16. Electric Aura (third person, front)
+            ctx.runOnClient(mc -> {
+                mc.setScreen(null);
+                mc.options.hideGui = true;
+                mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
+                var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
+                wm.aura.set(1); wm.hat.set(4);
+            });
+            frames(ctx, "c28aura", 12);
+            ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).aura.set(0));
             // 14. Account & Codes page
             ctx.runOnClient(mc -> {
                 mc.options.hideGui = false;

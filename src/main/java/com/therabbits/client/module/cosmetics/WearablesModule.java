@@ -20,16 +20,18 @@ public class WearablesModule extends Module {
 
     private static String lockLabel(String name, String id) { return name + (Account.isLocked(id) ? " (locked)" : ""); }
     private static String unlocked(String id) { return Account.isLocked(id) ? "none" : id; }
+    public final ModeSetting aura = add(new ModeSetting("Aura", 0, false, Wearables.AURA_NAMES).labels(i -> lockLabel(Wearables.AURA_NAMES[i], Wearables.AURA_IDS[i])));
     public final BoolSetting showOthers = add(new BoolSetting("Show Others' Cosmetics", true));
 
     public WearablesModule() {
-        super("Hats & Arms", "3D hats, claws and shield skins that other TheRabbits players see", Category.COSMETICS, true);
+        super("Hats & Arms", "Hats, claws, shields, auras", Category.COSMETICS, true);
         instance = this;
     }
 
     public static WearablesModule get() { return instance; }
 
     public String hatId() { return enabled() ? unlocked(Wearables.HAT_IDS[hat.get()]) : "none"; }
+    public String auraId() { return enabled() ? unlocked(Wearables.AURA_IDS[aura.get()]) : "none"; }
     public String shieldId() { return enabled() ? unlocked(Wearables.SHIELD_IDS[shield.get()]) : "none"; }
     public String armsId() { return enabled() ? unlocked(Wearables.ARM_IDS[arms.get()]) : "none"; }
 
@@ -48,6 +50,12 @@ public class WearablesModule extends Module {
         if (instance == null) return null;
         if (isMe(p)) return instance.shieldId();
         return instance.enabled() && instance.showOthers.on() ? CosmeticsSync.shieldOf(p.getUUID()) : null;
+    }
+
+    public static String auraFor(Player p) {
+        if (instance == null) return null;
+        if (isMe(p)) return instance.auraId();
+        return instance.enabled() && instance.showOthers.on() ? CosmeticsSync.auraOf(p.getUUID()) : null;
     }
 
     public static String ownShield() { return instance == null ? null : instance.shieldId(); }

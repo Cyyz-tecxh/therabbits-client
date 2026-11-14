@@ -17,7 +17,7 @@ public class AccountModule extends Module {
     private String result = "";
 
     public AccountModule() {
-        super("Account & Codes", "Redeem codes, add friends and make parties", Category.COSMETICS, true);
+        super("Account & Codes", "Codes, friends, parties", Category.COSMETICS, true);
         add(new InfoSetting("Status", () -> result.isEmpty() ? Account.status : result));
         ActionSetting connect = add(new ActionSetting("Connect Account", "Connect", () -> {}));
         connect.setAction(() -> run(connect, "Connecting...", "Connect", Account.login()));

@@ -36,7 +36,7 @@ public class WaypointsModule extends HudModule {
     private Map<String, List<Waypoint>> all;
 
     public WaypointsModule() {
-        super("Waypoints", "Press B to mark a spot; arrows guide you back", true, 220, 4);
+        super("Waypoints", "Mark spots with B", true, 220, 4);
         add(new ActionSetting("Waypoints Here", "Delete All", () -> { list().clear(); save(); }));
     }
 

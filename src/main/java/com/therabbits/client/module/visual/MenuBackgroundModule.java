@@ -38,7 +38,7 @@ public class MenuBackgroundModule extends Module {
     public final BoolSetting lightning = add(new BoolSetting("Lightning", true));
     public final BoolSetting glow = add(new BoolSetting("Glow", true));
 
-    public MenuBackgroundModule() { super("Menu Background", "Start menu background style", Category.VISUAL, true); }
+    public MenuBackgroundModule() { super("Menu Background", "Start menu background", Category.VISUAL, true); }
 
     /** The image for the current style, or null for an animated style. */
     public Image image() { return style.i() < IMAGES.length ? IMAGES[style.i()] : null; }

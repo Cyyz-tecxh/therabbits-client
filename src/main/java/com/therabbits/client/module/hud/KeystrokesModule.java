@@ -15,7 +15,7 @@ public class KeystrokesModule extends HudModule {
     private final BoolSetting cps = add(new BoolSetting("Show CPS", true));
     private final BoolSetting space = add(new BoolSetting("Space Bar", true));
 
-    public KeystrokesModule() { super("Keystrokes", "Shows WASD, mouse clicks and CPS", true, 4, 80); }
+    public KeystrokesModule() { super("Keystrokes", "WASD, clicks and CPS", true, 4, 80); }
 
     @Override public int width() { return K * 3 + G * 2; }
 

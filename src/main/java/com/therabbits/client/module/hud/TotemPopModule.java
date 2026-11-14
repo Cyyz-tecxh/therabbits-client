@@ -14,7 +14,7 @@ public class TotemPopModule extends HudModule {
     private static final Map<String, Integer> POPS = new LinkedHashMap<>();
     private static Object level;
 
-    public TotemPopModule() { super("Totem Pops", "Counts how many totems players popped", true, 4, 286); }
+    public TotemPopModule() { super("Totem Pops", "Count totem pops", true, 4, 286); }
 
     public static void onPop(Entity e) {
         String name = e.getName().getString();

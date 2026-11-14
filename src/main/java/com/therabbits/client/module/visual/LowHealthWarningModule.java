@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 public class LowHealthWarningModule extends Module {
     private final NumberSetting hearts = add(new NumberSetting("Below Hearts", 4, 1, 10, 0.5));
 
-    public LowHealthWarningModule() { super("Low Health Warning", "Red pulsing edges when health is low", Category.VISUAL, true); }
+    public LowHealthWarningModule() { super("Low Health Warning", "Red edges at low health", Category.VISUAL, true); }
 
     public void draw(GuiGraphics g) {
         if (mc.player == null || mc.player.isCreative() || mc.player.isSpectator()) return;

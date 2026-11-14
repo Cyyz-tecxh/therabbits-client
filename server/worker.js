@@ -28,8 +28,9 @@ const CAPES = ["none", "sheen_black", "sheen_white", "pulse", "scanline", "black
 const HATS = ["none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat"];
 const ARMS = ["none", "claws"];
 const SHIELDS = ["none", "neon_shield"];
-const SLOTS = { cape: CAPES, hat: HATS, arms: ARMS, shield: SHIELDS };
-const ALL = [...CAPES, ...HATS, ...ARMS, ...SHIELDS].filter((x) => x !== "none");
+const AURAS = ["none", "aura"];
+const SLOTS = { cape: CAPES, hat: HATS, arms: ARMS, shield: SHIELDS, aura: AURAS };
+const ALL = [...CAPES, ...HATS, ...ARMS, ...SHIELDS, ...AURAS].filter((x) => x !== "none");
 const CODE_TYPES = ["cosmetic", "license", "creator"];
 
 const json = (data, status = 200) =>
@@ -271,7 +272,7 @@ async function handleAdmin(env, request, url) {
     const cs = await env.CAPES.list({ prefix: "cstat:" });
     for (const k of cs.keys) creators[k.name.slice(6)] = parseInt((await env.CAPES.get(k.name)) || "0", 10);
     codes.sort((a, b) => (b.created || 0) - (a.created || 0));
-    return json({ codes, creators, cosmetics: { capes: CAPES, hats: HATS, arms: ARMS, shields: SHIELDS }, ...(await config(env)) });
+    return json({ codes, creators, cosmetics: { capes: CAPES, hats: HATS, arms: ARMS, shields: SHIELDS, auras: AURAS }, ...(await config(env)) });
   }
   const body = method === "POST" ? await readBody(request) : {};
   if (body === null) return json({ error: "bad json" }, 400);
@@ -320,8 +321,8 @@ export default {
       const ids = (url.searchParams.get("uuids") || "").toLowerCase().split(",").filter(isUuid).slice(0, 100);
       const out = {};
       await Promise.all(ids.map(async (id) => {
-        const [cape, hat, arms, shield] = await Promise.all(["cape:", "hat:", "arms:", "shield:"].map((k) => env.CAPES.get(k + id)));
-        out[id] = path === "/capes" ? cape || "none" : { cape: cape || "none", hat: hat || "none", arms: arms || "none", shield: shield || "none" };
+        const [cape, hat, arms, shield, aura] = await Promise.all(["cape:", "hat:", "arms:", "shield:", "aura:"].map((k) => env.CAPES.get(k + id)));
+        out[id] = path === "/capes" ? cape || "none" : { cape: cape || "none", hat: hat || "none", arms: arms || "none", shield: shield || "none", aura: aura || "none" };
       }));
       return json(out);
     }
@@ -348,7 +349,7 @@ export default {
       if (!body) return json({ error: "bad json" }, 400);
       const who = await mojangCheck(env, body.name, body.serverId);
       if (who.error) return json({ error: who.error }, who.status);
-      const r = await setCosmetics(env, who.uuid, { cape: body.cape, hat: body.hat, arms: body.arms, shield: body.shield });
+      const r = await setCosmetics(env, who.uuid, { cape: body.cape, hat: body.hat, arms: body.arms, shield: body.shield, aura: body.aura });
       return json(r.error ? r : { ok: true, uuid: who.uuid }, r.status || 200);
     }
 
@@ -425,7 +426,7 @@ async function api(path,opt={}){opt.headers=Object.assign({'authorization':'Bear
 function saveKey(){KEY=$('key').value.trim();try{localStorage.setItem('trlh_admin',KEY)}catch(e){}load()}
 function typeChanged(){const t=$('type').value;$('creatorBox').style.display=t==='creator'?'block':'none';
  $('rewardLabel').textContent=t==='cosmetic'?'Cosmetics this code unlocks':'Bonus cosmetics (optional)'}
-function allCos(){const c=STATE.cosmetics;return[...c.capes,...c.hats,...c.arms,...c.shields].filter(x=>x!=='none')}
+function allCos(){const c=STATE.cosmetics;return[...c.capes,...c.hats,...c.arms,...c.shields,...(c.auras||[])].filter(x=>x!=='none')}
 function chips(el,name,checked){el.innerHTML='';for(const id of allCos()){const l=document.createElement('label');l.className='chip';
  l.innerHTML='<input type="checkbox" name="'+name+'" value="'+id+'"'+(checked.includes(id)?' checked':'')+'> '+nice(id);el.appendChild(l)}}
 function picked(name){return[...document.querySelectorAll('input[name='+name+']:checked')].map(x=>x.value)}

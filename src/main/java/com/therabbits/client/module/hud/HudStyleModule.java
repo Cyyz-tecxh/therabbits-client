@@ -15,5 +15,5 @@ public class HudStyleModule extends Module {
     public final BoolSetting shadow = add(new BoolSetting("Text Shadow", true));
     public final NumberSetting bgOpacity = add(new NumberSetting("Background Opacity", 0, 0, 100, 5));
 
-    public HudStyleModule() { super("HUD Style", "Text color, size, shadow and background for the HUD", Category.HUD, true); }
+    public HudStyleModule() { super("HUD Style", "HUD colour, size, shadow", Category.HUD, true); }
 }

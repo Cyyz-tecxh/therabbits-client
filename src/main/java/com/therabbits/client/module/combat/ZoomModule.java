@@ -12,7 +12,7 @@ public class ZoomModule extends Module {
     private final BoolSetting smooth = add(new BoolSetting("Smooth", true));
     private double current = 1;
 
-    public ZoomModule() { super("Zoom", "Hold C to zoom in", Category.COMBAT, true); }
+    public ZoomModule() { super("Zoom", "Hold C to zoom", Category.COMBAT, true); }
 
     /** Divides the field of view; 1 = no zoom. Called every frame. */
     public double factor() {

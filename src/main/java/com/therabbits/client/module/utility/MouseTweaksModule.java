@@ -13,7 +13,7 @@ public class MouseTweaksModule extends Module {
     public final BoolSetting wheel = add(new BoolSetting("Scroll Wheel Moves Stacks", true));
     public final ModeSetting wheelDir = add(new ModeSetting("Wheel Direction", 0, false, "Any", "Down only", "Up only"));
 
-    public MouseTweaksModule() { super("Mouse Tweaks", "Faster inventory: shift-drag, scroll to move", Category.UTILITY, true); instance = this; }
+    public MouseTweaksModule() { super("Mouse Tweaks", "Faster inventory moves", Category.UTILITY, true); instance = this; }
 
     public static MouseTweaksModule get() { return instance; }
 

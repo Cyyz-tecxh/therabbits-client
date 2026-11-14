@@ -5,5 +5,5 @@ import com.therabbits.client.module.Module;
 
 /** Hides the sidebar scoreboard (GuiMixin). */
 public class HideScoreboardModule extends Module {
-    public HideScoreboardModule() { super("Hide Scoreboard", "Hide the sidebar scoreboard", Category.VISUAL, false); }
+    public HideScoreboardModule() { super("Hide Scoreboard", "Hide the scoreboard", Category.VISUAL, false); }
 }
