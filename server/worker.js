@@ -10,7 +10,7 @@
 // someone else's cape. KV binding name: CAPES.
 
 const CAPES = ["none", "sheen_black", "sheen_white", "pulse", "scanline"];
-const HATS = ["none", "fedora", "crown", "ears"];
+const HATS = ["none", "fedora", "crown", "ears", "royal_crown"];
 const ARMS = ["none", "claws"];
 
 const json = (data, status = 200) =>
