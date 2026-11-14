@@ -319,6 +319,38 @@ public class ShowcaseTest implements FabricClientGameTest {
                 ctx.getInput().releaseKey(o -> o.keyUp);
                 frames(ctx, "c19cape", 8);
             }
+            // 12. 3D cosmetics: front view, every hat, then claws
+            ctx.runOnClient(mc -> mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.connection.teleport(p.getX(), p.getY(), p.getZ(), p.getYRot(), 18f);
+            });
+            for (int hat = 1; hat < com.therabbits.client.cosmetics.Wearables.HAT_IDS.length; hat++) {
+                final int hh = hat;
+                ctx.runOnClient(mc -> {
+                    var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
+                    wm.hat.set(hh); wm.arms.set(0);
+                });
+                for (int i = 0; i < 12; i++) {
+                    final float yaw = i * 7.5f - 40f;
+                    sp.getServer().runOnServer(server -> {
+                        ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                        p.connection.teleport(p.getX(), p.getY(), p.getZ(), yaw, 18f);
+                    });
+                    frames(ctx, "c20hat" + hh, 1);
+                }
+            }
+            ctx.runOnClient(mc -> {
+                var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
+                wm.hat.set(2); wm.arms.set(1);
+            });
+            ctx.getInput().holdKey(o -> o.keyUp);
+            frames(ctx, "c21claws", 8);
+            ctx.getInput().releaseKey(o -> o.keyUp);
+            for (int i = 0; i < 6; i++) {
+                ctx.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+                frames(ctx, "c21claws", 2);
+            }
             ctx.runOnClient(mc -> {
                 mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
                 mc.options.hideGui = false;

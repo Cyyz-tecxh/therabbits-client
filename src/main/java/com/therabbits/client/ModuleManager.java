@@ -74,6 +74,7 @@ public final class ModuleManager {
         add(new FreelookModule());
         // Cosmetics
         add(new com.therabbits.client.module.cosmetics.CapesModule());
+        add(new com.therabbits.client.module.cosmetics.WearablesModule());
         add(new com.therabbits.client.module.utility.MouseTweaksModule());
         add(new com.therabbits.client.module.utility.AltHiderModule());
     }

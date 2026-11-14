@@ -78,6 +78,7 @@ public final class ModuleIcons {
         ITEMS.put("Alt Hider", Items.CARVED_PUMPKIN);
         ITEMS.put("Client Font", Items.WRITABLE_BOOK);
         ITEMS.put("Capes", Items.ELYTRA);
+        ITEMS.put("Hats & Arms", Items.LEATHER_HELMET);
     }
 
     private static final Path DIR = FabricLoader.getInstance().getConfigDir().resolve("therabbits/icons");

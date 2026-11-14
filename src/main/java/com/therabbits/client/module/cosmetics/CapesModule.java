@@ -18,7 +18,7 @@ public class CapesModule extends Module {
     public final BoolSetting showOthers = add(new BoolSetting("Show Others' Capes", true));
     public final TextSetting serverUrl = add(new TextSetting("Server URL", "", 120));
     private final ActionSetting sync;
-    private int lastSynced = -1;
+    private String lastSynced = "";
     private String lastUrl = "";
 
     public CapesModule() {
@@ -43,15 +43,23 @@ public class CapesModule extends Module {
 
     private void syncNow() {
         sync.set("Syncing...");
-        CosmeticsSync.publish(serverUrl.get(), enabled() ? capeId() : "none").thenAccept(sync::set);
-        lastSynced = cape.get();
+        WearablesModule w = WearablesModule.get();
+        String hat = w != null ? w.hatId() : "none", arms = w != null ? w.armsId() : "none";
+        CosmeticsSync.publish(serverUrl.get(), enabled() ? capeId() : "none", hat, arms).thenAccept(sync::set);
+        lastSynced = signature();
         lastUrl = serverUrl.get();
+    }
+
+    /** What we'd publish right now; a change triggers an automatic re-sync. */
+    private String signature() {
+        WearablesModule w = WearablesModule.get();
+        return (enabled() ? capeId() : "none") + "|" + (w != null ? w.hatId() + "|" + w.armsId() : "");
     }
 
     @Override
     public void onTick() {
         CosmeticsSync.tick(serverUrl.get());
         // auto-share when you pick a new cape (once you're in a world, so the login check can run)
-        if (mc.player != null && !serverUrl.get().isBlank() && (cape.get() != lastSynced || !serverUrl.get().equals(lastUrl))) syncNow();
+        if (mc.player != null && !serverUrl.get().isBlank() && (!signature().equals(lastSynced) || !serverUrl.get().equals(lastUrl))) syncNow();
     }
 }

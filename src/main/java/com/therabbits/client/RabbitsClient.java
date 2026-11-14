@@ -62,6 +62,13 @@ public class RabbitsClient implements ClientModInitializer {
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(RabbitsClient::tick);
+        net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
+            if (renderer instanceof net.minecraft.client.renderer.entity.player.AvatarRenderer<?> avatar) {
+                @SuppressWarnings("unchecked")
+                var parent = (net.minecraft.client.renderer.entity.RenderLayerParent<net.minecraft.client.renderer.entity.state.AvatarRenderState, net.minecraft.client.model.player.PlayerModel>) (Object) avatar;
+                helper.register(new com.therabbits.client.cosmetics.CosmeticsLayer(parent));
+            }
+        });
         ClientLifecycleEvents.CLIENT_STOPPING.register(c -> Config.save());
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "hud"), HudRenderer::render);
