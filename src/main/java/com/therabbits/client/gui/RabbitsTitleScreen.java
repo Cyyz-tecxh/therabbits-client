@@ -329,7 +329,7 @@ public class RabbitsTitleScreen extends Screen {
             int bob = (int) (Mth.sin((now - opened) / 1200f) * 2);
             int lift = (int) ((1 - ease(in)) * 14);
             skinWidget.setY(figureCy() + figureH() / 2 + 10 - skinWidget.getHeight() + bob + lift);
-            String name = minecraft.getUser().getName();
+            String name = com.therabbits.client.module.utility.AltHiderModule.displayName();
             int nw = Draw.font().width(name) + 26;
             int nx = figureCx() - nw / 2, ny = sy + 14;
             Draw.rect(g, nx, ny, nw, 16, 0xB0000000);
@@ -502,7 +502,7 @@ public class RabbitsTitleScreen extends Screen {
         String right = "Minecraft 1.21.11";
         Draw.text(g, right, width - Draw.font().width(right) - 6, y + 3, Theme.TEXT_MUTED);
         if (width >= 380)
-            Draw.centered(g, "Signed in as " + minecraft.getUser().getName(), width / 2, y + 3, Theme.TEXT_MUTED);
+            Draw.centered(g, "Signed in as " + com.therabbits.client.module.utility.AltHiderModule.displayName(), width / 2, y + 3, Theme.TEXT_MUTED);
     }
 
     private static int withAlpha(int rgb, int a) { return (Mth.clamp(a, 0, 255) << 24) | (rgb & 0xFFFFFF); }

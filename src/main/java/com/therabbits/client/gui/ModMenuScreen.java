@@ -10,6 +10,8 @@ import com.therabbits.client.setting.BoolSetting;
 import com.therabbits.client.setting.ModeSetting;
 import com.therabbits.client.setting.NumberSetting;
 import com.therabbits.client.setting.Setting;
+import com.therabbits.client.setting.TextSetting;
+import com.therabbits.client.setting.ActionSetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -54,6 +56,8 @@ public class ModMenuScreen extends Screen {
     private NumberSetting draggingSlider;
     private int sliderX, sliderW;
     private EditBox searchBox;
+    private EditBox textEdit;
+    private TextSetting editing;
     private final long opened = System.currentTimeMillis();
     private long pageChanged = opened;
     private long lastFrame = opened;
@@ -87,6 +91,13 @@ public class ModMenuScreen extends Screen {
         searchBox.setValue(search);
         searchBox.setResponder(s -> { search = s; scroll = 0; });
         ModuleIcons.reload();
+        textEdit = new EditBox(font, 0, 0, 100, 12, Component.literal("Text"));
+        textEdit.setBordered(false);
+        textEdit.setMaxLength(64);
+        textEdit.setTextColor(0xFFFFFFFF);
+        textEdit.visible = false;
+        textEdit.setResponder(v -> { if (editing != null) editing.set(v); });
+        addRenderableWidget(textEdit);
         addRenderableWidget(searchBox);
     }
 
@@ -137,6 +148,7 @@ public class ModMenuScreen extends Screen {
 
         g.pose().popMatrix();
         searchBox.visible = settingsFor == null && !presetsPage;
+        if (settingsFor == null) { editing = null; textEdit.visible = false; }
         if (toast != null && now - toastTime < 2000) {
             int tw = Draw.font().width(toast) + 20;
             Draw.rect(g, width / 2 - tw / 2, top() - 22 + 0, tw, 16, 0xF0FFFFFF);
@@ -421,6 +433,34 @@ public class ModMenuScreen extends Screen {
                 }
                 addClipped(bx, y, bw / 2, SETTING_ROW, areaY, areaH, ms::previous);
                 addClipped(bx + bw / 2, y, bw - bw / 2, SETTING_ROW, areaY, areaH, ms::next);
+            } else if (s instanceof TextSetting ts) {
+                int bw = Math.min(200, w / 2), bx = x + w - bw - 8;
+                boolean active = editing == ts;
+                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, 0xFF0C0C0C);
+                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, active ? 0xC0FFFFFF : 0x40FFFFFF);
+                if (active) {
+                    textEdit.setX(bx + 4); textEdit.setY(y + 5); textEdit.setWidth(bw - 8);
+                    textEdit.visible = y >= areaY && y + SETTING_ROW <= areaY + areaH;
+                } else {
+                    String v = ts.get();
+                    if (Draw.font().width(v) > bw - 10) v = Draw.font().plainSubstrByWidth(v, bw - 16) + "..";
+                    Draw.text(g, v.isEmpty() ? "click to type" : v, bx + 4, y + 6, v.isEmpty() ? 0xFF5A5A5A : 0xFFFFFFFF);
+                }
+                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> {
+                    editing = ts;
+                    textEdit.setMaxLength(ts.maxLength());
+                    textEdit.setValue(ts.get());
+                    textEdit.visible = true;
+                    setFocused(textEdit);
+                    textEdit.setFocused(true);
+                });
+            } else if (s instanceof ActionSetting as) {
+                int bw = 90, bx = x + w - bw - 8;
+                boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
+                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, hover ? 0xFFFFFFFF : 0xFF1C1C1C);
+                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
+                Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? 0xFF000000 : 0xFFD0D0D0);
+                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> { as.run(); toast("Done"); });
             } else if (s instanceof NumberSetting n) {
                 int sw = 140, sx = x + w - sw - 44;
                 Draw.rect(g, sx, cy - 1, sw, 2, 0xFF3A3A3A);
@@ -463,6 +503,8 @@ public class ModMenuScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() == 0) {
             if (settingsFor == null && searchBox.mouseClicked(event, doubleClick)) return true;
+            if (editing != null && textEdit.visible && textEdit.mouseClicked(event, doubleClick)) return true;
+            if (editing != null) { editing = null; textEdit.visible = false; textEdit.setFocused(false); }
             double mx = event.x(), my = event.y();
             // first match wins: gear buttons are registered before the tile under them
             for (Hit h : List.copyOf(hits)) {

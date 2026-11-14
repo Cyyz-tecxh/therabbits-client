@@ -5,6 +5,7 @@ import com.therabbits.client.module.combat.CrosshairModule;
 import com.therabbits.client.module.visual.HideScoreboardModule;
 import com.therabbits.client.module.hud.PotionEffectsModule;
 import com.therabbits.client.module.visual.HideVignetteModule;
+import com.therabbits.client.module.visual.TitleTweakerModule;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -29,6 +30,24 @@ public class GuiMixin {
     @Inject(method = "displayScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void therabbits$hideScoreboard(CallbackInfo ci) {
         if (ModuleManager.get(HideScoreboardModule.class).enabled()) ci.cancel();
+    }
+
+    @Inject(method = "renderTitle", at = @At("HEAD"), cancellable = true)
+    private void therabbits$titleStart(GuiGraphics g, DeltaTracker delta, CallbackInfo ci) {
+        TitleTweakerModule t = TitleTweakerModule.get();
+        if (t == null || !t.enabled()) return;
+        if (t.hide.on()) { ci.cancel(); return; }
+        float s = t.scale.f(), cx = g.guiWidth() / 2f, cy = g.guiHeight() / 2f;
+        g.pose().pushMatrix();
+        g.pose().translate(cx, cy);
+        g.pose().scale(s, s);
+        g.pose().translate(-cx, -cy);
+    }
+
+    @Inject(method = "renderTitle", at = @At("RETURN"))
+    private void therabbits$titleEnd(GuiGraphics g, DeltaTracker delta, CallbackInfo ci) {
+        TitleTweakerModule t = TitleTweakerModule.get();
+        if (t != null && t.enabled() && !t.hide.on()) g.pose().popMatrix();
     }
 
     @Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true)

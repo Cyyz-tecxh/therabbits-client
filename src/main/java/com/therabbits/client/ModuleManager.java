@@ -40,6 +40,10 @@ public final class ModuleManager {
         add(new AngleModule());
         add(new SessionTimeModule());
         add(new ItemCounterModule());
+        add(new CustomTextModule());
+        add(new InventoryHudModule());
+        add(new WaypointsModule());
+        add(new CooldownsModule());
         // PvP
         add(new ToggleSprintModule());
         add(new ZoomModule());
@@ -57,9 +61,18 @@ public final class ModuleManager {
         add(new HideBossBarModule());
         add(new HideVignetteModule());
         add(new LowHealthWarningModule());
+        add(new BlockOutlineModule());
+        add(new FogModule());
+        add(new EnchantGlintModule());
+        add(new ItemPhysicsModule());
+        add(new ViewModelModule());
+        add(new TitleTweakerModule());
+        add(new HitboxesModule());
         add(new MenuBackgroundModule());
         // Utility
         add(new FreelookModule());
+        add(new com.therabbits.client.module.utility.MouseTweaksModule());
+        add(new com.therabbits.client.module.utility.AltHiderModule());
     }
 
     private static void add(Module m) { MODULES.add(m); }

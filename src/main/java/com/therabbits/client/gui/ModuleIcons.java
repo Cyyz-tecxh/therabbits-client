@@ -63,6 +63,19 @@ public final class ModuleIcons {
         ITEMS.put("Hide Vignette", Items.TINTED_GLASS);
         ITEMS.put("Low Health Warning", Items.GLISTERING_MELON_SLICE);
         ITEMS.put("Freelook", Items.ENDER_EYE);
+        ITEMS.put("Custom Text", Items.WRITABLE_BOOK);
+        ITEMS.put("Inventory HUD", Items.BARREL);
+        ITEMS.put("Waypoints", Items.LODESTONE);
+        ITEMS.put("Cooldowns", Items.ENDER_PEARL);
+        ITEMS.put("Block Outline", Items.GLASS);
+        ITEMS.put("No Fog", Items.POWDER_SNOW_BUCKET);
+        ITEMS.put("Enchant Glint", Items.ENCHANTED_BOOK);
+        ITEMS.put("Item Physics", Items.DIAMOND);
+        ITEMS.put("ViewModel", Items.DIAMOND_PICKAXE);
+        ITEMS.put("Title Tweaker", Items.OAK_HANGING_SIGN);
+        ITEMS.put("Hitboxes", Items.SCAFFOLDING);
+        ITEMS.put("Mouse Tweaks", Items.HOPPER);
+        ITEMS.put("Alt Hider", Items.CARVED_PUMPKIN);
     }
 
     private static final Path DIR = FabricLoader.getInstance().getConfigDir().resolve("therabbits/icons");

@@ -14,7 +14,13 @@
     "DefaultPlayerSkinAccessor",
     "AbstractClientPlayerMixin",
     "ScreenEffectRendererMixin",
-    "BossHealthOverlayMixin"
+    "BossHealthOverlayMixin",
+    "FogRendererAccessor",
+    "LevelRendererMixin",
+    "ItemEntityRendererMixin",
+    "ItemInHandRendererMixin",
+    "AbstractContainerScreenMixin",
+    "PlayerTabOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1
