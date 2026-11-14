@@ -191,7 +191,7 @@ async function handlePlayer(env, request, url, me) {
     });
   }
   if (method === "POST" && path === "/heartbeat") {
-    await env.CAPES.put("on:" + me.uuid, "1", { expirationTtl: 90 });
+    await env.CAPES.put("on:" + me.uuid, "1", { expirationTtl: 400 });
     return json({ ok: true });
   }
   const body = method === "POST" ? await readBody(request) : {};

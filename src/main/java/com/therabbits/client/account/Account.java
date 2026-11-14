@@ -248,7 +248,7 @@ public final class Account {
     public static void tick() {
         long now = System.currentTimeMillis();
         if (!hasServer() || !loggedIn()) return;
-        if (now - lastHeartbeat > 60_000) {
+        if (now - lastHeartbeat > 300_000) {
             lastHeartbeat = now;
             CompletableFuture.runAsync(() -> { try { send("POST", "/heartbeat", null, true); } catch (Exception ignored) {} });
         }
