@@ -10,8 +10,8 @@ import java.util.Map;
 public final class Capes {
     private Capes() {}
 
-    public static final String[] IDS = {"none", "sheen_black", "sheen_white", "pulse", "scanline"};
-    public static final String[] NAMES = {"None", "Sheen Black", "Sheen White", "Pulse", "Scanline"};
+    public static final String[] IDS = {"none", "sheen_black", "sheen_white", "pulse", "scanline", "black_nebula"};
+    public static final String[] NAMES = {"None", "Sheen Black", "Sheen White", "Pulse", "Scanline", "Black Nebula"};
     private static final int FRAMES = 16, FRAME_MS = 125;
     private static final Map<String, ClientAsset.Texture[]> TEXTURES = new HashMap<>();
 
