@@ -105,7 +105,12 @@ public class ModMenuScreen extends Screen {
     private int left() { return width / 2 - W / 2; }
     private int top() { return height / 2 - H / 2; }
 
-    private static float ease(float t) { t = Mth.clamp(t, 0, 1); return 1 - (1 - t) * (1 - t) * (1 - t); }
+    /** Animations are quick, and can be turned off (Client Settings -> Menu Animations). */
+    private static float ease(float t) {
+        if (!com.therabbits.client.module.utility.ClientSettingsModule.animations()) return 1;
+        t = Mth.clamp(t * 1.8f, 0, 1);
+        return 1 - (1 - t) * (1 - t) * (1 - t);
+    }
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
@@ -180,7 +185,7 @@ public class ModMenuScreen extends Screen {
 
     // ---------- category pills ----------
     private void renderTabs(GuiGraphics g, int x, int y, int mx, int my) {
-        Category[] cats = Category.values();
+        Category[] cats = java.util.Arrays.stream(Category.values()).filter(c -> c != Category.COSMETICS).toArray(Category[]::new);
         int tx = x;
         for (int i = -1; i < cats.length; i++) {
             Category c = i < 0 ? null : cats[i];
@@ -280,6 +285,7 @@ public class ModMenuScreen extends Screen {
         String q = search.trim().toLowerCase(Locale.ROOT);
         List<Module> out = new ArrayList<>();
         for (Module m : ModuleManager.all()) {
+            if (m.category() == Category.COSMETICS) continue;   // cosmetics live in their own screen
             if (filter != null && m.category() != filter) continue;
             if (!q.isEmpty() && !m.name().toLowerCase(Locale.ROOT).contains(q)
                     && !m.description().toLowerCase(Locale.ROOT).contains(q)) continue;
@@ -498,6 +504,12 @@ public class ModMenuScreen extends Screen {
         Draw.outline(g, bx, by, bw, 16, 0x40FFFFFF);
         Draw.centered(g, "Edit HUD", bx + bw / 2, by + 4, hover ? 0xFF000000 : 0xFFD0D0D0);
         hits.add(new Hit(bx, by, bw, 16, () -> minecraft.setScreen(new HudEditorScreen(this))));
+        int cbx = bx + bw + 6, cbw = 76;
+        boolean ch = Draw.inside(mx, my, cbx, by, cbw, 16);
+        Draw.rect(g, cbx, by, cbw, 16, ch ? 0xFFFFFFFF : 0xFF151515);
+        Draw.outline(g, cbx, by, cbw, 16, 0x40FFFFFF);
+        Draw.centered(g, "Cosmetics", cbx + cbw / 2, by + 4, ch ? 0xFF000000 : 0xFFD0D0D0);
+        hits.add(new Hit(cbx, by, cbw, 16, () -> minecraft.setScreen(new CosmeticsScreen(parent))));
 
         long on = ModuleManager.all().stream().filter(Module::enabled).count();
         String info = on + " / " + ModuleManager.all().size() + " enabled";

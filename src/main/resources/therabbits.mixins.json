@@ -22,7 +22,8 @@
     "AbstractContainerScreenMixin",
     "PlayerTabOverlayMixin",
     "ShieldSpecialRendererMixin",
-    "ItemInHandLayerMixin"
+    "ItemInHandLayerMixin",
+    "AvatarRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -92,7 +92,7 @@ public class RabbitsTitleScreen extends Screen {
         entries = List.of(
                 new Entry("Singleplayer", "Your worlds", ICON_PLAYER, () -> minecraft.setScreen(new SelectWorldScreen(this))),
                 new Entry("Multiplayer", "Join a server", ICON_GLOBE, () -> minecraft.setScreen(new JoinMultiplayerScreen(this))),
-                new Entry("Mod Menu", "Modules & HUD", ICON_GRID, () -> minecraft.setScreen(new ModMenuScreen(this))),
+                new Entry("Mods & Cosmetics", "Modules, HUD, cosmetics", ICON_GRID, () -> minecraft.setScreen(new HubScreen(this))),
                 new Entry("Options", "Settings", ICON_GEAR, () -> minecraft.setScreen(new OptionsScreen(this, minecraft.options))),
                 new Entry("Quit", "Close game", ICON_POWER, () -> minecraft.stop())
         );

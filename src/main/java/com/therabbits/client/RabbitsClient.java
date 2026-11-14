@@ -95,7 +95,7 @@ public class RabbitsClient implements ClientModInitializer {
             if (wp.enabled()) wp.addHere();
         }
         while (menuKey.consumeClick()) {
-            if (mc.screen == null) mc.setScreen(new ModMenuScreen(null));
+            if (mc.screen == null) mc.setScreen(new com.therabbits.client.gui.HubScreen(null));
         }
 
         for (Module m : ModuleManager.all()) {

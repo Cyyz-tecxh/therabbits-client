@@ -360,6 +360,27 @@ public class ShowcaseTest implements FabricClientGameTest {
                 ctx.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
                 frames(ctx, "c21claws", 2);
             }
+            // 15. Right Shift hub, cosmetics locker, first-person claws
+            ctx.runOnClient(mc -> { mc.options.hideGui = false; mc.setScreen(new com.therabbits.client.gui.HubScreen(null)); });
+            frames(ctx, "c25hub", 3);
+            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.CosmeticsScreen(null)));
+            frames(ctx, "c26locker", 4);
+            ctx.runOnClient(mc -> {
+                mc.setScreen(null);
+                mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+                ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).arms.set(1);
+            });
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+                p.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+            });
+            frames(ctx, "c27fpclaws", 3);
+            for (int i = 0; i < 4; i++) {
+                ctx.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+                frames(ctx, "c27fpclaws", 2);
+            }
+            ctx.runOnClient(mc -> mc.options.hideGui = true);
             // 14. Account & Codes page
             ctx.runOnClient(mc -> {
                 mc.options.hideGui = false;

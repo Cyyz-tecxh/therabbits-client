@@ -72,6 +72,7 @@ public final class ModuleManager {
         add(new ClientFontModule());
         // Utility
         add(new FreelookModule());
+        add(new com.therabbits.client.module.utility.ClientSettingsModule());
         // Cosmetics
         add(new com.therabbits.client.module.cosmetics.CapesModule());
         add(new com.therabbits.client.module.cosmetics.WearablesModule());
@@ -95,8 +96,13 @@ public final class ModuleManager {
     }
 
     @SuppressWarnings("unchecked")
+    private static final java.util.Map<Class<?>, Module> BY_CLASS = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Instant lookup (this runs many times per frame from render hooks). */
     public static <T extends Module> T get(Class<T> type) {
-        for (Module m : MODULES) if (type.isInstance(m)) return (T) m;
+        Module hit = BY_CLASS.get(type);
+        if (hit != null) return (T) hit;
+        for (Module m : MODULES) if (type.isInstance(m)) { BY_CLASS.put(type, m); return (T) m; }
         throw new IllegalArgumentException(type.getName());
     }
 }
