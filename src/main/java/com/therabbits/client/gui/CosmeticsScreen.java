@@ -80,9 +80,9 @@ public class CosmeticsScreen extends Screen {
         for (Tab t : Tab.values()) {
             int w = Draw.width(t.label) + 18;
             boolean sel = t == tab, hov = Draw.inside(mx, my, tx, 10, w, 18);
-            Draw.rect(g, tx, 10, w, 18, sel ? 0xFFFFFFFF : hov ? 0xFF262626 : 0xFF151515);
+            Draw.rect(g, tx, 10, w, 18, sel ? Theme.accent() : hov ? 0xFF262626 : 0xFF151515);
             if (!sel) Draw.outline(g, tx, 10, w, 18, 0x30FFFFFF);
-            Draw.centered(g, t.label, tx + w / 2, 15, sel ? 0xFF000000 : 0xFFD0D0D0);
+            Draw.centered(g, t.label, tx + w / 2, 15, sel ? Theme.onAccent() : 0xFFD0D0D0);
             hits.add(new Hit(tx, 10, w, 18, () -> { tab = t; scroll = 0; if (t == Tab.CODES) openCodes(); }));
             tx += w + 4;
         }
@@ -154,8 +154,8 @@ public class CosmeticsScreen extends Screen {
         boolean locked = Account.isLocked(it.id());
         boolean hov = Draw.inside(mx, my, x, y, w, h) && my >= areaY && my < areaY + areaH;
         Draw.rect(g, x, y, w, h, hov ? 0xF0202024 : 0xF0141417);
-        Draw.outline(g, x, y, w, h, sel ? 0xFFFFFFFF : hov ? 0x70FFFFFF : 0x28FFFFFF);
-        if (sel) Draw.outline(g, x + 1, y + 1, w - 2, h - 2, 0x60FFFFFF);
+        Draw.outline(g, x, y, w, h, sel ? Theme.accent() : hov ? 0x70FFFFFF : 0x28FFFFFF);
+        if (sel) Draw.outline(g, x + 1, y + 1, w - 2, h - 2, Theme.accent(0x60));
         int ix = x + 5, iy = y + 5, is = w - 10;
         if (it.id().equals("none")) {
             Draw.centered(g, "-", x + w / 2, iy + is / 2 - 4, 0xFF6A6A6A);
@@ -173,7 +173,7 @@ public class CosmeticsScreen extends Screen {
             Draw.centered(g, "LOCKED", x + w / 2, iy + is / 2 - 4, 0xFFFFFFFF);
         }
         Draw.centered(g, Draw.trim(it.name(), w - 6), x + w / 2, y + h - 22, 0xFFEDEDED);
-        Draw.centered(g, sel ? "Equipped" : locked ? "Redeem a code" : "Free", x + w / 2, y + h - 11, sel ? 0xFF6AD48A : 0xFF6A6A6A);
+        Draw.centered(g, sel ? "Equipped" : locked ? "Redeem a code" : "Free", x + w / 2, y + h - 11, sel ? Theme.accent() : 0xFF6A6A6A);
         int top = Math.max(y, areaY), bottom = Math.min(y + h, areaY + areaH);
         if (bottom > top) hits.add(new Hit(x, top, w, bottom - top, () -> select(it, locked)));
     }

@@ -35,9 +35,9 @@ public class HubScreen extends Screen {
         int x0 = cx - bw / 2 - gap - sq, x1 = cx - bw / 2, x2 = cx + bw / 2 + gap;
         square(g, x0, y, sq, mx, my, ICON_EMOTE);
         boolean hm = Draw.inside(mx, my, x1, y, bw, sq);
-        Draw.rect(g, x1, y, bw, sq, hm ? 0xF0FFFFFF : 0xE0161619);
+        Draw.rect(g, x1, y, bw, sq, hm ? Theme.accent(0xF0) : 0xE0161619);
         Draw.outline(g, x1, y, bw, sq, 0x50FFFFFF);
-        Draw.centered(g, "MODS", cx, y + 7, hm ? 0xFF000000 : 0xFFEDEDED);
+        Draw.centered(g, "MODS", cx, y + 7, hm ? Theme.onAccent() : 0xFFEDEDED);
         square(g, x2, y, sq, mx, my, ICON_SHIRT);
         String hint = Draw.inside(mx, my, x0, y, sq, sq) ? "Emotes" : Draw.inside(mx, my, x2, y, sq, sq) ? "Cosmetics" : hm ? "Mods & settings" : "";
         if (!hint.isEmpty()) Draw.centered(g, hint, cx, y + sq + 8, 0xFF9A9A9A);
@@ -47,9 +47,9 @@ public class HubScreen extends Screen {
 
     private static void square(GuiGraphics g, int x, int y, int s, int mx, int my, String[] icon) {
         boolean h = Draw.inside(mx, my, x, y, s, s);
-        Draw.rect(g, x, y, s, s, h ? 0xF0FFFFFF : 0xE0161619);
+        Draw.rect(g, x, y, s, s, h ? Theme.accent(0xF0) : 0xE0161619);
         Draw.outline(g, x, y, s, s, 0x50FFFFFF);
-        int c = h ? 0xFF000000 : 0xFFBDBDBD;
+        int c = h ? Theme.onAccent() : 0xFFBDBDBD;
         for (int r = 0; r < icon.length; r++)
             for (int col = 0; col < icon[r].length(); col++)
                 if (icon[r].charAt(col) == '#') g.fill(x + 6 + col, y + 6 + r, x + 7 + col, y + 7 + r, c);

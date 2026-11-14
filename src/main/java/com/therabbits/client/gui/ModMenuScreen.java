@@ -69,7 +69,11 @@ public class ModMenuScreen extends Screen {
 
     private int W, H;
     private final List<Hit> hits = new ArrayList<>();
-    private record Hit(int x, int y, int w, int h, Runnable action) {}
+    private record Hit(int x, int y, int w, int h, Runnable action, Runnable right) {
+        Hit(int x, int y, int w, int h, Runnable action) { this(x, y, w, h, action, null); }
+    }
+    private boolean favoritesOnly;
+    private static final String[] ICON_STAR_SMALL = {"..#..", ".###.", "#####", ".###.", ".#.#."};
 
     public ModMenuScreen(Screen parent) {
         super(Component.literal("TheRabbits Menu"));
@@ -194,24 +198,35 @@ public class ModMenuScreen extends Screen {
             String label = c == null ? "All" : c.label();
             String[] icon = c == null ? ICON_ALL : icon(c);
             int w = Draw.width(label) + 28;
-            boolean sel = !presetsPage && filter == c;
+            boolean sel = !presetsPage && !favoritesOnly && filter == c;
             boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
-            Draw.rect(g, tx, y, w, TABS_H, sel ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF151515);
+            Draw.rect(g, tx, y, w, TABS_H, sel ? Theme.accent() : hover ? 0xFF262626 : 0xFF151515);
             if (!sel) Draw.outline(g, tx, y, w, TABS_H, 0x30FFFFFF);
-            pixelIcon(g, icon, tx + 7, y + 5, 1, sel ? 0xFF000000 : 0xFFBBBBBB);
-            Draw.text(g, label, tx + 20, y + 5, sel ? 0xFF000000 : 0xFFD0D0D0);
+            pixelIcon(g, icon, tx + 7, y + 5, 1, sel ? Theme.onAccent() : 0xFFBBBBBB);
+            Draw.text(g, label, tx + 20, y + 5, sel ? Theme.onAccent() : 0xFFD0D0D0);
             final Category fc = c;
-            hits.add(new Hit(tx, y, w, TABS_H, () -> selectCategory(fc)));
+            hits.add(new Hit(tx, y, w, TABS_H, () -> { favoritesOnly = false; selectCategory(fc); }));
             tx += w + 5;
+        }
+        {   // favourites
+            String label = "Favorites";
+            int w = Draw.width(label) + 24;
+            boolean sel = !presetsPage && favoritesOnly;
+            boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
+            Draw.rect(g, tx, y, w, TABS_H, sel ? Theme.accent() : hover ? 0xFF262626 : 0xFF151515);
+            if (!sel) Draw.outline(g, tx, y, w, TABS_H, 0x30FFFFFF);
+            pixelIcon(g, ICON_STAR_SMALL, tx + 7, y + 6, 1, sel ? Theme.onAccent() : 0xFFE8C34A);
+            Draw.text(g, label, tx + 16, y + 5, sel ? Theme.onAccent() : 0xFFD0D0D0);
+            hits.add(new Hit(tx, y, w, TABS_H, () -> { selectCategory(null); favoritesOnly = true; }));
         }
         // Presets pill (right side)
         String label = "Presets";
         int w = Draw.width(label) + 28, px = x + W - 24 - w;
         boolean hover = Draw.inside(mx, my, px, y, w, TABS_H);
-        Draw.rect(g, px, y, w, TABS_H, presetsPage ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF151515);
+        Draw.rect(g, px, y, w, TABS_H, presetsPage ? Theme.accent() : hover ? 0xFF262626 : 0xFF151515);
         if (!presetsPage) Draw.outline(g, px, y, w, TABS_H, 0x30FFFFFF);
-        pixelIcon(g, ICON_STAR, px + 7, y + 5, 1, presetsPage ? 0xFF000000 : 0xFFBBBBBB);
-        Draw.text(g, label, px + 20, y + 5, presetsPage ? 0xFF000000 : 0xFFD0D0D0);
+        pixelIcon(g, ICON_STAR, px + 7, y + 5, 1, presetsPage ? Theme.onAccent() : 0xFFBBBBBB);
+        Draw.text(g, label, px + 20, y + 5, presetsPage ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(px, y, w, TABS_H, this::showPresets));
     }
 
@@ -289,6 +304,7 @@ public class ModMenuScreen extends Screen {
         for (Module m : ModuleManager.all()) {
             if (m.category() == Category.COSMETICS) continue;   // cosmetics live in their own screen
             if (filter != null && m.category() != filter) continue;
+            if (favoritesOnly && !Favorites.is(m.name())) continue;
             if (!q.isEmpty() && !m.name().toLowerCase(Locale.ROOT).contains(q)
                     && !m.description().toLowerCase(Locale.ROOT).contains(q)) continue;
             out.add(m);
@@ -305,7 +321,7 @@ public class ModMenuScreen extends Screen {
         scroll = Mth.clamp(scroll, 0, Math.max(0, content - ah));
 
         g.enableScissor(ax, ay, ax + aw, ay + ah);
-        if (mods.isEmpty()) Draw.centered(g, "No features match \"" + search + "\"", ax + aw / 2, ay + 30, 0xFF808080);
+        if (mods.isEmpty()) Draw.centered(g, favoritesOnly ? "No favorites yet - click the star on any tile" : "No features match \"" + search + "\"", ax + aw / 2, ay + 30, 0xFF808080);
         for (int i = 0; i < mods.size(); i++) {
             Module m = mods.get(i);
             int tx = ax + (i % cols) * (tw + GAP);
@@ -319,12 +335,12 @@ public class ModMenuScreen extends Screen {
             ty -= lift;
 
             Draw.rect(g, tx, ty, tw, TILE_H, blend(0xFF141414, 0xFF1E1E1E, hv));
-            Draw.outline(g, tx, ty, tw, TILE_H, ((int) (0x28 + 0x70 * hv) << 24) | 0xFFFFFF);
+            Draw.outline(g, tx, ty, tw, TILE_H, hv > 0.05f ? Theme.accent((int) (0x28 + 0x90 * hv)) : 0x28FFFFFF);
 
             // picture badge
             int bx = tx + 8, by = ty + 8;
             Draw.rect(g, bx, by, 22, 22, blend(0xFF1A1A1A, 0xFF2C2C2C, on));
-            Draw.outline(g, bx, by, 22, 22, ((int) (0x30 + 0xA0 * on) << 24) | 0xFFFFFF);
+            Draw.outline(g, bx, by, 22, 22, Theme.accent((int) (0x30 + 0xA0 * on)));
             ModuleIcons.draw(g, m.name(), bx + 3, by + 3, 16);
             if (on < 0.99f) Draw.rect(g, bx + 1, by + 1, 20, 20, ((int) (150 * (1 - on)) << 24) | 0x0B0B0B);
 
@@ -340,7 +356,7 @@ public class ModMenuScreen extends Screen {
             Draw.text(g, m.enabled() ? "ENABLED" : "DISABLED", tx + 8, sy + 4, blend(0xFF5A5A5A, 0xFFFFFFFF, on));
             int barX = tx + 8, barW = tw - 16 - (m.settings().isEmpty() ? 0 : 16);
             g.fill(barX, sy + 13, barX + barW, sy + 14, 0x30FFFFFF);
-            g.fill(barX, sy + 13, barX + (int) (barW * on), sy + 14, 0xFFFFFFFF);
+            g.fill(barX, sy + 13, barX + (int) (barW * on), sy + 14, Theme.accent());
 
             final int ftx = tx, fty = ty;
             if (!m.settings().isEmpty()) {
@@ -349,7 +365,14 @@ public class ModMenuScreen extends Screen {
                 pixelIcon(g, ICON_GEAR, gx, gy, 1, gh ? 0xFFFFFFFF : 0xFF8A8A8A);
                 if (inArea) hits.add(new Hit(gx - 3, gy - 3, 15, 15, () -> openSettings(m)));
             }
-            if (inArea) hits.add(new Hit(ftx, fty, tw, TILE_H, m::toggle));
+            {   // favourite star (top-right)
+                int fx = tx + tw - 12, fy = ty + 5;
+                boolean fav = Favorites.is(m.name());
+                boolean fh = inArea && Draw.inside(mx, my, fx - 2, fy - 2, 9, 9);
+                if (fav || hover) pixelIcon(g, ICON_STAR_SMALL, fx, fy, 1, fav ? 0xFFE8C34A : fh ? 0xFFFFFFFF : 0xFF5A5A5A);
+                if (inArea) hits.add(new Hit(fx - 2, fy - 2, 9, 9, () -> { Favorites.toggle(m.name()); toast(Favorites.is(m.name()) ? "Added to favorites" : "Removed from favorites"); }));
+            }
+            if (inArea) hits.add(new Hit(ftx, fty, tw, TILE_H, m::toggle, m.settings().isEmpty() ? null : () -> openSettings(m)));
         }
         g.disableScissor();
 
@@ -520,16 +543,26 @@ public class ModMenuScreen extends Screen {
         Draw.outline(g, cbx, by, cbw, 16, 0x40FFFFFF);
         Draw.centered(g, "Cosmetics", cbx + cbw / 2, by + 4, ch ? 0xFF000000 : 0xFFD0D0D0);
         hits.add(new Hit(cbx, by, cbw, 16, () -> minecraft.setScreen(new CosmeticsScreen(parent))));
+        int pbx = cbx + cbw + 6, pbw = 52;
+        boolean ph = Draw.inside(mx, my, pbx, by, pbw, 16);
+        Draw.rect(g, pbx, by, pbw, 16, ph ? Theme.accent() : 0xFF151515);
+        Draw.outline(g, pbx, by, pbw, 16, 0x40FFFFFF);
+        Draw.centered(g, "Packs", pbx + pbw / 2, by + 4, ph ? Theme.onAccent() : 0xFFD0D0D0);
+        hits.add(new Hit(pbx, by, pbw, 16, () -> minecraft.setScreen(new PackCustomizerScreen(this))));
 
         long on = ModuleManager.all().stream().filter(Module::enabled).count();
         String info = on + " / " + ModuleManager.all().size() + " enabled";
         Draw.text(g, info, x + W - 12 - Draw.width(info), by + 4, 0xFF7A7A7A);
-        Draw.centered(g, "Right Shift", x + W / 2, by + 4, 0xFF4A4A4A);
+        Draw.centered(g, settingsFor == null ? "Right-click: settings" : "Right Shift", x + W / 2, by + 4, 0xFF5A5A5A);
     }
 
     // ---------- input ----------
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 1) {
+            for (Hit h : List.copyOf(hits))
+                if (h.right() != null && Draw.inside(event.x(), event.y(), h.x(), h.y(), h.w(), h.h())) { h.right().run(); return true; }
+        }
         if (event.button() == 0) {
             if (settingsFor == null && searchBox.mouseClicked(event, doubleClick)) return true;
             if (editing != null && textEdit.visible && textEdit.mouseClicked(event, doubleClick)) return true;

@@ -396,6 +396,20 @@ public class ShowcaseTest implements FabricClientGameTest {
             });
             frames(ctx, "c29snow", 16);
             ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).aura.set(0));
+            // 17. Pack Customizer (mix tab + picker) and purple accent menus
+            ctx.runOnClient(mc -> {
+                mc.options.hideGui = false;
+                ModuleManager.get(com.therabbits.client.module.utility.ClientSettingsModule.class).accent.set(1);
+                mc.setScreen(new com.therabbits.client.gui.PackCustomizerScreen(null));
+            });
+            frames(ctx, "c30packs", 3);
+            ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
+            frames(ctx, "c31accent", 3);
+            ctx.runOnClient(mc -> {
+                ModuleManager.get(com.therabbits.client.module.utility.ClientSettingsModule.class).accent.set(0);
+                mc.setScreen(null);
+                mc.options.hideGui = true;
+            });
             // 14. Account & Codes page
             ctx.runOnClient(mc -> {
                 mc.options.hideGui = false;

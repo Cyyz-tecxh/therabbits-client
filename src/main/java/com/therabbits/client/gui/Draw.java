@@ -77,8 +77,8 @@ public final class Draw {
     }
 
     public static void toggle(GuiGraphics g, int x, int y, boolean on) {
-        rect(g, x, y, 18, 10, on ? Theme.ON : Theme.OFF);
-        rect(g, on ? x + 9 : x + 1, y + 1, 8, 8, on ? 0xFF000000 : 0xFF9A9A9A);
+        rect(g, x, y, 18, 10, on ? Theme.accent() : Theme.OFF);
+        rect(g, on ? x + 9 : x + 1, y + 1, 8, 8, on ? Theme.onAccent() : 0xFF9A9A9A);
     }
 
     public static boolean inside(double mx, double my, int x, int y, int w, int h) {
