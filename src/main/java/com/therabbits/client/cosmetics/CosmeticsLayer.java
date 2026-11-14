@@ -53,10 +53,38 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         }
     }
 
+    /** Snow Aura: each flake drifts slowly around you, bobs, turns, and fades in and out on its own timer. */
+    private static void animateSnow(ModelPart root, float t) {
+        for (int i = 0; root.hasChild("f" + i); i++) {
+            ModelPart f = root.getChild("f" + i);
+            var ip = f.getInitialPose();
+            float h = (i * 0.6180339f) % 1f;                    // per-flake variety
+            float drift = t * (0.10f + h * 0.12f) * (i % 2 == 0 ? 1 : -1);
+            float c = net.minecraft.util.Mth.cos(drift), sn = net.minecraft.util.Mth.sin(drift);
+            f.x = ip.x() * c - ip.z() * sn;
+            f.z = ip.x() * sn + ip.z() * c;
+            f.y = ip.y() + net.minecraft.util.Mth.sin(t * (0.7f + h * 0.6f) + i * 1.3f) * (0.5f + h * 0.7f);
+            f.yRot = ip.yRot() + t * (0.4f + h * 0.5f);
+            f.zRot = t * (0.25f + h * 0.3f) * (i % 3 == 0 ? -1 : 1);
+            // life: fade in, stay, fade out, short gap; plus a gentle flicker
+            float life = (t * (0.11f + h * 0.08f) + h * 7.3f) % 1f;
+            float a = life < 0.15f ? life / 0.15f : life < 0.75f ? 1f : life < 0.9f ? (0.9f - life) / 0.15f : 0f;
+            a *= 0.85f + 0.15f * net.minecraft.util.Mth.sin(t * 9f + i * 2.1f);
+            float size = (0.75f + h * 0.75f) * Math.max(0f, a);
+            f.visible = size > 0.04f;
+            f.xScale = f.yScale = f.zScale = size;
+        }
+    }
+
     /** Swirling rings (each spins its own way), crackling segments and rising sparks. */
     private static void drawAura(PoseStack pose, SubmitNodeCollector out, CosmeticModel m) {
         float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         ModelPart root = m.root;
+        if (root.hasChild("f0")) {
+            animateSnow(root, t);
+            out.submitModelPart(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
+            return;
+        }
         float[] speed = {2.4f, -1.8f, 3.0f};
         for (int k = 0; k < 3; k++) {
             if (!root.hasChild("ring" + k)) continue;

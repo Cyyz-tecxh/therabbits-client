@@ -28,7 +28,7 @@ const CAPES = ["none", "sheen_black", "sheen_white", "pulse", "scanline", "black
 const HATS = ["none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat"];
 const ARMS = ["none", "claws"];
 const SHIELDS = ["none", "neon_shield"];
-const AURAS = ["none", "aura"];
+const AURAS = ["none", "aura", "snow_aura"];
 const SLOTS = { cape: CAPES, hat: HATS, arms: ARMS, shield: SHIELDS, aura: AURAS };
 const ALL = [...CAPES, ...HATS, ...ARMS, ...SHIELDS, ...AURAS].filter((x) => x !== "none");
 const CODE_TYPES = ["cosmetic", "license", "creator"];

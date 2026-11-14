@@ -390,6 +390,11 @@ public class ShowcaseTest implements FabricClientGameTest {
                 wm.aura.set(1); wm.hat.set(4);
             });
             frames(ctx, "c28aura", 12);
+            ctx.runOnClient(mc -> {
+                var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
+                wm.aura.set(2); wm.hat.set(0);
+            });
+            frames(ctx, "c29snow", 16);
             ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).aura.set(0));
             // 14. Account & Codes page
             ctx.runOnClient(mc -> {
