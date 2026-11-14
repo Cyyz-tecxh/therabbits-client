@@ -57,7 +57,7 @@ public class CosmeticsScreen extends Screen {
         preview = new PlayerSkinWidget(pw, ph, minecraft.getEntityModels(), SkinDraw::skin);
         preview.setPosition(panelX() + 10, 44 + (height - 80 - ph) / 2);
         addRenderableWidget(preview);
-        search = new net.minecraft.client.gui.components.EditBox(font, width - 190, 12, 120, 14, Component.literal("Search"));
+        search = new net.minecraft.client.gui.components.EditBox(font, gridX(), 38, Math.min(200, gridW()), 14, Component.literal("Search"));
         search.setHint(Component.literal("Search cosmetics..."));
         addRenderableWidget(search);
         Account.refreshNow();
@@ -75,7 +75,7 @@ public class CosmeticsScreen extends Screen {
         // header
         Draw.logo(g, 12, 8, 22);
         Draw.text(g, "COSMETICS", 40, 12, 0xFFFFFFFF);
-        Draw.text(g, "Pick what you wear - other TheRabbits players see it too", 40, 23, 0xFF7A7A7A);
+        Draw.text(g, "Your look", 40, 23, 0xFF7A7A7A);
         int tx = gridX();
         for (Tab t : Tab.values()) {
             int w = Draw.width(t.label) + 18;
@@ -100,7 +100,7 @@ public class CosmeticsScreen extends Screen {
         Draw.centered(g, Draw.trim(worn, pw - 8), px + pw / 2, py + ph - 14, 0xFF8A8A8A);
 
         // grid
-        int gx = gridX(), gy = 40, gw = gridW(), gh = height - 52;
+        int gx = gridX(), gy = 58, gw = gridW(), gh = height - 70;
         List<Item> items = items();
         int cw = 74, ch = 92, gap = 8, cols = Math.max(1, (gw + gap) / (cw + gap));
         int rows = (items.size() + cols - 1) / cols;
