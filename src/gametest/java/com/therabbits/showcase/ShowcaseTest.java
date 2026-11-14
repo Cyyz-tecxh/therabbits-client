@@ -236,6 +236,18 @@ public class ShowcaseTest implements FabricClientGameTest {
                 frames(ctx, "c08menu", 12);
             }
 
+            // 8b. Presets page: show it, then load the Minimal preset and the PvP preset
+            ctx.runOnClient(mc -> ((ModMenuScreen) mc.screen).showPresets());
+            cursor(ctx, w / 2.0, h / 2.0 + 120);
+            frames(ctx, "c13presets", 14);
+            ctx.runOnClient(mc -> com.therabbits.client.Presets.apply(com.therabbits.client.Presets.BUILT_IN.get(1)));
+            frames(ctx, "c13presets", 12);
+            ctx.runOnClient(mc -> com.therabbits.client.Presets.apply(com.therabbits.client.Presets.BUILT_IN.get(0)));
+            frames(ctx, "c13presets", 10);
+            ctx.runOnClient(mc -> mc.setScreen(null));
+            frames(ctx, "c14pvp", 14);
+            ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
+
             // 9. HUD editor
             cursor(ctx, w / 2.0, h / 2.0);
             ctx.runOnClient(mc -> mc.setScreen(new HudEditorScreen(null)));

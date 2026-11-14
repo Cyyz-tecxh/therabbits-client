@@ -18,7 +18,8 @@ public final class Config {
 
     private Config() {}
 
-    public static void save() {
+    /** Everything (toggles, settings, HUD positions) as JSON. */
+    public static JsonObject toJson() {
         JsonObject root = new JsonObject();
         for (Module m : ModuleManager.all()) {
             JsonObject o = new JsonObject();
@@ -32,9 +33,31 @@ public final class Config {
             o.add("settings", s);
             root.add(m.name(), o);
         }
+        return root;
+    }
+
+    /** Apply JSON produced by toJson(); unknown entries are ignored. */
+    public static void apply(JsonObject root) {
+        for (Module m : ModuleManager.all()) {
+            if (!root.has(m.name())) continue;
+            JsonObject o = root.getAsJsonObject(m.name());
+            if (o.has("enabled")) m.setEnabled(o.get("enabled").getAsBoolean());
+            if (m instanceof HudModule h) {
+                if (o.has("x")) h.x = o.get("x").getAsDouble();
+                if (o.has("y")) h.y = o.get("y").getAsDouble();
+            }
+            if (o.has("settings")) {
+                JsonObject s = o.getAsJsonObject("settings");
+                for (Setting<?> setting : m.settings())
+                    if (s.has(setting.name())) setting.load(s.get(setting.name()));
+            }
+        }
+    }
+
+    public static void save() {
         try {
             Files.createDirectories(FILE.getParent());
-            Files.writeString(FILE, GSON.toJson(root));
+            Files.writeString(FILE, GSON.toJson(toJson()));
         } catch (Exception e) {
             RabbitsClient.LOG.error("Could not save config", e);
         }
@@ -43,23 +66,11 @@ public final class Config {
     public static void load() {
         if (!Files.exists(FILE)) return;
         try {
-            JsonObject root = JsonParser.parseString(Files.readString(FILE)).getAsJsonObject();
-            for (Module m : ModuleManager.all()) {
-                if (!root.has(m.name())) continue;
-                JsonObject o = root.getAsJsonObject(m.name());
-                if (o.has("enabled")) m.setEnabled(o.get("enabled").getAsBoolean());
-                if (m instanceof HudModule h) {
-                    if (o.has("x")) h.x = o.get("x").getAsDouble();
-                    if (o.has("y")) h.y = o.get("y").getAsDouble();
-                }
-                if (o.has("settings")) {
-                    JsonObject s = o.getAsJsonObject("settings");
-                    for (Setting<?> setting : m.settings())
-                        if (s.has(setting.name())) setting.load(s.get(setting.name()));
-                }
-            }
+            apply(JsonParser.parseString(Files.readString(FILE)).getAsJsonObject());
         } catch (Exception e) {
             RabbitsClient.LOG.error("Could not load config", e);
         }
     }
+
+    public static Gson gson() { return GSON; }
 }

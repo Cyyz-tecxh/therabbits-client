@@ -2,6 +2,7 @@ package com.therabbits.client.gui;
 
 import com.therabbits.client.Config;
 import com.therabbits.client.ModuleManager;
+import com.therabbits.client.Presets;
 import com.therabbits.client.hud.HudColors;
 import com.therabbits.client.module.Category;
 import com.therabbits.client.module.Module;
@@ -45,6 +46,9 @@ public class ModMenuScreen extends Screen {
     private final Screen parent;
     private Category filter;               // null = all
     private Module settingsFor;            // non-null = settings page
+    private boolean presetsPage;
+    private String toast;
+    private long toastTime;
     private String search = "";
     private double scroll;
     private NumberSetting draggingSlider;
@@ -66,7 +70,8 @@ public class ModMenuScreen extends Screen {
     }
 
     // ---------- test / external hooks ----------
-    public void selectCategory(Category c) { filter = c; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    public void showPresets() { presetsPage = true; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    public void selectCategory(Category c) { presetsPage = false; filter = c; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
     public void openSettings(Module m) { settingsFor = m; scroll = 0; pageChanged = System.currentTimeMillis(); }
 
     @Override
@@ -122,14 +127,20 @@ public class ModMenuScreen extends Screen {
         renderHeader(g, x, y, mouseX, mouseY);
         if (settingsFor == null) {
             renderTabs(g, x + 12, y + HEADER + 2, mouseX, mouseY);
-            renderGrid(g, x + 12, y + HEADER + TABS_H + 10, W - 24, H - HEADER - TABS_H - 10 - FOOTER - 6, mouseX, mouseY, dt);
+            if (presetsPage) renderPresets(g, x + 12, y + HEADER + TABS_H + 10, W - 24, H - HEADER - TABS_H - 10 - FOOTER - 6, mouseX, mouseY, now);
+            else renderGrid(g, x + 12, y + HEADER + TABS_H + 10, W - 24, H - HEADER - TABS_H - 10 - FOOTER - 6, mouseX, mouseY, dt);
         } else {
             renderSettingsPage(g, x + 12, y + HEADER + 2, W - 24, H - HEADER - FOOTER - 6, mouseX, mouseY, now);
         }
         renderFooter(g, x, y + H - FOOTER, mouseX, mouseY);
 
         g.pose().popMatrix();
-        searchBox.visible = settingsFor == null;
+        searchBox.visible = settingsFor == null && !presetsPage;
+        if (toast != null && now - toastTime < 2000) {
+            int tw = Draw.font().width(toast) + 20;
+            Draw.rect(g, width / 2 - tw / 2, top() - 22 + 0, tw, 16, 0xF0FFFFFF);
+            Draw.centered(g, toast, width / 2, top() - 18, 0xFF000000);
+        }
         super.render(g, mouseX, mouseY, delta);   // search box on top (not scaled; it sits in the header)
     }
 
@@ -162,7 +173,7 @@ public class ModMenuScreen extends Screen {
             String label = c == null ? "All" : c.label();
             String[] icon = c == null ? ICON_ALL : icon(c);
             int w = Draw.font().width(label) + 28;
-            boolean sel = filter == c;
+            boolean sel = !presetsPage && filter == c;
             boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
             Draw.rect(g, tx, y, w, TABS_H, sel ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF151515);
             if (!sel) Draw.outline(g, tx, y, w, TABS_H, 0x30FFFFFF);
@@ -172,7 +183,73 @@ public class ModMenuScreen extends Screen {
             hits.add(new Hit(tx, y, w, TABS_H, () -> selectCategory(fc)));
             tx += w + 5;
         }
+        // Presets pill (right side)
+        String label = "Presets";
+        int w = Draw.font().width(label) + 28, px = x + W - 24 - w;
+        boolean hover = Draw.inside(mx, my, px, y, w, TABS_H);
+        Draw.rect(g, px, y, w, TABS_H, presetsPage ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF151515);
+        if (!presetsPage) Draw.outline(g, px, y, w, TABS_H, 0x30FFFFFF);
+        pixelIcon(g, ICON_STAR, px + 7, y + 5, 1, presetsPage ? 0xFF000000 : 0xFFBBBBBB);
+        Draw.text(g, label, px + 20, y + 5, presetsPage ? 0xFF000000 : 0xFFD0D0D0);
+        hits.add(new Hit(px, y, w, TABS_H, this::showPresets));
     }
+
+    private static final String[] ICON_STAR = {
+            "....#....", "....#....", "...###...", "#########", ".#######.", "..#####..", "..##.##..", ".##...##.", "#.......#"};
+
+    // ---------- presets page ----------
+    private void renderPresets(GuiGraphics g, int ax, int ay, int aw, int ah, int mx, int my, long now) {
+        float slide = ease((now - pageChanged) / 200f);
+        ay += (int) ((1 - slide) * 12);
+        Draw.text(g, "BUILT-IN", ax, ay, 0xFF6A6A6A);
+        int cols = 4, cw = (aw - (cols - 1) * GAP) / cols, ch = 62, cy = ay + 12;
+        for (int i = 0; i < Presets.BUILT_IN.size(); i++) {
+            Presets.BuiltIn p = Presets.BUILT_IN.get(i);
+            int cx = ax + i * (cw + GAP);
+            boolean active = Presets.active(p);
+            boolean hover = Draw.inside(mx, my, cx, cy, cw, ch);
+            Draw.rect(g, cx, cy, cw, ch, active ? 0xFFFFFFFF : hover ? 0xFF1E1E1E : 0xFF141414);
+            Draw.outline(g, cx, cy, cw, ch, active ? 0xFFFFFFFF : hover ? 0x90FFFFFF : 0x28FFFFFF);
+            int fg = active ? 0xFF000000 : 0xFFFFFFFF, sub = active ? 0xFF404040 : 0xFF7A7A7A;
+            Draw.text(g, p.name(), cx + 8, cy + 8, fg);
+            String d = p.description();
+            if (Draw.font().width(d) > cw - 14) d = Draw.font().plainSubstrByWidth(d, cw - 20) + "..";
+            Draw.text(g, d, cx + 8, cy + 20, sub);
+            Draw.text(g, Presets.count(p) + " features", cx + 8, cy + ch - 14, sub);
+            Draw.text(g, active ? "ACTIVE" : "LOAD \u203A", cx + cw - 8 - Draw.font().width(active ? "ACTIVE" : "LOAD \u203A"), cy + ch - 14, fg);
+            hits.add(new Hit(cx, cy, cw, ch, () -> { Presets.apply(p); toast("Loaded " + p.name()); }));
+        }
+
+        int sy = cy + ch + 16;
+        Draw.text(g, "YOUR PRESETS  -  saves every toggle, setting and HUD position", ax, sy, 0xFF6A6A6A);
+        int scw = (aw - (Presets.SLOTS - 1) * GAP) / Presets.SLOTS, sch = 58;
+        sy += 12;
+        for (int i = 0; i < Presets.SLOTS; i++) {
+            final int slot = i;
+            int cx = ax + i * (scw + GAP);
+            boolean has = Presets.hasSlot(i);
+            Draw.rect(g, cx, sy, scw, sch, 0xFF141414);
+            Draw.outline(g, cx, sy, scw, sch, 0x28FFFFFF);
+            Draw.text(g, "Custom " + (i + 1), cx + 8, sy + 8, 0xFFFFFFFF);
+            Draw.text(g, Presets.slotInfo(i), cx + 8, sy + 20, 0xFF7A7A7A);
+            int bw = (scw - 24) / 2, by = sy + sch - 22;
+            // Save
+            boolean hs = Draw.inside(mx, my, cx + 8, by, bw, 16);
+            Draw.rect(g, cx + 8, by, bw, 16, hs ? 0xFFFFFFFF : 0xFF1C1C1C);
+            Draw.outline(g, cx + 8, by, bw, 16, 0x40FFFFFF);
+            Draw.centered(g, "Save", cx + 8 + bw / 2, by + 4, hs ? 0xFF000000 : 0xFFD0D0D0);
+            hits.add(new Hit(cx + 8, by, bw, 16, () -> { Presets.saveSlot(slot); toast("Saved to Custom " + (slot + 1)); }));
+            // Load
+            int lx = cx + 16 + bw;
+            boolean hl = has && Draw.inside(mx, my, lx, by, bw, 16);
+            Draw.rect(g, lx, by, bw, 16, !has ? 0xFF101010 : hl ? 0xFFFFFFFF : 0xFF1C1C1C);
+            Draw.outline(g, lx, by, bw, 16, has ? 0x40FFFFFF : 0x18FFFFFF);
+            Draw.centered(g, "Load", lx + bw / 2, by + 4, !has ? 0xFF4A4A4A : hl ? 0xFF000000 : 0xFFD0D0D0);
+            if (has) hits.add(new Hit(lx, by, bw, 16, () -> { Presets.loadSlot(slot); toast("Loaded Custom " + (slot + 1)); }));
+        }
+    }
+
+    private void toast(String text) { toast = text; toastTime = System.currentTimeMillis(); }
 
     private static String[] icon(Category c) {
         return switch (c) {
