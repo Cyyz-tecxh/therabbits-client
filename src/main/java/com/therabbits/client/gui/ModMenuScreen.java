@@ -86,6 +86,7 @@ public class ModMenuScreen extends Screen {
         searchBox.setHint(Component.literal("Search features..."));
         searchBox.setValue(search);
         searchBox.setResponder(s -> { search = s; scroll = 0; });
+        ModuleIcons.reload();
         addRenderableWidget(searchBox);
     }
 
@@ -298,10 +299,12 @@ public class ModMenuScreen extends Screen {
             Draw.rect(g, tx, ty, tw, TILE_H, blend(0xFF141414, 0xFF1E1E1E, hv));
             Draw.outline(g, tx, ty, tw, TILE_H, ((int) (0x28 + 0x70 * hv) << 24) | 0xFFFFFF);
 
-            // icon badge
+            // picture badge
             int bx = tx + 8, by = ty + 8;
-            Draw.rect(g, bx, by, 22, 22, blend(0xFF222222, 0xFFFFFFFF, on));
-            pixelIcon(g, icon(m.category()), bx + 2, by + 2, 2, blend(0xFFA0A0A0, 0xFF000000, on));
+            Draw.rect(g, bx, by, 22, 22, blend(0xFF1A1A1A, 0xFF2C2C2C, on));
+            Draw.outline(g, bx, by, 22, 22, ((int) (0x30 + 0xA0 * on) << 24) | 0xFFFFFF);
+            ModuleIcons.draw(g, m.name(), bx + 3, by + 3, 16);
+            if (on < 0.99f) Draw.rect(g, bx + 1, by + 1, 20, 20, ((int) (150 * (1 - on)) << 24) | 0x0B0B0B);
 
             int textX = bx + 28;
             Draw.text(g, m.name(), textX, by + 2, blend(0xFF9A9A9A, 0xFFFFFFFF, on));
@@ -372,7 +375,7 @@ public class ModMenuScreen extends Screen {
         Draw.text(g, "‹ Back", ax + 9, ay + 5, backHover ? 0xFF000000 : 0xFFD0D0D0);
         hits.add(new Hit(ax, ay, 54, 18, () -> { settingsFor = null; pageChanged = System.currentTimeMillis(); }));
 
-        pixelIcon(g, icon(m.category()), ax + 66, ay + 1, 2, 0xFFFFFFFF);
+        ModuleIcons.draw(g, m.name(), ax + 66, ay, 18);
         Draw.text(g, m.name(), ax + 90, ay + 1, 0xFFFFFFFF);
         Draw.text(g, m.description(), ax + 90, ay + 11, 0xFF7A7A7A);
         int tgx = ax + aw - 30 - off;
