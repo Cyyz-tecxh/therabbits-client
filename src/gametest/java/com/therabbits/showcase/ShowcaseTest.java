@@ -154,13 +154,12 @@ public class ShowcaseTest implements FabricClientGameTest {
                 st.textColor.set(0); st.textSize.set(1.0);
                 ModuleManager.get(FpsModule.class).textColor.set(0);
             });
-            // style settings in the mod menu (HUD tab, first row = HUD Style)
-            ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
-            ctx.waitTicks(3);
-            {
-                int mw = Math.min(480, w - 10), mh = Math.min(300, h - 10);
-                click(ctx, w / 2 - mw / 2 + 120 + 40, h / 2 - mh / 2 + 18);
-            }
+            // style settings in the mod menu
+            ctx.runOnClient(mc -> {
+                ModMenuScreen menu = new ModMenuScreen(null);
+                mc.setScreen(menu);
+                menu.openSettings(ModuleManager.get(HudStyleModule.class));
+            });
             cursor(ctx, w / 2.0 + 200, h / 2.0 + 130);
             frames(ctx, "c11stylemenu", 18);
             ctx.runOnClient(mc -> mc.setScreen(null));
@@ -231,12 +230,10 @@ public class ShowcaseTest implements FabricClientGameTest {
             // 8. Mod menu: click through each category
             ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
             frames(ctx, "c08menu", 10);
-            int mw = Math.min(480, w - 10), mh = Math.min(300, h - 10);
-            int left = w / 2 - mw / 2, top = h / 2 - mh / 2;
-            for (int c = 1; c < 4; c++) {
-                click(ctx, left + 40, top + 86 + c * 22 + 9);
-                cursor(ctx, w / 2.0 + 150, h / 2.0 + 120);
-                frames(ctx, "c08menu", 14);
+            for (com.therabbits.client.module.Category c : com.therabbits.client.module.Category.values()) {
+                ctx.runOnClient(mc -> ((ModMenuScreen) mc.screen).selectCategory(c));
+                cursor(ctx, w / 2.0 - 60, h / 2.0 + 10);
+                frames(ctx, "c08menu", 12);
             }
 
             // 9. HUD editor
