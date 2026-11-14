@@ -51,6 +51,7 @@ public class KeystrokesModule extends HudModule {
     private void key(GuiGraphics g, int x, int y, int w, int h, String label, KeyMapping key) {
         boolean down = key.isDown();
         Draw.rect(g, x, y, w, h, down ? HudStyle.text() : HudStyle.bg());
+        if (!down && (HudStyle.bg() >>> 24) < 20) Draw.outline(g, x, y, w, h, 0x50FFFFFF);
         int tx = x + w / 2 - Draw.font().width(label) / 2;
         if (down) Draw.text(g, label, tx, y + h / 2 - 4, 0xFF000000);
         else HudStyle.text(g, label, tx, y + h / 2 - 4, HudStyle.text());
