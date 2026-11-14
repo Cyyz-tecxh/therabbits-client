@@ -301,6 +301,30 @@ public class ShowcaseTest implements FabricClientGameTest {
             sp.getServer().runOnServer(server -> server.overworld().getEntities(EntityType.ZOMBIE, z -> true).forEach(z -> z.discard()));
             ctx.runOnClient(mc -> mc.setScreen(new ModMenuScreen(null)));
 
+            // 11. Capes: third person from behind, cycle through every cape
+            ctx.runOnClient(mc -> {
+                mc.setScreen(null);
+                mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+                mc.options.hideGui = true;
+            });
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.connection.teleport(p.getX(), p.getY(), p.getZ(), p.getYRot(), 10f);
+            });
+            for (int c = 1; c < com.therabbits.client.cosmetics.Capes.IDS.length; c++) {
+                final int cape = c;
+                ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.CapesModule.class).cape.set(cape));
+                ctx.getInput().holdKey(o -> o.keyUp);
+                frames(ctx, "c19cape", 10);
+                ctx.getInput().releaseKey(o -> o.keyUp);
+                frames(ctx, "c19cape", 8);
+            }
+            ctx.runOnClient(mc -> {
+                mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+                mc.options.hideGui = false;
+                mc.setScreen(new ModMenuScreen(null));
+            });
+
             // 9. HUD editor
             cursor(ctx, w / 2.0, h / 2.0);
             ctx.runOnClient(mc -> mc.setScreen(new HudEditorScreen(null)));

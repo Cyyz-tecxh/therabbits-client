@@ -270,6 +270,7 @@ public class ModMenuScreen extends Screen {
             case COMBAT -> ICON_PVP;
             case VISUAL -> ICON_VISUAL;
             case UTILITY -> ICON_UTILITY;
+            case COSMETICS -> ICON_STAR;
         };
     }
 

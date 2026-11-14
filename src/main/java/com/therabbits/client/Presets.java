@@ -22,7 +22,7 @@ public final class Presets {
     public record BuiltIn(String name, String description, Set<String> enabled) {}
 
     /** Modules a built-in preset never changes (look & feel, not gameplay). */
-    private static final Set<String> KEEP = Set.of("HUD Style", "Menu Background", "Client Font", "Block Outline", "Enchant Glint", "Alt Hider");
+    private static final Set<String> KEEP = Set.of("HUD Style", "Menu Background", "Client Font", "Block Outline", "Enchant Glint", "Alt Hider", "Capes");
 
     public static final List<BuiltIn> BUILT_IN = List.of(
             new BuiltIn("PvP", "Everything useful in a fight", Set.of(

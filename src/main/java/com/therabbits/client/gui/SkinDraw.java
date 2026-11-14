@@ -12,6 +12,12 @@ public final class SkinDraw {
     private SkinDraw() {}
 
     public static PlayerSkin skin() {
+        PlayerSkin base = baseSkin();
+        var cape = com.therabbits.client.module.cosmetics.CapesModule.ownCape();
+        return cape == null ? base : new PlayerSkin(base.body(), cape, cape, base.model(), base.secure());
+    }
+
+    private static PlayerSkin baseSkin() {
         PlayerSkin chosen = com.therabbits.client.skin.SkinChanger.override();
         if (chosen != null) return chosen;
         Minecraft mc = Minecraft.getInstance();

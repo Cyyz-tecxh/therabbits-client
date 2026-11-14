@@ -72,6 +72,8 @@ public final class ModuleManager {
         add(new ClientFontModule());
         // Utility
         add(new FreelookModule());
+        // Cosmetics
+        add(new com.therabbits.client.module.cosmetics.CapesModule());
         add(new com.therabbits.client.module.utility.MouseTweaksModule());
         add(new com.therabbits.client.module.utility.AltHiderModule());
     }
