@@ -1,5 +1,6 @@
 package com.therabbits.client.module.cosmetics;
 
+import com.therabbits.client.account.Account;
 import com.therabbits.client.cosmetics.CosmeticsSync;
 import com.therabbits.client.cosmetics.Wearables;
 import com.therabbits.client.module.Category;
@@ -13,9 +14,12 @@ import net.minecraft.world.entity.player.Player;
 public class WearablesModule extends Module {
     private static WearablesModule instance;
 
-    public final ModeSetting hat = add(new ModeSetting("Hat", 2, false, Wearables.HAT_NAMES));
-    public final ModeSetting arms = add(new ModeSetting("Arms", 0, false, Wearables.ARM_NAMES));
-    public final ModeSetting shield = add(new ModeSetting("Shield", 0, false, Wearables.SHIELD_NAMES));
+    public final ModeSetting hat = add(new ModeSetting("Hat", 2, false, Wearables.HAT_NAMES).labels(i -> lockLabel(Wearables.HAT_NAMES[i], Wearables.HAT_IDS[i])));
+    public final ModeSetting arms = add(new ModeSetting("Arms", 0, false, Wearables.ARM_NAMES).labels(i -> lockLabel(Wearables.ARM_NAMES[i], Wearables.ARM_IDS[i])));
+    public final ModeSetting shield = add(new ModeSetting("Shield", 0, false, Wearables.SHIELD_NAMES).labels(i -> lockLabel(Wearables.SHIELD_NAMES[i], Wearables.SHIELD_IDS[i])));
+
+    private static String lockLabel(String name, String id) { return name + (Account.isLocked(id) ? " (locked)" : ""); }
+    private static String unlocked(String id) { return Account.isLocked(id) ? "none" : id; }
     public final BoolSetting showOthers = add(new BoolSetting("Show Others' Cosmetics", true));
 
     public WearablesModule() {
@@ -25,9 +29,9 @@ public class WearablesModule extends Module {
 
     public static WearablesModule get() { return instance; }
 
-    public String hatId() { return enabled() ? Wearables.HAT_IDS[hat.get()] : "none"; }
-    public String shieldId() { return enabled() ? Wearables.SHIELD_IDS[shield.get()] : "none"; }
-    public String armsId() { return enabled() ? Wearables.ARM_IDS[arms.get()] : "none"; }
+    public String hatId() { return enabled() ? unlocked(Wearables.HAT_IDS[hat.get()]) : "none"; }
+    public String shieldId() { return enabled() ? unlocked(Wearables.SHIELD_IDS[shield.get()]) : "none"; }
+    public String armsId() { return enabled() ? unlocked(Wearables.ARM_IDS[arms.get()]) : "none"; }
 
     private static boolean isMe(Player p) {
         Minecraft mc = Minecraft.getInstance();

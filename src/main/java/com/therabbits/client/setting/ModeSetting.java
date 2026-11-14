@@ -15,6 +15,10 @@ public class ModeSetting extends Setting<Integer> {
     }
 
     public String mode() { return modes[value]; }
+    private java.util.function.IntFunction<String> label;
+    /** What the menu shows for the current option (defaults to its name). */
+    public String display() { return label == null ? mode() : label.apply(value); }
+    public ModeSetting labels(java.util.function.IntFunction<String> label) { this.label = label; return this; }
     public boolean isColor() { return color; }
     public void next() { value = (value + 1) % modes.length; }
     public void previous() { value = (value - 1 + modes.length) % modes.length; }

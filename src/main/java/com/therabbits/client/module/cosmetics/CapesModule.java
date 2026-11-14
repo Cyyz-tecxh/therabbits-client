@@ -14,7 +14,8 @@ import net.minecraft.core.ClientAsset;
 public class CapesModule extends Module {
     private static CapesModule instance;
 
-    public final ModeSetting cape = add(new ModeSetting("Cape", 1, false, Capes.NAMES));
+    public final ModeSetting cape = add(new ModeSetting("Cape", 1, false, Capes.NAMES)
+            .labels(i -> Capes.NAMES[i] + (com.therabbits.client.account.Account.isLocked(Capes.IDS[i]) ? " (locked)" : "")));
     public final BoolSetting showOthers = add(new BoolSetting("Show Others' Capes", true));
     public final TextSetting serverUrl = add(new TextSetting("Server URL", "", 120));
     private final ActionSetting sync;
@@ -29,7 +30,10 @@ public class CapesModule extends Module {
 
     public static CapesModule get() { return instance; }
 
-    public String capeId() { return Capes.IDS[cape.get()]; }
+    public String capeId() {
+        String id = Capes.IDS[cape.get()];
+        return com.therabbits.client.account.Account.isLocked(id) ? "none" : id;
+    }
 
     /** Your own cape texture (shown right away, even before syncing). */
     public static ClientAsset.Texture ownCape() {

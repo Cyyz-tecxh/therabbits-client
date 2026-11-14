@@ -75,10 +75,19 @@ public class RabbitsClient implements ClientModInitializer {
         LOG.info("TheRabbits Client loaded");
     }
 
+    private static boolean accountStarted;
+
     private static void tick(Minecraft mc) {
         // Swap the vanilla title screen for ours.
-        if (mc.screen instanceof TitleScreen) {
-            mc.setScreen(new RabbitsTitleScreen());
+        if (!accountStarted) {
+            accountStarted = true;
+            com.therabbits.client.account.Account.loadConfig();
+            com.therabbits.client.account.Account.refreshNow();
+        }
+        if (mc.screen instanceof TitleScreen || mc.screen instanceof RabbitsTitleScreen) {
+            boolean needKey = com.therabbits.client.account.Account.licenseRequired && !com.therabbits.client.account.Account.licensed;
+            if (needKey) mc.setScreen(new com.therabbits.client.gui.LicenseScreen());
+            else if (mc.screen instanceof TitleScreen) mc.setScreen(new RabbitsTitleScreen());
         }
 
         while (waypointKey.consumeClick()) {

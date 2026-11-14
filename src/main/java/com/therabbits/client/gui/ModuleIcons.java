@@ -79,6 +79,7 @@ public final class ModuleIcons {
         ITEMS.put("Client Font", Items.WRITABLE_BOOK);
         ITEMS.put("Capes", Items.ELYTRA);
         ITEMS.put("Hats & Arms", Items.LEATHER_HELMET);
+        ITEMS.put("Account & Codes", Items.NAME_TAG);
     }
 
     private static final Path DIR = FabricLoader.getInstance().getConfigDir().resolve("therabbits/icons");

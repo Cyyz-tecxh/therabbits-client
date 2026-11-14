@@ -12,6 +12,7 @@ import com.therabbits.client.setting.NumberSetting;
 import com.therabbits.client.setting.Setting;
 import com.therabbits.client.setting.TextSetting;
 import com.therabbits.client.setting.ActionSetting;
+import com.therabbits.client.setting.InfoSetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -421,7 +422,7 @@ public class ModMenuScreen extends Screen {
                 Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
                 Draw.text(g, "‹", bx + 4, y + 6, 0xFF8A8A8A);
                 Draw.text(g, "›", bx + bw - 8, y + 6, 0xFF8A8A8A);
-                String label = ms.mode();
+                String label = ms.display();
                 int lx = bx + bw / 2 - Draw.width(label) / 2;
                 if (ms.isColor() && !label.equals("Global")) {
                     int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(label);
@@ -461,7 +462,12 @@ public class ModMenuScreen extends Screen {
                 Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, hover ? 0xFFFFFFFF : 0xFF1C1C1C);
                 Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
                 Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? 0xFF000000 : 0xFFD0D0D0);
-                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> { as.run(); toast("Done"); });
+                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, as::run);
+            } else if (s instanceof InfoSetting in) {
+                String v = in.text();
+                int maxW = w - Draw.width(s.name()) - 28;
+                if (Draw.width(v) > maxW) v = Draw.trim(v, maxW);
+                Draw.text(g, v, x + w - 8 - Draw.width(v), y + 6, 0xFFB8B8B8);
             } else if (s instanceof NumberSetting n) {
                 int sw = 140, sx = x + w - sw - 44;
                 Draw.rect(g, sx, cy - 1, sw, 2, 0xFF3A3A3A);

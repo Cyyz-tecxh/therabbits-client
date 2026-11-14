@@ -5,7 +5,7 @@ import com.google.gson.JsonNull;
 
 /** A button in the settings page (nothing saved). */
 public class ActionSetting extends Setting<String> {
-    private final Runnable action;
+    private Runnable action;
 
     public ActionSetting(String name, String buttonLabel, Runnable action) {
         super(name, buttonLabel);
@@ -13,6 +13,7 @@ public class ActionSetting extends Setting<String> {
     }
 
     public void run() { action.run(); }
+    public void setAction(Runnable action) { this.action = action; }
 
     @Override public JsonElement save() { return JsonNull.INSTANCE; }
     @Override public void load(JsonElement e) {}

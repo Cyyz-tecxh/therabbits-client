@@ -360,6 +360,15 @@ public class ShowcaseTest implements FabricClientGameTest {
                 ctx.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
                 frames(ctx, "c21claws", 2);
             }
+            // 14. Account & Codes page
+            ctx.runOnClient(mc -> {
+                mc.options.hideGui = false;
+                ModMenuScreen ms = new ModMenuScreen(null);
+                mc.setScreen(ms);
+                ms.openSettings(ModuleManager.get(com.therabbits.client.module.cosmetics.AccountModule.class));
+            });
+            frames(ctx, "c24account", 4);
+            ctx.runOnClient(mc -> { mc.setScreen(null); mc.options.hideGui = true; });
             // 13. Neon Royal Shield skin: blocking in third person, then first person
             sp.getServer().runOnServer(server -> {
                 ServerPlayer p = server.getPlayerList().getPlayers().get(0);
