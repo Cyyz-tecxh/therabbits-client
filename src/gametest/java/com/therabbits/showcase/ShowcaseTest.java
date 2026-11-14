@@ -360,6 +360,25 @@ public class ShowcaseTest implements FabricClientGameTest {
                 ctx.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
                 frames(ctx, "c21claws", 2);
             }
+            // 13. Neon Royal Shield skin: blocking in third person, then first person
+            sp.getServer().runOnServer(server -> {
+                ServerPlayer p = server.getPlayerList().getPlayers().get(0);
+                p.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SHIELD));
+                p.connection.teleport(p.getX(), p.getY(), p.getZ(), -30f, 12f);
+            });
+            ctx.runOnClient(mc -> {
+                var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
+                wm.shield.set(1); wm.arms.set(0); wm.hat.set(0);
+            });
+            frames(ctx, "c22shield", 8);
+            ctx.getInput().holdKey(o -> o.keyUse);
+            frames(ctx, "c22shield", 10);
+            ctx.getInput().releaseKey(o -> o.keyUse);
+            ctx.runOnClient(mc -> mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON));
+            frames(ctx, "c23shieldfp", 6);
+            ctx.getInput().holdKey(o -> o.keyUse);
+            frames(ctx, "c23shieldfp", 8);
+            ctx.getInput().releaseKey(o -> o.keyUse);
             ctx.runOnClient(mc -> {
                 mc.options.fov().set(70);
                 mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
