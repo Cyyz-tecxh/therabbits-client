@@ -146,7 +146,7 @@ public class ModMenuScreen extends Screen {
         for (int i = 1; i <= 6; i++) g.fill(x - i, y - i + 3, x + W + i, y + H + i + 3, 0x0C000000);
         Draw.rect(g, x, y, W, H, 0xF00B0B0B);
         Draw.outline(g, x, y, W, H, 0x30FFFFFF);
-        g.fill(x, y, x + W, y + 1, 0x60FFFFFF);
+        g.fill(x, y, x + W, y + 1, Theme.accent(0xC0));
 
         renderHeader(g, x, y, mouseX, mouseY);
         if (settingsFor == null) {
@@ -244,9 +244,9 @@ public class ModMenuScreen extends Screen {
             int cx = ax + i * (cw + GAP);
             boolean active = Presets.active(p);
             boolean hover = Draw.inside(mx, my, cx, cy, cw, ch);
-            Draw.rect(g, cx, cy, cw, ch, active ? 0xFFFFFFFF : hover ? 0xFF1E1E1E : 0xFF141414);
-            Draw.outline(g, cx, cy, cw, ch, active ? 0xFFFFFFFF : hover ? 0x90FFFFFF : 0x28FFFFFF);
-            int fg = active ? 0xFF000000 : 0xFFFFFFFF, sub = active ? 0xFF404040 : 0xFF7A7A7A;
+            Draw.rect(g, cx, cy, cw, ch, active ? Theme.accent() : hover ? 0xFF1E1E1E : 0xFF141414);
+            Draw.outline(g, cx, cy, cw, ch, active ? Theme.accent() : hover ? 0x90FFFFFF : 0x28FFFFFF);
+            int fg = active ? Theme.onAccent() : 0xFFFFFFFF, sub = active ? 0xFF404040 : 0xFF7A7A7A;
             Draw.text(g, p.name(), cx + 8, cy + 8, fg);
             String d = p.description();
             if (Draw.width(d) > cw - 14) d = Draw.trim(d, cw - 20 + 6);
@@ -271,16 +271,16 @@ public class ModMenuScreen extends Screen {
             int bw = (scw - 24) / 2, by = sy + sch - 22;
             // Save
             boolean hs = Draw.inside(mx, my, cx + 8, by, bw, 16);
-            Draw.rect(g, cx + 8, by, bw, 16, hs ? 0xFFFFFFFF : 0xFF1C1C1C);
+            Draw.rect(g, cx + 8, by, bw, 16, hs ? Theme.accent() : 0xFF1C1C1C);
             Draw.outline(g, cx + 8, by, bw, 16, 0x40FFFFFF);
-            Draw.centered(g, "Save", cx + 8 + bw / 2, by + 4, hs ? 0xFF000000 : 0xFFD0D0D0);
+            Draw.centered(g, "Save", cx + 8 + bw / 2, by + 4, hs ? Theme.onAccent() : 0xFFD0D0D0);
             hits.add(new Hit(cx + 8, by, bw, 16, () -> { Presets.saveSlot(slot); toast("Saved to Custom " + (slot + 1)); }));
             // Load
             int lx = cx + 16 + bw;
             boolean hl = has && Draw.inside(mx, my, lx, by, bw, 16);
-            Draw.rect(g, lx, by, bw, 16, !has ? 0xFF101010 : hl ? 0xFFFFFFFF : 0xFF1C1C1C);
+            Draw.rect(g, lx, by, bw, 16, !has ? 0xFF101010 : hl ? Theme.accent() : 0xFF1C1C1C);
             Draw.outline(g, lx, by, bw, 16, has ? 0x40FFFFFF : 0x18FFFFFF);
-            Draw.centered(g, "Load", lx + bw / 2, by + 4, !has ? 0xFF4A4A4A : hl ? 0xFF000000 : 0xFFD0D0D0);
+            Draw.centered(g, "Load", lx + bw / 2, by + 4, !has ? 0xFF4A4A4A : hl ? Theme.onAccent() : 0xFFD0D0D0);
             if (has) hits.add(new Hit(lx, by, bw, 16, () -> { Presets.loadSlot(slot); toast("Loaded Custom " + (slot + 1)); }));
         }
     }
@@ -362,14 +362,14 @@ public class ModMenuScreen extends Screen {
             if (!m.settings().isEmpty()) {
                 int gx = tx + tw - 18, gy = sy + 2;
                 boolean gh = inArea && Draw.inside(mx, my, gx - 2, gy - 2, 14, 14);
-                pixelIcon(g, ICON_GEAR, gx, gy, 1, gh ? 0xFFFFFFFF : 0xFF8A8A8A);
+                pixelIcon(g, ICON_GEAR, gx, gy, 1, gh ? Theme.accent() : 0xFF8A8A8A);
                 if (inArea) hits.add(new Hit(gx - 3, gy - 3, 15, 15, () -> openSettings(m)));
             }
             {   // favourite star (top-right)
                 int fx = tx + tw - 12, fy = ty + 5;
                 boolean fav = Favorites.is(m.name());
                 boolean fh = inArea && Draw.inside(mx, my, fx - 2, fy - 2, 9, 9);
-                if (fav || hover) pixelIcon(g, ICON_STAR_SMALL, fx, fy, 1, fav ? 0xFFE8C34A : fh ? 0xFFFFFFFF : 0xFF5A5A5A);
+                if (fav || hover) pixelIcon(g, ICON_STAR_SMALL, fx, fy, 1, fav ? 0xFFE8C34A : fh ? Theme.accent() : 0xFF5A5A5A);
                 if (inArea) hits.add(new Hit(fx - 2, fy - 2, 9, 9, () -> { Favorites.toggle(m.name()); toast(Favorites.is(m.name()) ? "Added to favorites" : "Removed from favorites"); }));
             }
             if (inArea) hits.add(new Hit(ftx, fty, tw, TILE_H, m::toggle, m.settings().isEmpty() ? null : () -> openSettings(m)));
@@ -415,9 +415,9 @@ public class ModMenuScreen extends Screen {
         ax += off;
 
         boolean backHover = Draw.inside(mx, my, ax, ay, 54, 18);
-        Draw.rect(g, ax, ay, 54, 18, backHover ? 0xFFFFFFFF : 0xFF151515);
+        Draw.rect(g, ax, ay, 54, 18, backHover ? Theme.accent() : 0xFF151515);
         Draw.outline(g, ax, ay, 54, 18, 0x40FFFFFF);
-        Draw.text(g, "‹ Back", ax + 9, ay + 5, backHover ? 0xFF000000 : 0xFFD0D0D0);
+        Draw.text(g, "‹ Back", ax + 9, ay + 5, backHover ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(ax, ay, 54, 18, () -> { settingsFor = null; pageChanged = System.currentTimeMillis(); }));
 
         ModuleIcons.draw(g, m.name(), ax + 66, ay, 18);
@@ -490,17 +490,17 @@ public class ModMenuScreen extends Screen {
             } else if (s instanceof ActionSetting as) {
                 int bw = 90, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, hover ? 0xFFFFFFFF : 0xFF1C1C1C);
+                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, hover ? Theme.accent() : 0xFF1C1C1C);
                 Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
-                Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? 0xFF000000 : 0xFFD0D0D0);
+                Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? Theme.onAccent() : 0xFFD0D0D0);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, as::run);
             } else if (s instanceof KeySetting ks) {
                 int bw = 90, bx = x + w - bw - 8;
                 boolean waiting = bindingKey == ks;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, waiting ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF0C0C0C);
+                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, waiting ? Theme.accent() : hover ? 0xFF262626 : 0xFF0C0C0C);
                 Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
-                Draw.centered(g, waiting ? "Press a key..." : ks.display(), bx + bw / 2, y + 6, waiting ? 0xFF000000 : 0xFFFFFFFF);
+                Draw.centered(g, waiting ? "Press a key..." : ks.display(), bx + bw / 2, y + 6, waiting ? Theme.onAccent() : 0xFFFFFFFF);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> bindingKey = ks);
             } else if (s instanceof InfoSetting in) {
                 String v = in.text();
@@ -533,15 +533,15 @@ public class ModMenuScreen extends Screen {
         g.fill(x + 10, y, x + W - 10, y + 1, 0x22FFFFFF);
         int bw = 70, bx = x + 12, by = y + 5;
         boolean hover = Draw.inside(mx, my, bx, by, bw, 16);
-        Draw.rect(g, bx, by, bw, 16, hover ? 0xFFFFFFFF : 0xFF151515);
+        Draw.rect(g, bx, by, bw, 16, hover ? Theme.accent() : 0xFF151515);
         Draw.outline(g, bx, by, bw, 16, 0x40FFFFFF);
-        Draw.centered(g, "Edit HUD", bx + bw / 2, by + 4, hover ? 0xFF000000 : 0xFFD0D0D0);
+        Draw.centered(g, "Edit HUD", bx + bw / 2, by + 4, hover ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(bx, by, bw, 16, () -> minecraft.setScreen(new HudEditorScreen(this))));
         int cbx = bx + bw + 6, cbw = 76;
         boolean ch = Draw.inside(mx, my, cbx, by, cbw, 16);
-        Draw.rect(g, cbx, by, cbw, 16, ch ? 0xFFFFFFFF : 0xFF151515);
+        Draw.rect(g, cbx, by, cbw, 16, ch ? Theme.accent() : 0xFF151515);
         Draw.outline(g, cbx, by, cbw, 16, 0x40FFFFFF);
-        Draw.centered(g, "Cosmetics", cbx + cbw / 2, by + 4, ch ? 0xFF000000 : 0xFFD0D0D0);
+        Draw.centered(g, "Cosmetics", cbx + cbw / 2, by + 4, ch ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(cbx, by, cbw, 16, () -> minecraft.setScreen(new CosmeticsScreen(parent))));
         int pbx = cbx + cbw + 6, pbw = 52;
         boolean ph = Draw.inside(mx, my, pbx, by, pbw, 16);

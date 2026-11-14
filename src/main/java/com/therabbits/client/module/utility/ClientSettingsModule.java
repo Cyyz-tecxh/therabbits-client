@@ -12,7 +12,7 @@ import net.minecraft.core.BlockPos;
 public class ClientSettingsModule extends Module {
     private static ClientSettingsModule instance;
 
-    public final ModeSetting accent = add(new ModeSetting("Accent Colour", 0, false, com.therabbits.client.gui.Theme.ACCENT_NAMES));
+    public final ModeSetting accent = add(new ModeSetting("Menu Colour", 0, false, com.therabbits.client.gui.Theme.ACCENT_NAMES));
     public final BoolSetting animations = add(new BoolSetting("Menu Animations", true));
     public final BoolSetting hideHudInF3 = add(new BoolSetting("Hide HUD When F3 Is Open", true));
     public final ModeSetting f3Style = add(new ModeSetting("F3 Screen", 0, false, "Vanilla", "Compact"));

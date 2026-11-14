@@ -340,8 +340,8 @@ public class RabbitsTitleScreen extends Screen {
             Draw.text(g, name, nx + 17, ny + 4, Theme.TEXT);
             boolean hn = Draw.inside(mouseX, mouseY, nx, ny, nw + 44, 16);
             int swx = nx + nw + 4;
-            Draw.rect(g, swx, ny, 40, 16, hn ? 0xFFFFFFFF : 0xB0000000);
-            Draw.centered(g, "Switch", swx + 20, ny + 4, hn ? 0xFF000000 : 0xFFBDBDBD);
+            Draw.rect(g, swx, ny, 40, 16, hn ? Theme.accent() : 0xB0000000);
+            Draw.centered(g, "Switch", swx + 20, ny + 4, hn ? Theme.onAccent() : 0xFFBDBDBD);
             nameTag = new int[]{nx, ny, nw + 44, 16};
             drawSkinChanger(g, mouseX, mouseY, ny + 20);
         }
@@ -430,9 +430,9 @@ public class RabbitsTitleScreen extends Screen {
         }
         int nbx = x + SEL_W + SC_GAP;
         boolean hrn = Draw.inside(mx, my, nbx, y, RN_W, SC_H);
-        Draw.rect(g, nbx, y, RN_W, SC_H, hrn || renaming ? 0xFFFFFFFF : 0xC0101010);
+        Draw.rect(g, nbx, y, RN_W, SC_H, hrn || renaming ? Theme.accent() : 0xC0101010);
         Draw.outline(g, nbx, y, RN_W, SC_H, 0x40FFFFFF);
-        Draw.centered(g, renaming ? "Save" : "Rename", nbx + RN_W / 2, y + 4, hrn || renaming ? 0xFF000000 : Theme.TEXT);
+        Draw.centered(g, renaming ? "Save" : "Rename", nbx + RN_W / 2, y + 4, hrn || renaming ? Theme.onAccent() : Theme.TEXT);
 
         int ux = nbx + RN_W + SC_GAP;
         boolean hu = Draw.inside(mx, my, ux, y, UP_W, SC_H);
@@ -461,8 +461,8 @@ public class RabbitsTitleScreen extends Screen {
         for (int r = 0; r < rows; r++) {
             int i = r + ddScroll, ry = y0 + r * DD_ROW;
             boolean h = Draw.inside(mx, my, x, ry, SEL_W, DD_ROW), sel = i == SkinChanger.index();
-            if (h || sel) Draw.rect(g, x + 1, ry, SEL_W - 2, DD_ROW, h ? 0xFFFFFFFF : 0x30FFFFFF);
-            Draw.text(g, Draw.trim(SkinChanger.name(i), SEL_W - 16), x + 6, ry + 3, h ? 0xFF000000 : Theme.TEXT);
+            if (h || sel) Draw.rect(g, x + 1, ry, SEL_W - 2, DD_ROW, h ? Theme.accent() : 0x30FFFFFF);
+            Draw.text(g, Draw.trim(SkinChanger.name(i), SEL_W - 16), x + 6, ry + 3, h ? Theme.onAccent() : Theme.TEXT);
         }
         if (n > rows) {
             int bh = Math.max(8, rows * DD_ROW * rows / n), by = y0 + (rows * DD_ROW - bh) * ddScroll / (n - rows);
@@ -574,10 +574,10 @@ public class RabbitsTitleScreen extends Screen {
     private void drawBackgroundButton(GuiGraphics g, int mouseX, int mouseY) {
         MenuBackgroundModule bg = ModuleManager.get(MenuBackgroundModule.class);
         boolean hover = Draw.inside(mouseX, mouseY, BG_X, BG_Y, BG_W, BG_H);
-        Draw.rect(g, BG_X, BG_Y, BG_W, BG_H, hover ? 0xFFFFFFFF : 0xC0101010);
-        Draw.outline(g, BG_X, BG_Y, BG_W, BG_H, hover ? 0xFFFFFFFF : Theme.BORDER);
-        Draw.text(g, "\u2039 " + bg.styleName(), BG_X + 5, BG_Y + 3, hover ? 0xFF000000 : Theme.TEXT_DIM);
-        Draw.text(g, "\u203A", BG_X + BG_W - 9, BG_Y + 3, hover ? 0xFF000000 : Theme.TEXT_DIM);
+        Draw.rect(g, BG_X, BG_Y, BG_W, BG_H, hover ? Theme.accent() : 0xC0101010);
+        Draw.outline(g, BG_X, BG_Y, BG_W, BG_H, hover ? Theme.accent() : Theme.BORDER);
+        Draw.text(g, "\u2039 " + bg.styleName(), BG_X + 5, BG_Y + 3, hover ? Theme.onAccent() : Theme.TEXT_DIM);
+        Draw.text(g, "\u203A", BG_X + BG_W - 9, BG_Y + 3, hover ? Theme.onAccent() : Theme.TEXT_DIM);
     }
 
     /** Clock + date in the top-left corner. */

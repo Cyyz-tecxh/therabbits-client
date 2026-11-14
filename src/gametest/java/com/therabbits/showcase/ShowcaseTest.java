@@ -399,7 +399,7 @@ public class ShowcaseTest implements FabricClientGameTest {
             // 17. Pack Customizer (mix tab + picker) and purple accent menus
             ctx.runOnClient(mc -> {
                 mc.options.hideGui = false;
-                ModuleManager.get(com.therabbits.client.module.utility.ClientSettingsModule.class).accent.set(1);
+                ModuleManager.get(com.therabbits.client.module.utility.ClientSettingsModule.class).accent.set(0);
                 try {   // a tiny test pack with a purple totem, picked in the mixer and applied
                     var dir = mc.getResourcePackDirectory().resolve("Test Purple Totem");
                     var tex = dir.resolve("assets/minecraft/textures/item/totem_of_undying.png");

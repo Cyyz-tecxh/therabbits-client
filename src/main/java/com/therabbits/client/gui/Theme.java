@@ -17,8 +17,8 @@ public final class Theme {
     public static final int OFF        = 0xFF3C3C3C;
     public static final int HUD_BG     = 0x90000000;
 
-    private static final int[] ACCENTS = {0xFFFFFFFF, 0xFF9B5CFF, 0xFF3D8BFF, 0xFF38D6F5, 0xFF46D97A, 0xFFFF4B5C, 0xFFFF6FB5, 0xFFFF9A3C};
-    public static final String[] ACCENT_NAMES = {"White", "Purple", "Blue", "Cyan", "Green", "Red", "Pink", "Orange"};
+    private static final int[] ACCENTS = {0xFF6EC6FF, 0xFFFFFFFF, 0xFF9B5CFF, 0xFF3D8BFF, 0xFF38D6F5, 0xFF46D97A, 0xFFFF4B5C, 0xFFFF6FB5, 0xFFFF9A3C};
+    public static final String[] ACCENT_NAMES = {"Light Blue", "White", "Purple", "Blue", "Cyan", "Green", "Red", "Pink", "Orange"};
 
     /** Menu highlight colour (Client Settings -> Accent Colour). */
     public static int accent() {

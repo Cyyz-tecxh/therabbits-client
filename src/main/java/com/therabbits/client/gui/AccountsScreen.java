@@ -80,9 +80,9 @@ public class AccountsScreen extends Screen {
 
     private void button(GuiGraphics g, int mx, int my, int x, int y, int w, int h, String label, Runnable r) {
         boolean hov = Draw.inside(mx, my, x, y, w, h);
-        Draw.rect(g, x, y, w, h, hov ? 0xFFFFFFFF : 0xFF1A1A1C);
+        Draw.rect(g, x, y, w, h, hov ? Theme.accent() : 0xFF1A1A1C);
         Draw.outline(g, x, y, w, h, 0x40FFFFFF);
-        Draw.centered(g, label, x + w / 2, y + (h - 8) / 2, hov ? 0xFF000000 : 0xFFD0D0D0);
+        Draw.centered(g, label, x + w / 2, y + (h - 8) / 2, hov ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(x, y, w, h, r));
     }
 

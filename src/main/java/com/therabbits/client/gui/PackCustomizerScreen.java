@@ -135,7 +135,7 @@ public class PackCustomizerScreen extends Screen {
             int ttx = Math.min(mx + 10, width - tw - 10), tty = my + 10;
             Draw.rect(g, ttx - 4, tty - 3, tw + 8, lines.length * 10 + 5, 0xF0141418);
             Draw.outline(g, ttx - 4, tty - 3, tw + 8, lines.length * 10 + 5, Theme.accent(0x90));
-            for (int i = 0; i < lines.length; i++) Draw.text(g, lines[i], ttx, tty + i * 10, i == 0 ? 0xFFFFFFFF : 0xFFAFAFB8);
+            for (int i = 0; i < lines.length; i++) Draw.text(g, lines[i], ttx, tty + i * 10, i == 0 ? Theme.accent() : 0xFFAFAFB8);
         }
     }
 
@@ -311,7 +311,7 @@ public class PackCustomizerScreen extends Screen {
         boolean hov = Draw.inside(mx, my, x, y, w, h) && my >= areaY && my < areaY + areaH;
         Draw.rect(g, x, y, w, h, hov ? 0xFF1C1C21 : 0xFF141418);
         Draw.outline(g, x, y, w, h, on ? Theme.accent(0x70) : 0x18FFFFFF);
-        Draw.text(g, Draw.trim(p.getTitle().getString(), w - 130), x + 8, y + 4, on ? 0xFFFFFFFF : 0xFF9A9AA2);
+        Draw.text(g, Draw.trim(p.getTitle().getString(), w - 130), x + 8, y + 4, on ? Theme.accent() : 0xFF9A9AA2);
         Draw.text(g, Draw.trim(p.getDescription().getString(), w - 130), x + 8, y + 13, 0xFF5E5E66);
         int tx = x + w - 30;
         if (fixed) { Draw.text(g, "Built-in", x + w - 8 - Draw.width("Built-in"), y + 8, 0xFF5E5E66); return; }
