@@ -7,6 +7,9 @@ S = 8  # texels per model unit (atlas is declared in units, PNG is S times bigge
 rng = np.random.default_rng(7)
 
 # ---------------------------------------------------------------- materials
+FAB = {'fab_red': (200, 26, 34), 'fab_green': (96, 200, 58), 'fab_dkgreen': (44, 120, 36), 'fab_black': (30, 30, 34),
+       'fab_black2': (20, 20, 23), 'fab_white': (240, 240, 244), 'fab_lav': (176, 146, 236), 'fab_pink': (244, 132, 186),
+       'fab_velvet': (140, 16, 30), 'fab_pupil': (16, 16, 18)}
 def noise(h, w, sx=1.0, sy=1.0, octaves=3):
     out = np.zeros((h, w))
     amp = 1.0
@@ -128,6 +131,23 @@ def paint(mat, face, w, h):
         img[..., :3] = np.clip(np.array((236, 238, 246))[None, None] * v[..., None], 0, 255)
         img[(np.abs(dx + 0.35) < 0.18) & (np.abs(dy + 0.35) < 0.18), :3] = 255
         glow = img.copy(); glow[..., :3] *= 0.55
+    elif mat in FAB:
+        c = np.array(FAB[mat], float)
+        n = noise(h, w, 0.5, 0.5) * 0.12 + fine(h, w, 0.08)
+        g = vgrad(h, w, 1.06, 0.9) if face not in ('top', 'bottom') else np.ones((h, w))
+        img[..., :3] = np.clip(c[None, None] * ((1 + n) * g)[..., None], 0, 255)
+        bevel(img, face, 0.16, max(1, S // 4))
+    elif mat == 'fluff':
+        c = np.array((244, 244, 246), float)
+        n = noise(h, w, 0.3, 0.3, 2) * 0.07 + fine(h, w, 0.04)
+        img[..., :3] = np.clip(c[None, None] * (1.0 + n)[..., None], 0, 255)
+        bevel(img, face, 0.12, max(1, S // 3))
+    elif mat == 'gold':
+        c = np.array((236, 176, 40), float)
+        t = np.linspace(0, 1, h)[:, None] * np.ones((1, w))
+        sh = 1.08 - 0.3 * t + 0.25 * np.exp(-((t - 0.2) ** 2) / 0.01) + noise(h, w, 0.2, 2, 2) * 0.08
+        img[..., :3] = np.clip(c[None, None] * sh[..., None], 0, 255)
+        bevel(img, face, 0.3, max(1, S // 4))
     elif mat == 'skin':
         base((214, 168, 134)); img[..., :3] *= (1 + fine(h, w, 0.04))[..., None]
     elif mat == 'face':
@@ -262,6 +282,90 @@ for i, (cx_, cz_) in enumerate(((-4.3, -4.3), (4.3, -4.3), (-4.3, 4.3), (4.3, 4.
     r.append(P(n + 'b', (-0.55, -1.2, -0.55), (1.1, 1.2, 1.1), 'pearl', pivot=(0, -1.7, 0), parent=n))
     r.append(P(n + 'c', (-0.3, -0.8, -0.3), (0.6, 0.8, 0.6), 'pearl', pivot=(0, -1.2, 0), parent=n + 'b'))
 MODELS['royal_crown'] = dict(attach='head', parts=r)
+
+
+# ---------------- six colour hats
+def side_group(tag, rot_y, pivot=(0, 0, 0)):
+    return P(tag, (-0.01, -0.01, -0.01), (0.02, 0.02, 0.02), 'fab_black2', pivot=pivot, rot=(0, rot_y, 0))
+
+# 1. Gold Crown — gold band, velvet cap, battlement spikes, rubies
+g = [box_c('band', 0, -10.2, 0, 9.2, 2.2, 9.2, 'gold'), box_c('lip', 0, -8.4, 0, 9.6, 0.5, 9.6, 'gold'),
+     box_c('velvet', 0, -10.9, 0, 8.4, 1.6, 8.4, 'fab_velvet')]
+for tag, ry in (('n', 0), ('e', 90), ('s', 180), ('w', -90)):
+    g.append(side_group(tag, ry, (0, -10.2, 0)))
+    for j, (x, hh) in enumerate(((-3.5, 2.2), (-1.75, 1.4), (0, 3.0), (1.75, 1.4), (3.5, 2.2))):
+        g.append(P(tag + 'sp%d' % j, (x - 0.55, -hh, -4.6), (1.1, hh, 0.9), 'gold', parent=tag))
+        g.append(P(tag + 'tp%d' % j, (x - 0.3, -hh - 0.6, -4.45), (0.6, 0.6, 0.6), 'gold', parent=tag))
+    g.append(P(tag + 'rb', (-0.8, 0.5, -4.9), (1.6, 1.4, 0.4), 'gem', parent=tag))
+    for x in (-2.6, 2.6):
+        g.append(P(tag + 'rs%d' % x, (x - 0.45, 0.75, -4.85), (0.9, 0.9, 0.35), 'gem', parent=tag))
+    g.append(P(tag + 'rt', (-0.4, -2.4, -4.75), (0.8, 0.8, 0.3), 'gem', parent=tag))
+MODELS['gold_crown'] = dict(attach='head', parts=g)
+
+# 2. Cat Ears Hat — black beanie, pink-lined ears, little white cat face
+c2 = [box_c('cap', 0, -9.6, 0, 9.1, 5.0, 9.1, 'fab_black'), box_c('top', 0, -10.1, 0, 8.4, 0.5, 8.4, 'fab_black'),
+      box_c('fold', 0, -5.4, 0, 9.4, 1.1, 9.4, 'fab_black2')]
+for sx in (-1, 1):
+    x = 2.7 * sx
+    c2.append(P('ear%d' % sx, (-1.7, -1.6, -0.75), (3.4, 1.6, 1.5), 'fab_black', pivot=(x, -10.0, -1.0), rot=(0, 0, 12 * sx)))
+    c2.append(P('ear%db' % sx, (-1.15, -1.5, -0.7), (2.3, 1.5, 1.4), 'fab_black', pivot=(0, -1.6, 0), parent='ear%d' % sx))
+    c2.append(P('ear%dc' % sx, (-0.55, -1.2, -0.6), (1.1, 1.2, 1.2), 'fab_black', pivot=(0, -1.5, 0), parent='ear%db' % sx))
+    c2.append(P('in%d' % sx, (-1.15, -1.6, -1.0), (2.3, 1.6, 0.3), 'fab_pink', parent='ear%d' % sx))
+    c2.append(P('in%db' % sx, (-0.6, -1.4, -0.95), (1.2, 1.4, 0.3), 'fab_pink', parent='ear%db' % sx))
+    c2.append(box_c('eye%d' % sx, 1.5 * sx, -8.0, -4.65, 0.9, 0.6, 0.3, 'fab_white'))
+for i, (x, y) in enumerate(((-0.9, -6.9), (-0.45, -6.6), (0, -6.9), (0.45, -6.6), (0.9, -6.9))):
+    c2.append(box_c('m%d' % i, x, y, -4.65, 0.45, 0.35, 0.3, 'fab_white'))
+MODELS['cat_hat'] = dict(attach='head', parts=c2)
+
+# 3. Bucket Hat — black crown, white stripe, silver eyelets, sloped brim
+b3 = [box_c('crown', 0, -10.6, 0, 8.9, 3.4, 8.9, 'fab_black'), box_c('top', 0, -11.1, 0, 8.1, 0.5, 8.1, 'fab_black'),
+      box_c('stripe', 0, -8.4, 0, 9.15, 1.05, 9.15, 'pearl'), box_c('ring', 0, -7.4, 0, 10.0, 0.45, 10.0, 'fab_black2')]
+for tag, ry in (('n', 0), ('e', 90), ('s', 180), ('w', -90)):
+    b3.append(side_group('b' + tag, ry, (0, -7.2, 0)))
+    b3.append(P('b' + tag + 'sk', (-6.4, 0, -2.3), (12.8, 0.45, 2.3), 'fab_black2', pivot=(0, 0, -5.0), rot=(30, 0, 0), parent='b' + tag))
+    for x in (-1.6, 1.6):
+        b3.append(P('b' + tag + 'ey%d' % x, (x - 0.25, -2.4, -4.55), (0.5, 0.5, 0.2), 'silver', parent='b' + tag))
+MODELS['bucket_hat'] = dict(attach='head', parts=b3)
+
+# 4. Santa Hat — red cone that flops to the side, fluffy trim and pom-pom
+s4 = [box_c('trim', 0, -9.6, 0, 9.6, 2.0, 9.6, 'fluff'),
+      box_c('t1', -2.6, -9.8, -4.85, 2.0, 0.6, 0.4, 'fluff'), box_c('t2', 2.2, -8.3, -4.9, 2.4, 0.7, 0.4, 'fluff'),
+      P('c0', (-4.3, -2.6, -4.3), (8.6, 2.6, 8.6), 'fab_red', pivot=(0, -9.6, 0))]
+prev, dims = 'c0', ((7.4, 2.2, 10), (6.0, 2.0, 16), (4.6, 1.9, 24), (3.4, 1.8, 32), (2.4, 1.6, 36))
+y = -2.6
+for i, (wdt, hh, rz) in enumerate(dims):
+    n = 'c%d' % (i + 1)
+    s4.append(P(n, (-wdt / 2, -hh, -wdt / 2), (wdt, hh, wdt), 'fab_red', pivot=(0.5 if i else 0.3, y, 0.4), rot=(-8, 0, rz), parent=prev))
+    prev, y = n, -hh
+s4.append(P('pom', (-1.3, -2.4, -1.3), (2.6, 2.6, 2.6), 'fluff', pivot=(0.3, y, 0), parent=prev))
+MODELS['santa_hat'] = dict(attach='head', parts=s4)
+
+# 5. Frog Hat — green dome, big 3D eyes, smile and blush
+f5 = [box_c('dome', 0, -9.6, 0, 9.2, 4.8, 9.2, 'fab_green'), box_c('top', 0, -10.2, 0, 8.4, 0.6, 8.4, 'fab_green'),
+      box_c('lip', 0, -5.3, 0, 9.6, 0.8, 9.6, 'fab_dkgreen')]
+for sx in (-1, 1):
+    x = 2.3 * sx
+    f5.append(box_c('eye%d' % sx, x, -12.6, -2.4, 3.0, 2.8, 2.8, 'fab_green'))
+    f5.append(box_c('wh%d' % sx, x, -12.2, -3.9, 2.2, 2.1, 0.3, 'fab_white'))
+    f5.append(box_c('pu%d' % sx, x + 0.25 * sx, -11.7, -4.1, 1.0, 1.2, 0.3, 'fab_pupil'))
+    f5.append(box_c('sh%d' % sx, x - 0.35 * sx, -12.0, -4.2, 0.4, 0.4, 0.2, 'fab_white'))
+    f5.append(box_c('bl%d' % sx, 3.3 * sx, -7.2, -4.7, 1.0, 0.5, 0.2, 'fab_pink'))
+    f5.append(box_c('no%d' % sx, 0.6 * sx, -8.6, -4.7, 0.4, 0.4, 0.2, 'fab_dkgreen'))
+f5 += [box_c('mouth', 0, -6.7, -4.7, 4.4, 0.35, 0.2, 'fab_dkgreen'),
+       box_c('mo_l', -2.35, -7.0, -4.7, 0.5, 0.45, 0.2, 'fab_dkgreen'), box_c('mo_r', 2.35, -7.0, -4.7, 0.5, 0.45, 0.2, 'fab_dkgreen')]
+MODELS['frog_hat'] = dict(attach='head', parts=f5)
+
+# 6. Bunny Hat — fluffy white beanie, lavender brim, tall bunny ears
+u6 = [box_c('cap', 0, -9.6, 0, 9.1, 5.0, 9.1, 'fluff'), box_c('top', 0, -10.1, 0, 8.4, 0.5, 8.4, 'fluff'),
+      box_c('fold', 0, -5.4, 0, 9.4, 1.1, 9.4, 'fab_lav'), box_c('nose', 0, -6.9, -4.75, 0.8, 0.5, 0.3, 'fab_pink')]
+for sx in (-1, 1):
+    n = 'ear%d' % sx
+    u6.append(P(n, (-1.0, -5.2, -0.55), (2.0, 5.2, 1.1), 'fluff', pivot=(2.0 * sx, -10.0, 0.4), rot=(-4, 0, 9 * sx)))
+    u6.append(P(n + 'i', (-0.55, -4.6, -0.7), (1.1, 4.2, 0.25), 'fab_lav', parent=n))
+    u6.append(P(n + 'b', (-0.9, -3.4, -0.5), (1.8, 3.4, 1.0), 'fluff', pivot=(0, -5.2, 0), rot=(-10, 0, 4 * sx), parent=n))
+    u6.append(P(n + 'bi', (-0.5, -2.9, -0.65), (1.0, 2.6, 0.25), 'fab_lav', parent=n + 'b'))
+    u6.append(P(n + 'c', (-0.6, -0.7, -0.4), (1.2, 0.7, 0.8), 'fluff', pivot=(0, -3.4, 0), parent=n + 'b'))
+MODELS['bunny_hat'] = dict(attach='head', parts=u6)
 
 # Rabbit Ears — two-segment furry ears that flop back at the tip, pink inner
 e = []
