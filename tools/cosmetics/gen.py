@@ -283,6 +283,87 @@ def paint(mat, face, w, h):
                     img[oy + r * k: oy + (r + 1) * k, ox + c * k: ox + (c + 1) * k, :3] = col
         img[..., 3] = np.where(img[..., :3].sum(-1) > 0, 255, 0)
         glow = img.copy()
+    elif mat.startswith('neon:') or mat.startswith('metal:'):
+        kind, hx = mat.split(':')
+        c = np.array([int(hx[i:i + 2], 16) for i in (0, 2, 4)], float)
+        if kind == 'neon':
+            xx = np.linspace(-1, 1, w)[None, :] * np.ones((h, 1)); yy = np.linspace(-1, 1, h)[:, None] * np.ones((1, w))
+            core = 1.0 - 0.35 * np.maximum(np.abs(xx), np.abs(yy)) ** 2
+            img[..., :3] = np.clip(c[None, None] * core[..., None], 0, 255)
+            img[np.maximum(np.abs(xx), np.abs(yy)) < 0.35, :3] = np.clip(c * 0.4 + 160, 0, 255)
+            glow = img.copy()
+        else:
+            t = np.linspace(0, 1, h)[:, None] * np.ones((1, w))
+            sh = 1.1 - 0.35 * t + 0.35 * np.exp(-((t - 0.2) ** 2) / 0.01) + noise(h, w, 0.2, 2, 2) * 0.1
+            img[..., :3] = np.clip(c[None, None] * sh[..., None], 0, 255)
+            bevel(img, face, 0.4, max(1, S // 4))
+    elif mat.startswith('face_'):
+        style = mat[5:]
+        yy, xx = np.mgrid[0:h, 0:w].astype(float)
+        u, v = xx / max(1, w - 1), yy / max(1, h - 1)
+        front = face == 'front'
+        if style == 'frost':
+            base = np.array((20, 60, 110), float) + np.array((60, 120, 140)) * (1 - v)[..., None] * 0.6
+            img[..., :3] = base * (1 + noise(h, w, 0.4, 0.4, 3) * 0.25)[..., None]
+            if front:
+                for k in range(7):
+                    cx, cy = rng.random() * w, rng.random() * h
+                    ang = rng.random() * np.pi
+                    for t in np.linspace(-1, 1, 60):
+                        for a in (ang, ang + np.pi / 3, ang - np.pi / 3):
+                            px, py = int(cx + np.cos(a) * t * S * 2.2), int(cy + np.sin(a) * t * S * 2.2)
+                            if 0 <= px < w and 0 <= py < h: img[py, px, :3] = (190, 240, 255)
+                glow = np.zeros_like(img); m = img[..., 2] > 240
+                glow[m] = img[m]; glow[..., 3] = np.where(m, 255, 0)
+        elif style == 'inferno':
+            img[..., :3] = np.array((22, 16, 16), float) * (1 + noise(h, w, 0.3, 0.3, 3) * 0.4)[..., None]
+            if front:
+                n = noise(h, w, 0.9, 0.9, 2) + noise(h, w, 0.5, 0.5, 1) * 0.5
+                crack = np.abs(n) < 0.03
+                crack = np.asarray(Image.fromarray((crack * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(3))) > 0
+                heat = np.clip(1 - v * 0.6, 0.3, 1)
+                col = np.stack([255 * heat, 120 * heat ** 2, 20 * heat], -1)
+                img[..., :3] = np.where(crack[..., None], col, img[..., :3])
+                glow = np.zeros_like(img); glow[..., :3] = np.where(crack[..., None], col, 0); glow[..., 3] = np.where(crack, 255, 0)
+        elif style == 'rabbit':
+            img[..., :3] = np.array((16, 16, 18), float) * (1 + noise(h, w, 0.5, 0.5, 2) * 0.2)[..., None]
+            if front:
+                chk = ((xx // (S * 1.5)).astype(int) + (yy // (S * 1.5)).astype(int)) % 2 == 0
+                edge = (u < 0.07) | (u > 0.93) | (v < 0.04) | (v > 0.96)
+                img[edge & chk, :3] = (235, 235, 238)
+                try:
+                    logo = Image.open('/home/claude/repo/src/main/resources/assets/therabbits/textures/gui/logo.png').convert('RGBA')
+                    ls = int(min(w, h) * 0.78)
+                    lg = np.asarray(logo.resize((ls, ls), Image.LANCZOS)).astype(float)
+                    ox, oy = (w - ls) // 2, (h - ls) // 2
+                    a = lg[..., 3:4] / 255
+                    img[oy:oy + ls, ox:ox + ls, :3] = img[oy:oy + ls, ox:ox + ls, :3] * (1 - a) + lg[..., :3] * a
+                except Exception:
+                    pass
+        elif style == 'galaxy':
+            n1 = noise(h, w, 0.6, 0.6, 5); n2 = noise(h, w, 0.3, 0.3, 4)
+            img[..., :3] = np.clip(np.array((10, 8, 22), float) + np.clip(n1 + 0.2, 0, 1)[..., None] * np.array((110, 40, 170))
+                                   + np.clip(n2 + 0.1, 0, 1)[..., None] * np.array((20, 70, 160)), 0, 255)
+            if front:
+                st = rng.random((h, w)) > 0.992
+                img[st, :3] = (255, 255, 255)
+                glow = np.zeros_like(img); glow[st] = img[st]; glow[..., 3] = np.where(st, 255, 0)
+        elif style == 'dragon':
+            img[..., :3] = np.array((24, 70, 38), float)
+            if front:
+                sc = S * 1.6
+                ry = (yy / sc) % 1; rx = ((xx / sc) + 0.5 * ((yy // sc) % 2)) % 1
+                d = np.sqrt((rx - 0.5) ** 2 + (ry - 0.15) ** 2)
+                shade = np.clip(1.25 - d * 1.3, 0.45, 1.25)
+                img[..., :3] = np.clip(np.array((40, 130, 60), float)[None, None] * shade[..., None] * (1 + noise(h, w, 0.3, 0.3, 2) * 0.15)[..., None], 0, 255)
+                img[(d > 0.62) & (d < 0.7), :3] = (14, 40, 20)
+        elif style == 'knight':
+            img[..., :3] = np.array((232, 232, 236), float) * (1 - 0.12 * v)[..., None] * (1 + noise(h, w, 0.4, 0.4, 2) * 0.04)[..., None]
+            if front:
+                cross = ((np.abs(u - 0.5) < 0.09) & (v > 0.12) & (v < 0.88)) | ((np.abs(v - 0.38) < 0.06) & (u > 0.18) & (u < 0.82))
+                img[cross, :3] = (230, 180, 60)
+                img[cross & ((np.abs(u - 0.5) > 0.07) | (np.abs(v - 0.38) > 0.045)), :3] = (180, 130, 30)
+        bevel(img, face, 0.2)
     elif mat == 'skin':
         base((214, 168, 134)); img[..., :3] *= (1 + fine(h, w, 0.04))[..., None]
     elif mat == 'face':
@@ -551,6 +632,34 @@ for i in range(28):
     sa.append(P(n, (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', pivot=(math.cos(a) * r, y, math.sin(a) * r), rot=(0, srng.random() * 180, 0)))
     sa.append(P(n + 'x', (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', rot=(0, 90, 0), parent=n))
 MODELS['snow_aura'] = dict(attach='aura', parts=sa)
+
+
+# ---------------- shield drafts
+def shield_model(face, frame, corner, corner_inlay, gem):
+    sd = [P('plate', (-6, -11, -0.75), (12, 22, 1.5), face)]
+    for n, frm, size in (('ft', (-6.5, -11.5, -1.05), (13, 0.9, 2.1)), ('fb', (-6.5, 10.6, -1.05), (13, 0.9, 2.1)),
+                         ('fl', (-6.5, -10.6, -1.05), (0.9, 21.2, 2.1)), ('fr', (5.6, -10.6, -1.05), (0.9, 21.2, 2.1))):
+        sd.append(P(n, frm, size, frame))
+    for i, (cx_, cy_) in enumerate(((-6.0, -11.0), (6.0, -11.0), (-6.0, 11.0), (6.0, 11.0))):
+        sd.append(box_c('cn%d' % i, cx_, cy_ - 1.05, 0.0, 2.1, 2.1, 2.7, corner))
+        sd.append(box_c('cg%d' % i, cx_, cy_ - 0.55, -1.45, 1.1, 1.1, 0.4, corner_inlay))
+    if gem:
+        sd.append(P('core_ring', (-1.9, -1.9, -0.2), (3.8, 3.8, 0.35), corner, pivot=(0, 0, -0.8), rot=(0, 0, 45)))
+        sd.append(P('core_glow', (-1.1, -1.1, -0.25), (2.2, 2.2, 0.5), gem, pivot=(0, 0, -1.2), rot=(0, 0, 45)))
+    sd += [box_c('post_t', 0, -3.6, 1.35, 1.2, 1.2, 1.2, 'gunmetal'), box_c('post_b', 0, 2.4, 1.35, 1.2, 1.2, 1.2, 'gunmetal'),
+           box_c('grip', 0, -3.6, 2.3, 1.6, 7.2, 0.9, corner)]
+    return dict(attach='shield', parts=sd)
+
+SHIELD_DRAFTS = {
+    'frost_ward': ('Frost Ward', shield_model('face_frost', 'neon:9BE8FF', 'metal:C8D2E0', 'neon:E8FBFF', 'neon:BFF4FF'), (130, 220, 255)),
+    'inferno': ('Inferno', shield_model('face_inferno', 'neon:FF6A1A', 'metal:3A3436', 'neon:FFB347', 'neon:FF5A1A'), (255, 120, 40)),
+    'rabbit_emblem': ('Rabbit Emblem', shield_model('face_rabbit', 'metal:F0F0F2', 'metal:26262A', 'metal:F0F0F2', None), (235, 235, 240)),
+    'galaxy_guard': ('Galaxy Guard', shield_model('face_galaxy', 'neon:B07CFF', 'metal:B9BCC8', 'neon:7FB6FF', 'neon:E3C9FF'), (170, 120, 255)),
+    'dragon_scale': ('Dragon Scale', shield_model('face_dragon', 'metal:D7A93A', 'metal:2E3A2E', 'metal:D7A93A', 'gem'), (90, 210, 110)),
+    'holy_knight': ('Holy Knight', shield_model('face_knight', 'metal:D9AE45', 'metal:EDEDF0', 'metal:D9AE45', 'neon:5AA8FF'), (240, 205, 110)),
+}
+for k, (_, m_, _c) in SHIELD_DRAFTS.items():
+    MODELS[k] = m_
 
 # Rabbit Ears — two-segment furry ears that flop back at the tip, pink inner
 e = []

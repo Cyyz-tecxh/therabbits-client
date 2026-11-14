@@ -27,7 +27,9 @@
     "DebugScreenOverlayMixin",
     "EntityHitboxDebugRendererMixin",
     "LevelMixin",
-    "MinecraftAccessor"
+    "MinecraftAccessor",
+    "PlayerModelMixin",
+    "AvatarRendererEmoteMixin"
   ],
   "injectors": {
     "defaultRequire": 1

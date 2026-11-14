@@ -31,6 +31,7 @@ public class RabbitsClient implements ClientModInitializer {
     public static KeyMapping zoomKey;
     public static KeyMapping freelookKey;
     public static KeyMapping waypointKey;
+    public static KeyMapping emoteKey;
 
     @Override
     public void onInitializeClient() {
@@ -47,6 +48,8 @@ public class RabbitsClient implements ClientModInitializer {
 
         waypointKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.therabbits.waypoint", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY));
+        emoteKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.therabbits.emote", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY));
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.MODIFY_GAME.register((message, overlay) ->
                 com.therabbits.client.module.utility.AltHiderModule.active()
                         && message.getString().contains(Minecraft.getInstance().getUser().getName())
@@ -94,6 +97,10 @@ public class RabbitsClient implements ClientModInitializer {
             var wp = ModuleManager.get(com.therabbits.client.module.hud.WaypointsModule.class);
             if (wp.enabled()) wp.addHere();
         }
+        while (emoteKey.consumeClick()) {
+            if (mc.screen == null && mc.player != null) mc.setScreen(new com.therabbits.client.gui.EmoteWheelScreen());
+        }
+        com.therabbits.client.emote.EmoteManager.tick();
         while (menuKey.consumeClick()) {
             if (mc.screen == null) mc.setScreen(new com.therabbits.client.gui.HubScreen(null));
         }

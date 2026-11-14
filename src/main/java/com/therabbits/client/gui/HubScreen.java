@@ -39,7 +39,7 @@ public class HubScreen extends Screen {
         Draw.outline(g, x1, y, bw, sq, 0x50FFFFFF);
         Draw.centered(g, "MODS", cx, y + 7, hm ? Theme.onAccent() : 0xFFEDEDED);
         square(g, x2, y, sq, mx, my, ICON_SHIRT);
-        String hint = Draw.inside(mx, my, x0, y, sq, sq) ? "Emotes" : Draw.inside(mx, my, x2, y, sq, sq) ? "Cosmetics" : hm ? "Mods & settings" : "";
+        String hint = Draw.inside(mx, my, x0, y, sq, sq) ? "Emotes (G)" : Draw.inside(mx, my, x2, y, sq, sq) ? "Cosmetics" : hm ? "Mods & settings" : "";
         if (!hint.isEmpty()) Draw.centered(g, hint, cx, y + sq + 8, 0xFF9A9A9A);
         if (toast != null && System.currentTimeMillis() - toastAt < 1800) Draw.centered(g, toast, cx, y + sq + 22, 0xFFFFFFFF);
         super.render(g, mx, my, delta);
@@ -67,7 +67,11 @@ public class HubScreen extends Screen {
             int x0 = cx - bw / 2 - gap - sq, x1 = cx - bw / 2, x2 = cx + bw / 2 + gap;
             if (Draw.inside(e.x(), e.y(), x1, y, bw, sq)) { minecraft.setScreen(new ModMenuScreen(parent)); return true; }
             if (Draw.inside(e.x(), e.y(), x2, y, sq, sq)) { minecraft.setScreen(new CosmeticsScreen(parent)); return true; }
-            if (Draw.inside(e.x(), e.y(), x0, y, sq, sq)) { toast = "Emotes are coming soon"; toastAt = System.currentTimeMillis(); return true; }
+            if (Draw.inside(e.x(), e.y(), x0, y, sq, sq)) {
+                if (minecraft.player == null) { toast = "Join a world to use emotes"; toastAt = System.currentTimeMillis(); }
+                else minecraft.setScreen(new EmoteWheelScreen());
+                return true;
+            }
         }
         return super.mouseClicked(e, dbl);
     }

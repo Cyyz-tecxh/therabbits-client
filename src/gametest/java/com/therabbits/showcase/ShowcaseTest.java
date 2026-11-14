@@ -435,6 +435,16 @@ public class ShowcaseTest implements FabricClientGameTest {
                 mc.setScreen(null);
                 mc.options.hideGui = true;
             });
+            // 18. Emotes: wheel, then backflip / dance / floss in third person (front)
+            ctx.runOnClient(mc -> { mc.options.hideGui = false; mc.setScreen(new com.therabbits.client.gui.EmoteWheelScreen()); });
+            frames(ctx, "c32wheel", 2);
+            ctx.runOnClient(mc -> { mc.setScreen(null); mc.options.hideGui = true;
+                var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class); wm.aura.set(0); wm.hat.set(0); wm.arms.set(0); });
+            for (String id : new String[]{"backflip", "dance", "floss", "dab", "spin", "sit"}) {
+                ctx.runOnClient(mc -> com.therabbits.client.emote.EmoteManager.play(com.therabbits.client.emote.Emotes.byId(id)));
+                for (int k = 0; k < 7; k++) { ctx.waitTicks(3); frames(ctx, "c33emote_" + id, 1); }
+            }
+            ctx.runOnClient(mc -> com.therabbits.client.emote.EmoteManager.stop());
             // 14. Account & Codes page
             ctx.runOnClient(mc -> {
                 mc.options.hideGui = false;
