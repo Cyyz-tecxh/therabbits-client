@@ -28,6 +28,16 @@ jobs:
         run: |
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest build/libs/*.jar --title "TheRabbits Client (latest build)" --notes "Built automatically from ${GITHUB_SHA::7}"
+      - name: Dump Minecraft API (for development)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: |
+          JAR=$(find .gradle/loom-cache ~/.gradle/caches -name 'minecraft-merged*1.21.11*.jar' -not -name '*sources*' 2>/dev/null | head -1)
+          echo "JAR=$JAR" > api.txt
+          unzip -l "$JAR" | awk '{print $4}' | grep -iE 'outline|fog|glint|hitbox|ItemEntityRenderer|ItemInHand|PostChain|Cooldown|Title|DebugScreenEntr|ShapeRenderer|BlockOutline|LevelRenderer|PlayerTabOverlay|AbstractContainerScreen|EntityRenderDispatcher|FeatureRenderDispatcher|SubmitNodeCollector' | grep -v '\$' | head -80 >> api.txt
+          for c in net.minecraft.client.renderer.entity.EntityRenderDispatcher net.minecraft.client.renderer.ItemInHandRenderer net.minecraft.client.renderer.LevelRenderer net.minecraft.client.renderer.fog.FogRenderer net.minecraft.client.renderer.entity.ItemEntityRenderer net.minecraft.client.renderer.entity.state.ItemEntityRenderState net.minecraft.client.gui.Gui net.minecraft.client.renderer.GameRenderer net.minecraft.client.gui.screens.inventory.AbstractContainerScreen net.minecraft.client.gui.components.PlayerTabOverlay net.minecraft.world.item.ItemCooldowns net.minecraft.client.renderer.ShapeRenderer net.minecraft.client.renderer.debug.DebugRenderer net.minecraft.client.gui.components.debug.DebugScreenEntries net.minecraft.client.renderer.PostChain net.minecraft.client.renderer.ShaderManager; do
+            echo "=== $c" >> api.txt; javap -p -cp "$JAR" $c 2>&1 | head -150 >> api.txt; done
+          javap -p -cp "$JAR" net.minecraft.client.Options | grep -iE 'glint|fog|bob|fov|hitbox' >> api.txt
       - name: Run in-game showcase
         id: showcase
         continue-on-error: true
@@ -46,4 +56,4 @@ jobs:
           find . -name latest.log -path '*run*' -exec cp {} out-latest.log \; || true
           gh release delete showcase --yes --cleanup-tag || true
           gh release create showcase --title "Showcase run" --notes "Automated showcase" --prerelease \
-            $(ls screenshots.zip build.log showcase.log out-latest.log 2>/dev/null)
+            $(ls screenshots.zip build.log showcase.log out-latest.log api.txt 2>/dev/null)
