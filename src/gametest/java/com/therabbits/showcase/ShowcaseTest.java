@@ -89,12 +89,14 @@ public class ShowcaseTest implements FabricClientGameTest {
         // Apply every mixin now so a broken hook fails loudly in CI
         org.spongepowered.asm.mixin.MixinEnvironment.getCurrentEnvironment().audit();
         ctx.runOnClient(mc -> {
-            mc.options.renderDistance().set(3);
+            mc.options.renderDistance().set(2);
             mc.options.simulationDistance().set(5);
+            mc.options.framerateLimit().set(10);   // CI has 2 CPU cores: leave them to the world generator while it loads
         });
 
         // ================= In-game features (world first: it loads faster in a small window) =================
         try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
+            ctx.runOnClient(mc -> mc.options.framerateLimit().set(60));
             sp.getServer().runOnServer(server -> {
                 ServerPlayer p = server.getPlayerList().getPlayers().get(0);
                 p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
