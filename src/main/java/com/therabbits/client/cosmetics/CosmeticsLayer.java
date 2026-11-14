@@ -70,7 +70,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             float life = (t * (0.11f + h * 0.08f) + h * 7.3f) % 1f;
             float a = life < 0.15f ? life / 0.15f : life < 0.75f ? 1f : life < 0.9f ? (0.9f - life) / 0.15f : 0f;
             a *= 0.85f + 0.15f * net.minecraft.util.Mth.sin(t * 9f + i * 2.1f);
-            float size = (0.75f + h * 0.75f) * Math.max(0f, a);
+            float size = (1.0f + h * 0.8f) * Math.max(0f, a);
             f.visible = size > 0.04f;
             f.xScale = f.yScale = f.zScale = size;
         }

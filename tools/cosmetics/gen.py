@@ -281,6 +281,7 @@ def paint(mat, face, w, h):
                     if ch == '.': continue
                     col = (235, 252, 255) if ch == '@' else ((150, 235, 255) if (r == 4 or c == 4) and abs(r - 4) + abs(c - 4) <= 2 else (60, 200, 255))
                     img[oy + r * k: oy + (r + 1) * k, ox + c * k: ox + (c + 1) * k, :3] = col
+        img[..., 3] = np.where(img[..., :3].sum(-1) > 0, 255, 0)
         glow = img.copy()
     elif mat == 'skin':
         base((214, 168, 134)); img[..., :3] *= (1 + fine(h, w, 0.04))[..., None]
@@ -541,7 +542,7 @@ MODELS['aura'] = dict(attach='aura', parts=au)
 # Snow Aura - sparse glowing snowflakes scattered around the body (animated in-game)
 sa = []
 srng = np.random.default_rng(21)
-for i in range(22):
+for i in range(28):
     a = srng.random() * 2 * math.pi
     y = -9.5 + srng.random() * 34.0
     r = 4.6 + srng.random() * 3.6 if y > 0 else 5.2 + srng.random() * 2.6
