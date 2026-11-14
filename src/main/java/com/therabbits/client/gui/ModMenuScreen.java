@@ -154,7 +154,7 @@ public class ModMenuScreen extends Screen {
         g.pose().popMatrix();
         Draw.text(g, "C L I E N T", x + 43, y + 25, 0xFF7A7A7A);
 
-        if (settingsFor == null) {
+        if (settingsFor == null && !presetsPage) {
             int sw = Math.min(150, W / 3), sx = x + W - sw - 16, sy = y + 10;
             boolean focus = searchBox.isFocused();
             Draw.rect(g, sx, sy, sw, 18, 0xFF161616);
