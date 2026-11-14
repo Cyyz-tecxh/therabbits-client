@@ -23,7 +23,11 @@
     "PlayerTabOverlayMixin",
     "ShieldSpecialRendererMixin",
     "ItemInHandLayerMixin",
-    "AvatarRendererMixin"
+    "AvatarRendererMixin",
+    "DebugScreenOverlayMixin",
+    "EntityHitboxDebugRendererMixin",
+    "LevelMixin",
+    "MinecraftAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

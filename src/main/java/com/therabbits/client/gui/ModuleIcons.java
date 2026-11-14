@@ -81,6 +81,10 @@ public final class ModuleIcons {
         ITEMS.put("Hats & Arms", Items.LEATHER_HELMET);
         ITEMS.put("Account & Codes", Items.NAME_TAG);
         ITEMS.put("Client Settings", Items.COMPARATOR);
+        ITEMS.put("Quick Messages", Items.WRITABLE_BOOK);
+        ITEMS.put("Pack Customizer", Items.PAINTING);
+        ITEMS.put("Time & Weather", Items.CLOCK);
+        ITEMS.put("Item Customizer", Items.DIAMOND_SWORD);
     }
 
     private static final Path DIR = FabricLoader.getInstance().getConfigDir().resolve("therabbits/icons");

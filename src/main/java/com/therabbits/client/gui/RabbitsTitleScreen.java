@@ -338,6 +338,11 @@ public class RabbitsTitleScreen extends Screen {
             g.blit(RenderPipelines.GUI_TEXTURED, tex, nx + 5, ny + 4, 8, 8, 8, 8, 8, 8, 64, 64);   // face
             g.blit(RenderPipelines.GUI_TEXTURED, tex, nx + 5, ny + 4, 40, 8, 8, 8, 8, 8, 64, 64);  // hat layer
             Draw.text(g, name, nx + 17, ny + 4, Theme.TEXT);
+            boolean hn = Draw.inside(mouseX, mouseY, nx, ny, nw + 44, 16);
+            int swx = nx + nw + 4;
+            Draw.rect(g, swx, ny, 40, 16, hn ? 0xFFFFFFFF : 0xB0000000);
+            Draw.centered(g, "Switch", swx + 20, ny + 4, hn ? 0xFF000000 : 0xFFBDBDBD);
+            nameTag = new int[]{nx, ny, nw + 44, 16};
             drawSkinChanger(g, mouseX, mouseY, ny + 20);
         }
 
@@ -402,8 +407,12 @@ public class RabbitsTitleScreen extends Screen {
     }
 
     // ---------- skin changer ----------
-    private static final int SEL_W = 150, UP_W = 50, RS_W = 40, SC_H = 16, SC_GAP = 4;
-    private int scX() { return figureCx() - (SEL_W + UP_W + RS_W + SC_GAP * 2) / 2; }
+    private static final int SEL_W = 150, RN_W = 44, UP_W = 50, RS_W = 40, SC_H = 16, SC_GAP = 4, DD_ROW = 14, DD_ROWS = 8;
+    private int scX() { return figureCx() - (SEL_W + RN_W + UP_W + RS_W + SC_GAP * 3) / 2; }
+    private boolean dropdown, renaming;
+    private int ddScroll;
+    private int[] nameTag;
+    private net.minecraft.client.gui.components.EditBox renameBox;
     private int scY;
 
     private void drawSkinChanger(GuiGraphics g, int mx, int my, int y) {
@@ -413,13 +422,19 @@ public class RabbitsTitleScreen extends Screen {
         Draw.rect(g, x, y, SEL_W, SC_H, hs ? 0xE0262626 : 0xC0101010);
         Draw.outline(g, x, y, SEL_W, SC_H, hs ? 0x80FFFFFF : 0x40FFFFFF);
         Draw.rect(g, x, y, 2, SC_H, 0xFFFFFFFF);
-        Draw.text(g, "\u2039", x + 6, y + 4, Theme.TEXT);
-        Draw.text(g, "\u203A", x + SEL_W - 9, y + 4, Theme.TEXT);
-        String label = SkinChanger.currentName();
-        if (Draw.width(label) > SEL_W - 28) label = Draw.trim(label, SEL_W - 34 + 6);
-        Draw.centered(g, label, x + SEL_W / 2, y + 4, Theme.TEXT);
+        if (!renaming) {
+            String label = SkinChanger.currentName();
+            if (Draw.width(label) > SEL_W - 28) label = Draw.trim(label, SEL_W - 34 + 6);
+            Draw.text(g, label, x + 8, y + 4, Theme.TEXT);
+            Draw.text(g, dropdown ? "\u25B4" : "\u25BE", x + SEL_W - 11, y + 4, Theme.TEXT);
+        }
+        int nbx = x + SEL_W + SC_GAP;
+        boolean hrn = Draw.inside(mx, my, nbx, y, RN_W, SC_H);
+        Draw.rect(g, nbx, y, RN_W, SC_H, hrn || renaming ? 0xFFFFFFFF : 0xC0101010);
+        Draw.outline(g, nbx, y, RN_W, SC_H, 0x40FFFFFF);
+        Draw.centered(g, renaming ? "Save" : "Rename", nbx + RN_W / 2, y + 4, hrn || renaming ? 0xFF000000 : Theme.TEXT);
 
-        int ux = x + SEL_W + SC_GAP;
+        int ux = nbx + RN_W + SC_GAP;
         boolean hu = Draw.inside(mx, my, ux, y, UP_W, SC_H);
         Draw.rect(g, ux, y, UP_W, SC_H, hu ? 0xFFD0D0D0 : 0xFFFFFFFF);
         Draw.centered(g, "Upload", ux + UP_W / 2, y + 4, 0xFF000000);
@@ -434,11 +449,93 @@ public class RabbitsTitleScreen extends Screen {
             Draw.centered(g, skinMessage, figureCx(), y + SC_H + 4, 0xFFFF8080);
     }
 
+    private int ddY() { return scY - Math.min(DD_ROWS, SkinChanger.count()) * DD_ROW - 2; }
+
+    /** The skin list (opens above the selector). */
+    private void drawSkinDropdown(GuiGraphics g, int mx, int my) {
+        if (!dropdown || !wide()) return;
+        int x = scX(), n = SkinChanger.count(), rows = Math.min(DD_ROWS, n), y0 = ddY();
+        ddScroll = Mth.clamp(ddScroll, 0, Math.max(0, n - rows));
+        Draw.rect(g, x, y0 - 1, SEL_W, rows * DD_ROW + 2, 0xF20C0C0E);
+        Draw.outline(g, x, y0 - 1, SEL_W, rows * DD_ROW + 2, 0x60FFFFFF);
+        for (int r = 0; r < rows; r++) {
+            int i = r + ddScroll, ry = y0 + r * DD_ROW;
+            boolean h = Draw.inside(mx, my, x, ry, SEL_W, DD_ROW), sel = i == SkinChanger.index();
+            if (h || sel) Draw.rect(g, x + 1, ry, SEL_W - 2, DD_ROW, h ? 0xFFFFFFFF : 0x30FFFFFF);
+            Draw.text(g, Draw.trim(SkinChanger.name(i), SEL_W - 16), x + 6, ry + 3, h ? 0xFF000000 : Theme.TEXT);
+        }
+        if (n > rows) {
+            int bh = Math.max(8, rows * DD_ROW * rows / n), by = y0 + (rows * DD_ROW - bh) * ddScroll / (n - rows);
+            Draw.rect(g, x + SEL_W - 3, by, 2, bh, 0x80FFFFFF);
+        }
+    }
+
+    private void startRename() {
+        renaming = true;
+        dropdown = false;
+        if (renameBox == null) {
+            renameBox = new net.minecraft.client.gui.components.EditBox(font, 0, 0, SEL_W - 8, 12, Component.literal("Skin name"));
+            renameBox.setMaxLength(32);
+            renameBox.setBordered(false);
+            addRenderableWidget(renameBox);
+        }
+        renameBox.setX(scX() + 6); renameBox.setY(scY + 4);
+        renameBox.setValue(SkinChanger.currentName());
+        renameBox.visible = true;
+        setFocused(renameBox);
+        renameBox.setFocused(true);
+    }
+
+    private void finishRename(boolean save) {
+        if (!renaming) return;
+        if (save) SkinChanger.rename(SkinChanger.index(), renameBox.getValue());
+        renaming = false;
+        renameBox.visible = false;
+        renameBox.setFocused(false);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (renaming) {
+            if (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) { finishRename(true); return true; }
+            if (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) { finishRename(false); return true; }
+        }
+        if (dropdown && event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) { dropdown = false; return true; }
+        return super.keyPressed(event);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (dropdown) { ddScroll -= (int) Math.signum(sy); return true; }
+        return super.mouseScrolled(mx, my, sx, sy);
+    }
+
     private boolean clickSkinChanger(double mx, double my) {
         if (!wide() || skinWidget == null) return false;
-        int x = scX(), ux = x + SEL_W + SC_GAP, rx = ux + UP_W + SC_GAP;
+        if (nameTag != null && Draw.inside(mx, my, nameTag[0], nameTag[1], nameTag[2], nameTag[3])) {
+            minecraft.setScreen(new AccountsScreen(this));
+            return true;
+        }
+        int x = scX(), nbx = x + SEL_W + SC_GAP, ux = nbx + RN_W + SC_GAP, rx = ux + UP_W + SC_GAP;
+        if (dropdown) {
+            int n = SkinChanger.count(), rows = Math.min(DD_ROWS, n), y0 = ddY();
+            if (Draw.inside(mx, my, x, y0, SEL_W, rows * DD_ROW)) {
+                SkinChanger.select(ddScroll + (int) ((my - y0) / DD_ROW));
+                dropdown = false;
+                return true;
+            }
+            dropdown = false;
+            if (Draw.inside(mx, my, x, scY, SEL_W, SC_H)) return true;
+        }
+        if (Draw.inside(mx, my, nbx, scY, RN_W, SC_H)) {
+            if (renaming) finishRename(true); else startRename();
+            return true;
+        }
+        if (renaming && renameBox != null && Draw.inside(mx, my, x, scY, SEL_W, SC_H)) return false;   // let the text box take the click
+        finishRename(true);
         if (Draw.inside(mx, my, x, scY, SEL_W, SC_H)) {
-            if (mx < x + SEL_W / 2.0) SkinChanger.previous(); else SkinChanger.next();
+            dropdown = true;
+            ddScroll = Math.max(0, SkinChanger.index() - DD_ROWS / 2);
             return true;
         }
         if (Draw.inside(mx, my, ux, scY, UP_W, SC_H)) {

@@ -3,5 +3,11 @@
   "key.therabbits.menu": "Open TheRabbits Menu",
   "key.therabbits.zoom": "Zoom",
   "key.therabbits.freelook": "Freelook (hold)",
-  "key.therabbits.waypoint": "Add Waypoint"
+  "key.therabbits.waypoint": "Add Waypoint",
+  "key.therabbits.quick1": "Quick Message 1",
+  "key.therabbits.quick2": "Quick Message 2",
+  "key.therabbits.quick3": "Quick Message 3",
+  "key.therabbits.quick4": "Quick Message 4",
+  "key.therabbits.quick5": "Quick Message 5",
+  "key.therabbits.quick6": "Quick Message 6"
 }

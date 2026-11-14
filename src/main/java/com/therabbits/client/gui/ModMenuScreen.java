@@ -13,6 +13,7 @@ import com.therabbits.client.setting.Setting;
 import com.therabbits.client.setting.TextSetting;
 import com.therabbits.client.setting.ActionSetting;
 import com.therabbits.client.setting.InfoSetting;
+import com.therabbits.client.setting.KeySetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -59,6 +60,7 @@ public class ModMenuScreen extends Screen {
     private EditBox searchBox;
     private EditBox textEdit;
     private TextSetting editing;
+    private KeySetting bindingKey;
     private final long opened = System.currentTimeMillis();
     private long pageChanged = opened;
     private long lastFrame = opened;
@@ -469,6 +471,14 @@ public class ModMenuScreen extends Screen {
                 Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
                 Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? 0xFF000000 : 0xFFD0D0D0);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, as::run);
+            } else if (s instanceof KeySetting ks) {
+                int bw = 90, bx = x + w - bw - 8;
+                boolean waiting = bindingKey == ks;
+                boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
+                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, waiting ? 0xFFFFFFFF : hover ? 0xFF262626 : 0xFF0C0C0C);
+                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
+                Draw.centered(g, waiting ? "Press a key..." : ks.display(), bx + bw / 2, y + 6, waiting ? 0xFF000000 : 0xFFFFFFFF);
+                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> bindingKey = ks);
             } else if (s instanceof InfoSetting in) {
                 String v = in.text();
                 int maxW = w - Draw.width(s.name()) - 28;
@@ -536,6 +546,16 @@ public class ModMenuScreen extends Screen {
             searchBox.setFocused(false);
         }
         return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (bindingKey != null) {
+            bindingKey.bind(event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE ? -1 : event.key());
+            bindingKey = null;
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override

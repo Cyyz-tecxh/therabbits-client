@@ -14,6 +14,8 @@ public final class HudRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.player == null) return;
         if (mc.screen instanceof HudEditorScreen) return; // the editor draws them itself
+        var cs = ModuleManager.get(com.therabbits.client.module.utility.ClientSettingsModule.class);
+        if (cs.enabled() && cs.hideHudInF3.on() && mc.getDebugOverlay().showDebugScreen()) return;
         CpsTracker.update();
         var low = ModuleManager.get(com.therabbits.client.module.visual.LowHealthWarningModule.class);
         if (low.enabled()) low.draw(g);

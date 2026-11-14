@@ -19,6 +19,12 @@ public class ItemInHandRendererMixin {
     @Inject(method = "renderArmWithItem", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V", shift = At.Shift.AFTER, ordinal = 0))
     private void therabbits$viewModel(AbstractClientPlayer player, float partialTick, float pitch, InteractionHand hand, float swing,
                                       ItemStack stack, float equip, PoseStack pose, SubmitNodeCollector nodes, int light, CallbackInfo ci) {
+        com.therabbits.client.module.visual.ItemCustomizerModule ic = com.therabbits.client.module.visual.ItemCustomizerModule.get();
+        if (ic != null && ic.enabled()) {
+            if (ic.lowShield.on() && stack.is(net.minecraft.world.item.Items.SHIELD)) pose.translate(0, -ic.shieldDrop.f(), 0);
+            float sz = hand == InteractionHand.MAIN_HAND ? ic.mainHand.f() : ic.offHand.f();
+            if (sz != 1) pose.scale(sz, sz, sz);
+        }
         ViewModelModule m = ViewModelModule.get();
         if (m == null || !m.enabled()) return;
         float side = hand == InteractionHand.MAIN_HAND ? 1 : -1;

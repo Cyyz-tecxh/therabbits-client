@@ -18,6 +18,8 @@ public class ItemEntityRendererMixin {
     @Inject(method = "submit(Lnet/minecraft/client/renderer/entity/state/ItemEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V",
             at = @At("HEAD"))
     private void therabbits$physics(ItemEntityRenderState state, PoseStack pose, SubmitNodeCollector nodes, CameraRenderState camera, CallbackInfo ci) {
+        com.therabbits.client.module.visual.ItemCustomizerModule ic = com.therabbits.client.module.visual.ItemCustomizerModule.get();
+        if (ic != null && ic.enabled() && ic.dropped.f() != 1) pose.scale(ic.dropped.f(), ic.dropped.f(), ic.dropped.f());
         ItemPhysicsModule m = ItemPhysicsModule.get();
         if (m == null || !m.enabled()) return;
         state.ageInTicks = 0;

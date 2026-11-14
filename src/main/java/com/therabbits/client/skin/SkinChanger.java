@@ -27,10 +27,12 @@ import java.util.Locale;
  * Only changes how YOU see your skin; other players still see your Minecraft account skin.
  */
 public final class SkinChanger {
-    private record Option(String name, PlayerSkin skin) {}
+    private record Option(String key, String name, PlayerSkin skin) {}
 
     private static final Path DIR = FabricLoader.getInstance().getConfigDir().resolve("therabbits/skins");
     private static final Path SELECTED = FabricLoader.getInstance().getConfigDir().resolve("therabbits/selected_skin.txt");
+    private static final Path NAMES = FabricLoader.getInstance().getConfigDir().resolve("therabbits/skin_names.json");
+    private static final java.util.Map<String, String> CUSTOM_NAMES = new java.util.HashMap<>();
     private static final List<Option> OPTIONS = new ArrayList<>();
     private static int index = 0; // 0 = your own skin
     private static boolean loaded;
@@ -41,8 +43,16 @@ public final class SkinChanger {
         if (loaded) return;
         loaded = true;
         OPTIONS.clear();
-        OPTIONS.add(new Option("Your skin", null));
-        for (PlayerSkin s : DefaultPlayerSkinAccessor.therabbits$defaults()) OPTIONS.add(new Option(nameOf(s), s));
+        OPTIONS.add(new Option("self", "Your skin", null));
+        for (PlayerSkin s : DefaultPlayerSkinAccessor.therabbits$defaults()) OPTIONS.add(new Option("default:" + s.body().texturePath().getPath(), nameOf(s), s));
+        try {
+            if (Files.exists(NAMES)) {
+                var o = com.google.gson.JsonParser.parseString(Files.readString(NAMES)).getAsJsonObject();
+                for (var e : o.entrySet()) CUSTOM_NAMES.put(e.getKey(), e.getValue().getAsString());
+            }
+        } catch (Exception e) {
+            RabbitsClient.LOG.warn("Skin changer: could not read names", e);
+        }
         try {
             Files.createDirectories(DIR);
             try (var files = Files.list(DIR)) {
@@ -50,7 +60,8 @@ public final class SkinChanger {
             }
             if (Files.exists(SELECTED)) {
                 String want = Files.readString(SELECTED).trim();
-                for (int i = 0; i < OPTIONS.size(); i++) if (OPTIONS.get(i).name().equals(want)) index = i;
+                for (int i = 0; i < OPTIONS.size(); i++)
+                    if (OPTIONS.get(i).key().equals(want) || OPTIONS.get(i).name().equals(want)) index = i;
             }
         } catch (Exception e) {
             RabbitsClient.LOG.warn("Skin changer: could not load skins", e);
@@ -80,7 +91,7 @@ public final class SkinChanger {
                 @Override public Identifier texturePath() { return id; }
             };
             String name = file.getFileName().toString().replaceAll("(?i)\\.png$", "");
-            Option o = new Option(name, new PlayerSkin(tex, null, null, slim ? PlayerModelType.SLIM : PlayerModelType.WIDE, true));
+            Option o = new Option("file:" + file.getFileName(), name, new PlayerSkin(tex, null, null, slim ? PlayerModelType.SLIM : PlayerModelType.WIDE, true));
             OPTIONS.add(o);
             return o;
         } catch (Exception e) {
@@ -97,7 +108,34 @@ public final class SkinChanger {
 
     public static String currentName() {
         ensureLoaded();
-        return OPTIONS.get(index).name();
+        return name(index);
+    }
+
+    public static int count() { ensureLoaded(); return OPTIONS.size(); }
+    public static int index() { ensureLoaded(); return index; }
+    public static void select(int i) { ensureLoaded(); if (i >= 0 && i < OPTIONS.size()) { index = i; save(); } }
+
+    /** Shown name (your own name for it if you renamed it). */
+    public static String name(int i) {
+        ensureLoaded();
+        Option o = OPTIONS.get(i);
+        return CUSTOM_NAMES.getOrDefault(o.key(), o.name());
+    }
+
+    /** Rename a skin in the list (empty name = back to the original name). */
+    public static void rename(int i, String newName) {
+        ensureLoaded();
+        String key = OPTIONS.get(i).key();
+        newName = newName == null ? "" : newName.trim();
+        if (newName.isEmpty()) CUSTOM_NAMES.remove(key); else CUSTOM_NAMES.put(key, newName.length() > 32 ? newName.substring(0, 32) : newName);
+        try {
+            var o = new com.google.gson.JsonObject();
+            CUSTOM_NAMES.forEach(o::addProperty);
+            Files.createDirectories(NAMES.getParent());
+            Files.writeString(NAMES, o.toString());
+        } catch (Exception e) {
+            RabbitsClient.LOG.warn("Skin changer: could not save names", e);
+        }
     }
 
     public static void next() { ensureLoaded(); index = (index + 1) % OPTIONS.size(); save(); }
@@ -132,7 +170,7 @@ public final class SkinChanger {
     private static void save() {
         try {
             Files.createDirectories(SELECTED.getParent());
-            Files.writeString(SELECTED, currentName());
+            Files.writeString(SELECTED, OPTIONS.get(index).key());
         } catch (Exception ignored) {}
     }
 }

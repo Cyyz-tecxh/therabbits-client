@@ -27,9 +27,21 @@ public abstract class AbstractContainerScreenMixin {
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
     private void therabbits$dragMove(MouseButtonEvent event, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
         MouseTweaksModule m = MouseTweaksModule.get();
-        if (m == null || !m.enabled() || event.button() != 0 || !event.hasShiftDown()) return;
+        if (m == null || !m.enabled() || event.button() != 0) return;
+        if (!event.hasShiftDown() || !m.shiftDrag.on()) return;
         Slot s = getHoveredSlot(event.x(), event.y());
         if (s != null && s.hasItem() && therabbits$moved.add(s)) slotClicked(s, s.index, 0, ClickType.QUICK_MOVE);
+        cir.setReturnValue(true);
+    }
+
+    /** Scroll over a slot to quick-move that stack. */
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
+    private void therabbits$wheel(double x, double y, double sx, double sy, CallbackInfoReturnable<Boolean> cir) {
+        MouseTweaksModule m = MouseTweaksModule.get();
+        if (m == null || !m.wheelMoves(sy)) return;
+        Slot s = getHoveredSlot(x, y);
+        if (s == null || !s.hasItem()) return;
+        slotClicked(s, s.index, 0, ClickType.QUICK_MOVE);
         cir.setReturnValue(true);
     }
 

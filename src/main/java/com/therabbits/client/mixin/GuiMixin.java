@@ -21,8 +21,8 @@ public class GuiMixin {
     private void therabbits$crosshair(GuiGraphics g, DeltaTracker delta, CallbackInfo ci) {
         CrosshairModule c = ModuleManager.get(CrosshairModule.class);
         Minecraft mc = Minecraft.getInstance();
-        if (c.enabled() && mc.options.getCameraType().isFirstPerson()) {
-            c.draw(g);
+        if (c.enabled() && !mc.options.hideGui) {
+            if (c.visibleNow()) c.draw(g);
             ci.cancel();
         }
     }

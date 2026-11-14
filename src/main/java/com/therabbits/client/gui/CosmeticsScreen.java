@@ -35,6 +35,7 @@ public class CosmeticsScreen extends Screen {
     private final Screen parent;
     private Tab tab = Tab.HATS;
     private PlayerSkinWidget preview;
+    private net.minecraft.client.gui.components.EditBox search;
     private final List<Hit> hits = new ArrayList<>();
     private double scroll;
     private String toast;
@@ -56,6 +57,9 @@ public class CosmeticsScreen extends Screen {
         preview = new PlayerSkinWidget(pw, ph, minecraft.getEntityModels(), SkinDraw::skin);
         preview.setPosition(panelX() + 10, 44 + (height - 80 - ph) / 2);
         addRenderableWidget(preview);
+        search = new net.minecraft.client.gui.components.EditBox(font, width - 190, 12, 120, 14, Component.literal("Search"));
+        search.setHint(Component.literal("Search cosmetics..."));
+        addRenderableWidget(search);
         Account.refreshNow();
     }
 
@@ -139,6 +143,8 @@ public class CosmeticsScreen extends Screen {
             case SHIELDS -> { for (int i = 0; i < Wearables.SHIELD_IDS.length; i++) out.add(new Item(Wearables.SHIELD_IDS[i], Wearables.SHIELD_NAMES[i], w.shield, i, false)); }
             case CODES -> {}
         }
+        String q = search == null ? "" : search.getValue().trim().toLowerCase(java.util.Locale.ROOT);
+        if (!q.isEmpty()) out.removeIf(i -> !i.name().toLowerCase(java.util.Locale.ROOT).contains(q));
         return out;
     }
 
@@ -203,6 +209,8 @@ public class CosmeticsScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent e, boolean dbl) {
         if (e.button() == 0) {
+            if (search.mouseClicked(e, dbl)) return true;
+            search.setFocused(false);
             for (Hit h : List.copyOf(hits))
                 if (Draw.inside(e.x(), e.y(), h.x(), h.y(), h.w(), h.h())) { h.action().run(); return true; }
         }

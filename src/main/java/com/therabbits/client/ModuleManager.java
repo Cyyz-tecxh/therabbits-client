@@ -73,6 +73,10 @@ public final class ModuleManager {
         // Utility
         add(new FreelookModule());
         add(new com.therabbits.client.module.utility.ClientSettingsModule());
+        add(new com.therabbits.client.module.utility.QuickMessagesModule());
+        add(new com.therabbits.client.module.utility.PackCustomizerModule());
+        add(new com.therabbits.client.module.visual.TimeWeatherModule());
+        add(new com.therabbits.client.module.visual.ItemCustomizerModule());
         // Cosmetics
         add(new com.therabbits.client.module.cosmetics.CapesModule());
         add(new com.therabbits.client.module.cosmetics.WearablesModule());
@@ -89,11 +93,17 @@ public final class ModuleManager {
         return MODULES.stream().filter(m -> m.category() == c).toList();
     }
 
+    private static List<HudModule> hudCache;
+
     public static List<HudModule> hud() {
-        List<HudModule> out = new ArrayList<>();
-        for (Module m : MODULES) if (m instanceof HudModule h) out.add(h);
-        return out;
+        if (hudCache == null) {
+            List<HudModule> out = new ArrayList<>();
+            for (Module m : MODULES) if (m instanceof HudModule h) out.add(h);
+            hudCache = java.util.Collections.unmodifiableList(out);
+        }
+        return hudCache;
     }
+
 
     @SuppressWarnings("unchecked")
     private static final java.util.Map<Class<?>, Module> BY_CLASS = new java.util.concurrent.ConcurrentHashMap<>();
