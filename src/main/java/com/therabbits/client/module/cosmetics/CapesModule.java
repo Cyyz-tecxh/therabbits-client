@@ -44,8 +44,8 @@ public class CapesModule extends Module {
     private void syncNow() {
         sync.set("Syncing...");
         WearablesModule w = WearablesModule.get();
-        String hat = w != null ? w.hatId() : "none", arms = w != null ? w.armsId() : "none";
-        CosmeticsSync.publish(serverUrl.get(), enabled() ? capeId() : "none", hat, arms).thenAccept(sync::set);
+        String hat = w != null ? w.hatId() : "none", arms = w != null ? w.armsId() : "none", sh = w != null ? w.shieldId() : "none";
+        CosmeticsSync.publish(serverUrl.get(), enabled() ? capeId() : "none", hat, arms, sh).thenAccept(sync::set);
         lastSynced = signature();
         lastUrl = serverUrl.get();
     }
@@ -53,7 +53,7 @@ public class CapesModule extends Module {
     /** What we'd publish right now; a change triggers an automatic re-sync. */
     private String signature() {
         WearablesModule w = WearablesModule.get();
-        return (enabled() ? capeId() : "none") + "|" + (w != null ? w.hatId() + "|" + w.armsId() : "");
+        return (enabled() ? capeId() : "none") + "|" + (w != null ? w.hatId() + "|" + w.armsId() + "|" + w.shieldId() : "");
     }
 
     @Override

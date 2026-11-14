@@ -12,6 +12,7 @@
 const CAPES = ["none", "sheen_black", "sheen_white", "pulse", "scanline", "black_nebula"];
 const HATS = ["none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat"];
 const ARMS = ["none", "claws"];
+const SHIELDS = ["none", "neon_shield"];
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -36,8 +37,8 @@ export default {
       const ids = (url.searchParams.get("uuids") || "").toLowerCase().split(",").filter(isUuid).slice(0, 100);
       const out = {};
       await Promise.all(ids.map(async (id) => {
-        const [cape, hat, arms] = await Promise.all(["cape:", "hat:", "arms:"].map((k) => env.CAPES.get(k + id)));
-        out[id] = { cape: cape || "none", hat: hat || "none", arms: arms || "none" };
+        const [cape, hat, arms, shield] = await Promise.all(["cape:", "hat:", "arms:", "shield:"].map((k) => env.CAPES.get(k + id)));
+        out[id] = { cape: cape || "none", hat: hat || "none", arms: arms || "none", shield: shield || "none" };
       }));
       return json(out);
     }
@@ -55,6 +56,8 @@ export default {
       const { name, serverId, cape } = body || {};
       const hat = body.hat === undefined ? null : body.hat;
       const arms = body.arms === undefined ? null : body.arms;
+      const shield = body.shield === undefined ? null : body.shield;
+      if (shield !== null && !SHIELDS.includes(shield)) return json({ error: "unknown shield" }, 400);
       if (hat !== null && !HATS.includes(hat)) return json({ error: "unknown hat" }, 400);
       if (arms !== null && !ARMS.includes(arms)) return json({ error: "unknown arms" }, 400);
       if (typeof name !== "string" || !/^[A-Za-z0-9_]{1,16}$/.test(name)) return json({ error: "bad name" }, 400);
@@ -73,7 +76,7 @@ export default {
 
       if (cape === "none") await env.CAPES.delete("cape:" + uuid);
       else await env.CAPES.put("cape:" + uuid, cape);
-      for (const [k, v] of [["hat:", hat], ["arms:", arms]]) {
+      for (const [k, v] of [["hat:", hat], ["arms:", arms], ["shield:", shield]]) {
         if (v === null) continue;
         if (v === "none") await env.CAPES.delete(k + uuid);
         else await env.CAPES.put(k + uuid, v);

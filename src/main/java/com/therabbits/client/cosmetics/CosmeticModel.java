@@ -31,6 +31,10 @@ public final class CosmeticModel {
     public final ModelPart mirrored;
     public final Identifier texture;
     public final Identifier glow;
+    /** Animated cosmetics have this many texture frames (textures/cosmetics/&lt;id&gt;/&lt;n&gt;.png), 0 = static. */
+    public final int frames;
+    private final Identifier[] frameTex, frameGlow;
+    private static final int FRAME_MS = 110;
 
     private CosmeticModel(String id, JsonObject js) {
         this.id = id;
@@ -42,7 +46,21 @@ public final class CosmeticModel {
         this.texture = Identifier.fromNamespaceAndPath(RabbitsClient.MOD_ID, "textures/cosmetics/" + id + ".png");
         this.glow = js.get("glow").getAsBoolean()
                 ? Identifier.fromNamespaceAndPath(RabbitsClient.MOD_ID, "textures/cosmetics/" + id + "_glow.png") : null;
+        this.frames = js.has("frames") ? js.get("frames").getAsInt() : 0;
+        this.frameTex = new Identifier[frames];
+        this.frameGlow = new Identifier[frames];
+        for (int i = 0; i < frames; i++) {
+            frameTex[i] = Identifier.fromNamespaceAndPath(RabbitsClient.MOD_ID, "textures/cosmetics/" + id + "/" + i + ".png");
+            frameGlow[i] = Identifier.fromNamespaceAndPath(RabbitsClient.MOD_ID, "textures/cosmetics/" + id + "/" + i + "_glow.png");
+        }
     }
+
+    private int frame() { return (int) ((System.currentTimeMillis() / FRAME_MS) % frames); }
+
+    /** Texture to draw right now (current animation frame for animated cosmetics). */
+    public Identifier currentTexture() { return frames > 0 ? frameTex[frame()] : texture; }
+
+    public Identifier currentGlow() { return frames > 0 ? (glow != null ? frameGlow[frame()] : null) : glow; }
 
     private static float f(JsonArray a, int i) { return a.get(i).getAsFloat(); }
 

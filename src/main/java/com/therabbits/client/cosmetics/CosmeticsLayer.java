@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
@@ -50,9 +51,10 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         }
     }
 
-    private static void draw(PoseStack pose, SubmitNodeCollector out, int light, CosmeticModel m, ModelPart part) {
-        out.submitModelPart(part, pose, RenderTypes.entityCutoutNoCull(m.texture), light, OverlayTexture.NO_OVERLAY, null);
-        if (m.glow != null)
-            out.submitModelPart(part, pose, RenderTypes.eyes(m.glow), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
+    static void draw(PoseStack pose, SubmitNodeCollector out, int light, CosmeticModel m, ModelPart part) {
+        out.submitModelPart(part, pose, RenderTypes.entityCutoutNoCull(m.currentTexture()), light, OverlayTexture.NO_OVERLAY, null);
+        Identifier g = m.currentGlow();
+        if (g != null)
+            out.submitModelPart(part, pose, RenderTypes.eyes(g), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
     }
 }

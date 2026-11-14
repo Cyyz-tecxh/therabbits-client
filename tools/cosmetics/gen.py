@@ -7,6 +7,44 @@ S = 8  # texels per model unit (atlas is declared in units, PNG is S times bigge
 rng = np.random.default_rng(7)
 
 # ---------------------------------------------------------------- materials
+SHIELD_T = 0.3  # honeycomb animation time (0..1); frames are rendered by sweeping this
+
+def honeycomb(base, w, h, t):
+    R_ = 1.55 * S
+    yy, xx = np.mgrid[0:h, 0:w].astype(float)
+    x, y = xx - w / 2, yy - h / 2
+    q = (np.sqrt(3) / 3 * x - y / 3) / R_; r = (2 / 3 * y) / R_
+    cx, cz = q, r; cy = -cx - cz
+    rx, ry, rz = np.round(cx), np.round(cy), np.round(cz)
+    dx, dy, dz = np.abs(rx - cx), np.abs(ry - cy), np.abs(rz - cz)
+    fx = (dx > dy) & (dx > dz); fy = ~fx & (dy > dz)
+    rx = np.where(fx, -ry - rz, rx); ry = np.where(fy, -rx - rz, ry); rz = np.where(~fx & ~fy, -rx - ry, rz)
+    norm = (np.abs(cx - rx) + np.abs(cy - ry) + np.abs(cz - rz)) / 2      # 0 centre .. 0.5 edge
+    hsh = (np.abs(np.sin(rx * 12.9898 + rz * 78.233) * 43758.5453) % 1.0)
+    # brightness: a diagonal wave sweeping across + per-cell sparkle
+    ph = (t - (rx * 0.09 - rz * 0.06) - hsh * 0.18) % 1.0
+    b = np.clip(1 - np.abs(ph - 0.5) * 6.5, 0, 1)
+    gold = np.array((255, 186, 50), float); orange = np.array((255, 122, 30), float)
+    tone = (hsh > 0.5)[..., None]
+    fill = np.where(tone, orange, gold)
+    edge = norm > 0.40
+    out = base.copy()
+    # faint purple grid everywhere, then outlines (b>0.15) and fills (b>0.55)
+    out = np.where(edge[..., None], out + np.array((22, 8, 34)), out)
+    ol = edge & (b > 0.15)
+    out = np.where(ol[..., None], fill * (0.35 + 0.5 * b)[..., None], out)
+    fl = (~edge) & (b > 0.55)
+    shade = (1.05 - 0.35 * norm / 0.4)[..., None]
+    out = np.where(fl[..., None], fill * shade * (0.55 + 0.45 * b)[..., None], out)
+    # purple light along top and bottom edges
+    v = np.abs(yy / max(1, h - 1) - 0.5) * 2
+    out = out + np.array((90, 30, 140)) * (np.clip(v - 0.82, 0, 1) / 0.18)[..., None] ** 2
+    glow = np.zeros((h, w, 4))
+    lit = ol | fl
+    glow[..., :3] = np.where(lit[..., None], fill * (0.25 + 0.45 * b)[..., None], 0)
+    glow[..., 3] = np.where(lit, 255, 0)
+    return np.clip(out, 0, 255), glow
+
 FAB = {'fab_red': (200, 26, 34), 'fab_green': (96, 200, 58), 'fab_dkgreen': (44, 120, 36), 'fab_black': (30, 30, 34),
        'fab_black2': (20, 20, 23), 'fab_white': (240, 240, 244), 'fab_lav': (176, 146, 236), 'fab_pink': (244, 132, 186),
        'fab_velvet': (140, 16, 30), 'fab_pupil': (16, 16, 18)}
@@ -148,6 +186,66 @@ def paint(mat, face, w, h):
         sh = 1.08 - 0.3 * t + 0.25 * np.exp(-((t - 0.2) ** 2) / 0.01) + noise(h, w, 0.2, 2, 2) * 0.08
         img[..., :3] = np.clip(c[None, None] * sh[..., None], 0, 255)
         bevel(img, face, 0.3, max(1, S // 4))
+    elif mat == 'shield_face':
+        c = np.array((14, 10, 20), float)
+        yy, xx = np.mgrid[0:h, 0:w].astype(float)
+        sh = 1.0 + noise(h, w, 0.4, 0.4, 3) * 0.35
+        purple = np.array((52, 22, 84), float) * np.clip(noise(h, w, 0.8, 0.8, 2) + 0.35, 0, 1)[..., None]
+        img[..., :3] = np.clip(c[None, None] * sh[..., None] + purple * 0.6, 0, 255)
+        if face == 'front':
+            img[..., :3], glow = honeycomb(img[..., :3], w, h, SHIELD_T)
+        bevel(img, face, 0.2)
+    elif mat == 'neon':
+        xx = np.linspace(-1, 1, w)[None, :] * np.ones((h, 1)); yy = np.linspace(-1, 1, h)[:, None] * np.ones((1, w))
+        core = 1.0 - 0.35 * np.maximum(np.abs(xx), np.abs(yy)) ** 2
+        img[..., 0] = 200 * core; img[..., 1] = 96 * core; img[..., 2] = 255 * core
+        img[np.maximum(np.abs(xx), np.abs(yy)) < 0.35, :3] = (240, 200, 255)
+        glow = img.copy()
+    elif mat == 'purple_metal':
+        c = np.array((112, 56, 176), float)
+        t = np.linspace(0, 1, h)[:, None] * np.ones((1, w))
+        sh = 1.1 - 0.35 * t + 0.35 * np.exp(-((t - 0.2) ** 2) / 0.01) + noise(h, w, 0.2, 2, 2) * 0.1
+        img[..., :3] = np.clip(c[None, None] * sh[..., None], 0, 255)
+        bevel(img, face, 0.4, max(1, S // 4))
+    elif mat == 'void':
+        c = np.array((18, 12, 28), float)
+        xx = np.linspace(-1, 1, w)[None, :] * np.ones((h, 1)); yy = np.linspace(-1, 1, h)[:, None] * np.ones((1, w))
+        sh = 1.0 + 1.6 * np.exp(-((xx + 0.3) ** 2 + (yy + 0.4) ** 2) / 0.08)
+        img[..., :3] = np.clip(c[None, None] * sh[..., None], 0, 255)
+        bevel(img, face, 0.5, max(1, S // 4))
+    elif mat.startswith('astro_'):
+        part = mat[6:]
+        c = np.array((238, 240, 244), float)
+        img[..., :3] = np.clip(c[None, None] * (1 + noise(h, w, 0.4, 0.4, 2) * 0.05 + fine(h, w, 0.03))[..., None], 0, 255)
+        u = w / 8 if part in ('head', 'body') else w / 4
+        v = h / 8 if part == 'head' else h / 12
+        if part == 'head' and face == 'front':
+            img[int(1.6 * v):int(6.6 * v), int(0.9 * u):int(7.1 * u), :3] = (150, 154, 162)
+            vis = np.array((28, 36, 52), float)
+            yy, xx = np.mgrid[0:h, 0:w]
+            box = (yy >= int(2 * v)) & (yy < int(6.2 * v)) & (xx >= int(1.3 * u)) & (xx < int(6.7 * u))
+            grad = vis * (1 + 0.6 * np.clip(1 - yy / h, 0, 1))[..., None]
+            img[..., :3] = np.where(box[..., None], grad, img[..., :3])
+            refl = box & (xx > yy * 0.6 + w * 0.45) & (xx < yy * 0.6 + w * 0.62)
+            img[refl, :3] = (110, 160, 230)
+        if part == 'head' and face in ('left', 'right'):
+            img[int(3 * v):int(5 * v), int(3 * u):int(5 * u), :3] = (170, 174, 182)
+        if part == 'body':
+            img[int(7.2 * v):int(8.1 * v), :, :3] = (214, 40, 46)
+            if face == 'front':
+                img[int(2.5 * v):int(5.5 * v), int(2 * u):int(6 * u), :3] = (178, 182, 190)
+                img[int(3.2 * v):int(4.6 * v), int(3 * u):int(5 * u), :3] = (40, 50, 70)
+                img[int(3.4 * v):int(3.8 * v), int(3.2 * u):int(3.8 * u), :3] = (90, 200, 255)
+                img[int(1.0 * v):int(1.8 * v), int(5.4 * u):int(7 * u), :3] = (40, 90, 200)
+            if face == 'back':
+                img[int(1 * v):int(6.5 * v), int(1 * u):int(7 * u), :3] = (200, 204, 210)
+        if part == 'arm':
+            img[int(3.0 * v):int(3.8 * v), :, :3] = (214, 40, 46)
+            img[int(9.8 * v):, :, :3] = (54, 60, 74)
+        if part == 'leg':
+            img[int(3.5 * v):int(5.5 * v), int(0.6 * u):int(3.4 * u), :3] = (196, 200, 208) if face == 'front' else img[int(3.5 * v):int(5.5 * v), int(0.6 * u):int(3.4 * u), :3]
+            img[int(9.6 * v):, :, :3] = (60, 66, 80)
+        bevel(img, face, 0.12)
     elif mat == 'skin':
         base((214, 168, 134)); img[..., :3] *= (1 + fine(h, w, 0.04))[..., None]
     elif mat == 'face':
@@ -367,6 +465,24 @@ for sx in (-1, 1):
     u6.append(P(n + 'c', (-0.6, -0.7, -0.4), (1.2, 0.7, 0.8), 'fluff', pivot=(0, -3.4, 0), parent=n + 'b'))
 MODELS['bunny_hat'] = dict(attach='head', parts=u6)
 
+
+# Neon Royal Shield — black/purple plate, gold-orange honeycomb, neon frame, purple+gold corners, glossy core, handle
+sd = [P('plate', (-6, -11, -0.75), (12, 22, 1.5), 'shield_face')]
+for n, frm, size in (('ft', (-6.5, -11.5, -1.05), (13, 0.9, 2.1)), ('fb', (-6.5, 10.6, -1.05), (13, 0.9, 2.1)),
+                     ('fl', (-6.5, -10.6, -1.05), (0.9, 21.2, 2.1)), ('fr', (5.6, -10.6, -1.05), (0.9, 21.2, 2.1))):
+    sd.append(P(n, frm, size, 'neon'))
+for i, (cx_, cy_) in enumerate(((-6.0, -11.0), (6.0, -11.0), (-6.0, 11.0), (6.0, 11.0))):
+    sd.append(box_c('cn%d' % i, cx_, cy_ - 1.05, -0.0, 2.1, 2.1, 2.7, 'purple_metal'))
+    sd.append(box_c('cg%d' % i, cx_, cy_ - 0.55, -1.45, 1.1, 1.1, 0.4, 'gold'))
+sd.append(P('core', (-2.2, -2.2, -0.35), (4.4, 4.4, 0.7), 'void', pivot=(0, 0, -1.0), rot=(0, 0, 45)))
+sd.append(P('core_ring', (-2.7, -2.7, -0.2), (5.4, 5.4, 0.35), 'gold', pivot=(0, 0, -0.8), rot=(0, 0, 45)))
+sd.append(P('core_glow', (-0.8, -0.8, -0.25), (1.6, 1.6, 0.5), 'neon', pivot=(0, 0, -1.5), rot=(0, 0, 45)))
+for (x, y) in ((0, -6.5), (0, 6.5), (-3.6, 0), (3.6, 0)):
+    sd.append(box_c('stud%d%d' % (x, y), x, y - 0.4, -0.95, 0.8, 0.8, 0.4, 'gold'))
+sd += [box_c('post_t', 0, -3.6, 1.35, 1.2, 1.2, 1.2, 'gunmetal'), box_c('post_b', 0, 2.4, 1.35, 1.2, 1.2, 1.2, 'gunmetal'),
+       box_c('grip', 0, -3.6, 2.3, 1.6, 7.2, 0.9, 'purple_metal')]
+MODELS['neon_shield'] = dict(attach='shield', parts=sd)
+
 # Rabbit Ears — two-segment furry ears that flop back at the tip, pink inner
 e = []
 for side, sgn in (('l', -1), ('r', 1)):
@@ -390,6 +506,15 @@ for i, bx in enumerate((-2.35, -1.0, 0.35)):
     k.append(P(n + 'b', (-0.2, 0, -0.35), (0.4, 3.0, 0.7), 'blade', pivot=(0, 4.0, 0), rot=(18, 0, 0), parent=n))
     k.append(P(n + 'c', (-0.12, 0, -0.2), (0.25, 1.8, 0.4), 'blade', pivot=(0, 3.0, 0), rot=(20, 0, 0), parent=n + 'b'))
 MODELS['claws'] = dict(attach='arms', parts=k)
+
+ASTRO = dict(
+    head=dict(pivot=(0, 0, 0), parts=[P('h', (-4.4, -8.6, -4.4), (8.8, 8.8, 8.8), 'astro_head')]),
+    body=dict(pivot=(0, 0, 0), parts=[P('b', (-4.2, 0, -2.2), (8.4, 12, 4.4), 'astro_body'), P('pack', (-3.4, 0.6, 2.2), (6.8, 8.5, 2.6), 'astro_pack')]),
+    right_arm=dict(pivot=(-5, 2, 0), parts=[P('ra', (-3.2, -2, -2.2), (4.4, 12, 4.4), 'astro_arm')]),
+    left_arm=dict(pivot=(5, 2, 0), parts=[P('la', (-1.2, -2, -2.2), (4.4, 12, 4.4), 'astro_arm')]),
+    right_leg=dict(pivot=(-1.9, 12, 0), parts=[P('rl', (-2.2, 0, -2.2), (4.4, 12, 4.4), 'astro_leg')]),
+    left_leg=dict(pivot=(1.9, 12, 0), parts=[P('ll', (-2.2, 0, -2.2), (4.4, 12, 4.4), 'astro_leg')]),
+)
 
 # Preview mannequin (not exported) — part-local boxes + attachments
 BODY = dict(
@@ -455,7 +580,7 @@ def export(outdir):
                               from_=p['frm'], size=p['size'], uv=p['uv']) for p in m['parts']])
         txt = json.dumps(js, indent=1).replace('"from_"', '"from"')
         open(f'{outdir}/models/{key}.json', 'w').write(txt)
-    for key, b in BODY.items():
+    for key, b in list(BODY.items()) + list(ASTRO.items()):
         tex, glow, ts = build_atlas(b['parts'])
         b['tex'] = tex; b['glow'] = None; b['texsize'] = ts
 

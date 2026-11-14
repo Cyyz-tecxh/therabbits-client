@@ -9,6 +9,10 @@ public final class Wearables {
     public static final String[] ARM_IDS = {"none", "claws"};
     public static final String[] ARM_NAMES = {"None", "Claws"};
 
+    public static final String[] SHIELD_IDS = {"none", "neon_shield"};
+    public static final String[] SHIELD_NAMES = {"None", "Neon Royal Shield"};
+
+    public static boolean validShield(String id) { return java.util.Arrays.asList(SHIELD_IDS).contains(id); }
     public static boolean validHat(String id) { return java.util.Arrays.asList(HAT_IDS).contains(id); }
     public static boolean validArms(String id) { return java.util.Arrays.asList(ARM_IDS).contains(id); }
 }

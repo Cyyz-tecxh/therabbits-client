@@ -20,7 +20,9 @@
     "ItemEntityRendererMixin",
     "ItemInHandRendererMixin",
     "AbstractContainerScreenMixin",
-    "PlayerTabOverlayMixin"
+    "PlayerTabOverlayMixin",
+    "ShieldSpecialRendererMixin",
+    "ItemInHandLayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

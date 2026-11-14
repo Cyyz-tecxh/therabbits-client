@@ -40,6 +40,7 @@ def quads_for(parts, tex, texsize, glow, base):
     return out
 
 AMB, DIF = 0.42, 0.68
+LAST_ZB = None
 LIGHT = np.array([-0.45, -0.75, -0.5]); LIGHT /= np.linalg.norm(LIGHT)
 
 def render(quads, W, H, yaw, pitch, scale, cx, cy):
@@ -88,6 +89,8 @@ def render(quads, W, H, yaw, pitch, scale, cx, cy):
         # clear glow where an opaque non-glow surface wins
         if glow is None:
             gl[Y0:Y1, X0:X1][win] = 0
+    global LAST_ZB
+    LAST_ZB = zb
     return col, gl, mask
 
 def scene(key, yaw, pitch, pose):
