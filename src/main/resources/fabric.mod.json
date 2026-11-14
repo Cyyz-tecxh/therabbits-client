@@ -3,7 +3,7 @@
   "id": "therabbits",
   "version": "${version}",
   "name": "TheRabbits Client",
-  "description": "TheRabbits Client for Fabric 1.21.11.",
+  "description": "PvP Client",
   "authors": ["TheRabbits"],
   "license": "All-Rights-Reserved",
   "icon": "assets/therabbits/icon.png",
