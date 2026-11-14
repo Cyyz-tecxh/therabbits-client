@@ -364,7 +364,9 @@ public class ShowcaseTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> { mc.options.hideGui = false; mc.setScreen(new com.therabbits.client.gui.HubScreen(null)); });
             frames(ctx, "c25hub", 3);
             ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.CosmeticsScreen(null)));
-            frames(ctx, "c26locker", 4);
+            frames(ctx, "c26locker", 3);
+            ctx.runOnClient(mc -> { com.therabbits.client.cosmetics.CosmeticPreview.set("hat", "royal_crown"); com.therabbits.client.cosmetics.CosmeticPreview.set("aura", "snow_aura"); });
+            frames(ctx, "c26tryon", 3);
             ctx.runOnClient(mc -> {
                 mc.setScreen(null);
                 mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);

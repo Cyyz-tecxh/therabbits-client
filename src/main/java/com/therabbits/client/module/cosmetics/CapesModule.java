@@ -29,6 +29,8 @@ public class CapesModule extends Module {
 
     /** Your own cape texture (shown right away, even before sharing). */
     public static ClientAsset.Texture ownCape() {
+        String t = com.therabbits.client.cosmetics.CosmeticPreview.get("cape");
+        if (t != null) return Capes.texture(t);
         return instance != null && instance.enabled() ? Capes.texture(instance.capeId()) : null;
     }
 

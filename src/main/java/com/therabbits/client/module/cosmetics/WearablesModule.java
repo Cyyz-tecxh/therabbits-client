@@ -41,27 +41,30 @@ public class WearablesModule extends Module {
 
     public static String hatFor(Player p) {
         if (instance == null) return null;
-        if (isMe(p)) return instance.hatId();
+        if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("hat"); return t != null ? t : instance.hatId(); }
         return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.hatOf(p.getUUID()) : null;
     }
 
     public static String shieldFor(Player p) {
         if (instance == null) return null;
-        if (isMe(p)) return instance.shieldId();
+        if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("shield"); return t != null ? t : instance.shieldId(); }
         return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.shieldOf(p.getUUID()) : null;
     }
 
     public static String auraFor(Player p) {
         if (instance == null) return null;
-        if (isMe(p)) return instance.auraId();
+        if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("aura"); return t != null ? t : instance.auraId(); }
         return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.auraOf(p.getUUID()) : null;
     }
 
-    public static String ownShield() { return instance == null ? null : instance.shieldId(); }
+    public static String ownShield() {
+        String t = com.therabbits.client.cosmetics.CosmeticPreview.get("shield");
+        return t != null ? t : instance == null ? null : instance.shieldId();
+    }
 
     public static String armsFor(Player p) {
         if (instance == null) return null;
-        if (isMe(p)) return instance.armsId();
+        if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("arms"); return t != null ? t : instance.armsId(); }
         return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.armsOf(p.getUUID()) : null;
     }
 }
