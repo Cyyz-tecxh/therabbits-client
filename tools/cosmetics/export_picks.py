@@ -12,6 +12,10 @@ def atlas(parts):
 
 def write(key, attach, parts):
     tex, glow, (tw, th) = atlas(parts)
+    if glow is not None:   # only real light sources glow; faint full-body glow would darken the model in game
+        g = glow.astype(int)
+        dim = g[..., :3].max(axis=-1) < 70
+        glow = glow.copy(); glow[dim] = 0
     Image.fromarray(tex, 'RGBA').save(f'{OUT}/textures/cosmetics/{key}.png')
     if glow is not None: Image.fromarray(glow, 'RGBA').save(f'{OUT}/textures/cosmetics/{key}_glow.png')
     js = dict(attach=attach, texture=[tw, th], glow=glow is not None,

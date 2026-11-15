@@ -45,7 +45,7 @@ KOI_N = 14
 KOI_W = [2.5, 3.1, 3.5, 3.7, 3.7, 3.5, 3.2, 2.8, 2.4, 2.0, 1.6, 1.2, 0.85, 0.6]
 KOIS = [('a', 'koipat:3:FFFFFF:E8301C:000000:0.02', 'fin:FFE4DA'),      # kohaku: white with red
         ('b', 'koipat:7:FFC23A:FFF6E0:000000', 'fin:FFE7A8'),      # yamabuki: gold
-        ('c', 'koipat:11:131316:F2F2EE:000000:0.24', 'fin:2A2A32')]     # karasu: black with white + orange
+        ]
 def build_koi():
     ps = []
     for f, mat, fin in KOIS:
@@ -69,15 +69,15 @@ def build_koi():
     for i in range(12):
         ps.append(P('kbub%d' % i, (-0.25, -0.25, -0.25), (0.5, 0.5, 0.5), 'neon:CFF4FF'))
     return ps
-add('koi', 'Koi Spirits', 'AURAS', 'Three spirit koi (red, gold, black) swim around you · bubbles rise', build_koi())
+add('koi', 'Koi Spirits', 'AURAS', 'Two spirit koi (red and gold) swim around you · bubbles rise', build_koi())
 
 def koi_path(s, k):
-    return (math.sin(s) * 13.5, 7 + 3.0 * math.sin(s * 2 + 1) + (k - 1) * 4.5, math.sin(2 * s) * 9.5)
+    return (math.sin(s) * 13.5, 7 + 3.0 * math.sin(s * 2 + 1) - 4.5 * k + 2, math.sin(2 * s) * 9.5)
 
 def pose_koi(t, ps0):
     ps = copy.deepcopy(ps0); by = {p['name']: p for p in ps}
     for k, (f, _, _) in enumerate(KOIS):
-        s0 = t * 0.55 + k * 2 * math.pi / 3
+        s0 = t * 0.55 + k * math.pi
         pts = [koi_path(s0 - i * 0.085, k) for i in range(KOI_N + 1)]
         hp = koi_path(s0 + 0.085, k)
         for i in range(KOI_N):

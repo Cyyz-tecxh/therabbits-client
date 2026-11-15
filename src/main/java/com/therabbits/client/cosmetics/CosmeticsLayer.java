@@ -211,18 +211,18 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     }
 
     private static float[] koiPath(float s, int k) {
-        return new float[]{sin(s) * 13.5f, 7f + 3f * sin(s * 2f + 1f) + (k - 1) * 4.5f, sin(2f * s) * 9.5f};
+        return new float[]{sin(s) * 13.5f, 7f + 3f * sin(s * 2f + 1f) - 4.5f * k + 2f, sin(2f * s) * 9.5f};
     }
 
     /** Two koi swim figure-eights around you, tails swishing; bubbles rise. */
     private static void animateKoi(ModelPart root, float t) {
-        String[] fish = {"a", "b", "c"};
+        String[] fish = {"a", "b"};
         for (int k = 0; k < fish.length; k++) {
             String f = fish[k];
             int n = 0;
             while (root.hasChild("k" + f + n)) n++;
             if (n == 0) continue;
-            float s0 = t * 0.55f + k * (float) (Math.PI * 2 / 3);
+            float s0 = t * 0.55f + k * (float) Math.PI;
             float[] prev = koiPath(s0 + 0.085f, k);
             for (int i = 0; i < n; i++) {
                 float[] pt = koiPath(s0 - i * 0.085f, k);
