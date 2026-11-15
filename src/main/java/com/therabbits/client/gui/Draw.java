@@ -76,9 +76,79 @@ public final class Draw {
         g.blit(RenderPipelines.GUI_TEXTURED, LOGO, x, y, 0, 0, size, size, 512, 512, 512, 512);
     }
 
+    /** Premium switch: rounded track, glowing when on, round knob. */
     public static void toggle(GuiGraphics g, int x, int y, boolean on) {
-        rect(g, x, y, 18, 10, on ? Theme.accent() : Theme.OFF);
-        rect(g, on ? x + 9 : x + 1, y + 1, 8, 8, on ? Theme.onAccent() : 0xFF9A9A9A);
+        if (on) glow(g, x, y, 20, 10, 5, Theme.accent(), 3);
+        rgrad(g, x, y, 20, 10, 5, on ? Theme.accent() : 0xFF2E2E34, on ? shade(Theme.accent(), 0.75f) : 0xFF222227);
+        rrect(g, on ? x + 11 : x + 1, y + 1, 8, 8, 4, on ? 0xFFFFFFFF : 0xFF8C8C94);
+    }
+
+    // ---------------------------------------------------------------- rounded shapes
+    private static int inset(int r, int i) {
+        double d = r - i - 0.5;
+        return (int) Math.round(r - Math.sqrt(Math.max(0, r * r - d * d)));
+    }
+
+    /** Filled rounded rectangle. */
+    public static void rrect(GuiGraphics g, int x, int y, int w, int h, int r, int color) {
+        r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+        for (int i = 0; i < r; i++) {
+            int in = inset(r, i);
+            g.fill(x + in, y + i, x + w - in, y + i + 1, color);
+            g.fill(x + in, y + h - 1 - i, x + w - in, y + h - i, color);
+        }
+        g.fill(x, y + r, x + w, y + h - r, color);
+    }
+
+    /** Rounded rectangle with a vertical gradient. */
+    public static void rgrad(GuiGraphics g, int x, int y, int w, int h, int r, int top, int bottom) {
+        r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+        for (int i = 0; i < h; i++) {
+            int in = i < r ? inset(r, i) : i >= h - r ? inset(r, h - 1 - i) : 0;
+            g.fill(x + in, y + i, x + w - in, y + i + 1, lerp(top, bottom, h <= 1 ? 0 : (float) i / (h - 1)));
+        }
+    }
+
+    /** 1px rounded outline. */
+    public static void routline(GuiGraphics g, int x, int y, int w, int h, int r, int color) {
+        r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+        int prev = r;
+        for (int i = 0; i < r; i++) {
+            int in = inset(r, i), a = Math.min(prev, in + 1);
+            g.fill(x + in, y + i, x + Math.max(in + 1, a), y + i + 1, color);
+            g.fill(x + w - Math.max(in + 1, a), y + i, x + w - in, y + i + 1, color);
+            g.fill(x + in, y + h - 1 - i, x + Math.max(in + 1, a), y + h - i, color);
+            g.fill(x + w - Math.max(in + 1, a), y + h - 1 - i, x + w - in, y + h - i, color);
+            prev = in;
+        }
+        g.fill(x + r, y, x + w - r, y + 1, color);
+        g.fill(x + r, y + h - 1, x + w - r, y + h, color);
+        g.fill(x, y + r, x + 1, y + h - r, color);
+        g.fill(x + w - 1, y + r, x + w, y + h - r, color);
+    }
+
+    /** Soft glow around a rounded box. */
+    public static void glow(GuiGraphics g, int x, int y, int w, int h, int r, int color, int spread) {
+        int a0 = (color >>> 24) == 0 ? 0xFF : (color >>> 24);
+        for (int i = spread; i >= 1; i--) {
+            int a = (int) (a0 * 0.16f * (1f - (i - 1f) / spread));
+            routline(g, x - i, y - i, w + 2 * i, h + 2 * i, r + i, (a << 24) | (color & 0xFFFFFF));
+        }
+    }
+
+    public static int lerp(int a, int b, float t) {
+        t = Math.max(0, Math.min(1, t));
+        int r = 0;
+        for (int s = 0; s <= 24; s += 8) {
+            int ca = (a >>> s) & 0xFF, cb = (b >>> s) & 0xFF;
+            r |= ((int) (ca + (cb - ca) * t) & 0xFF) << s;
+        }
+        return r;
+    }
+
+    public static int shade(int c, float k) {
+        int r = (int) (((c >> 16) & 255) * k), gg = (int) (((c >> 8) & 255) * k), b = (int) ((c & 255) * k);
+        return (c & 0xFF000000) | (Math.min(255, r) << 16) | (Math.min(255, gg) << 8) | Math.min(255, b);
     }
 
     public static boolean inside(double mx, double my, int x, int y, int w, int h) {

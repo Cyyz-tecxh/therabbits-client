@@ -29,14 +29,14 @@ public class HubScreen extends Screen {
         float t = Mth.clamp((System.currentTimeMillis() - opened) / 160f, 0, 1);
         g.fill(0, 0, width, height, ((int) (t * 0x99)) << 24);
         int cx = width / 2, cy = cy() + (int) ((1 - t) * 8);
+        Draw.glow(g, cx - 28, cy - 70, 56, 56, 14, Theme.accent(0x90), 5);
         Draw.logo(g, cx - 28, cy - 70, 56);
         // [emote] [  MODS  ] [cosmetics]
         int bw = 100, sq = 22, gap = 5, y = cy;
         int x0 = cx - bw / 2 - gap - sq, x1 = cx - bw / 2, x2 = cx + bw / 2 + gap;
         square(g, x0, y, sq, mx, my, ICON_EMOTE);
         boolean hm = Draw.inside(mx, my, x1, y, bw, sq);
-        Draw.rect(g, x1, y, bw, sq, hm ? Theme.accent(0xF0) : 0xE0161619);
-        Draw.outline(g, x1, y, bw, sq, 0x50FFFFFF);
+        tile(g, x1, y, bw, sq, hm);
         Draw.centered(g, "MODS", cx, y + 7, hm ? Theme.onAccent() : 0xFFEDEDED);
         square(g, x2, y, sq, mx, my, ICON_SHIRT);
         String hint = Draw.inside(mx, my, x0, y, sq, sq) ? "Emotes (G)" : Draw.inside(mx, my, x2, y, sq, sq) ? "Cosmetics" : hm ? "Mods & settings" : "";
@@ -45,10 +45,15 @@ public class HubScreen extends Screen {
         super.render(g, mx, my, delta);
     }
 
+    private static void tile(GuiGraphics g, int x, int y, int w, int h, boolean hover) {
+        Draw.glow(g, x, y, w, h, 7, Theme.accent(hover ? 0xFF : 0x50), hover ? 4 : 2);
+        if (hover) Draw.rgrad(g, x, y, w, h, 7, Theme.accent(), Draw.shade(Theme.accent(), 0.75f));
+        else { Draw.rgrad(g, x, y, w, h, 7, 0xF01E1E23, 0xF0121215); Draw.routline(g, x, y, w, h, 7, 0x40FFFFFF); }
+    }
+
     private static void square(GuiGraphics g, int x, int y, int s, int mx, int my, String[] icon) {
         boolean h = Draw.inside(mx, my, x, y, s, s);
-        Draw.rect(g, x, y, s, s, h ? Theme.accent(0xF0) : 0xE0161619);
-        Draw.outline(g, x, y, s, s, 0x50FFFFFF);
+        tile(g, x, y, s, s, h);
         int c = h ? Theme.onAccent() : 0xFFBDBDBD;
         for (int r = 0; r < icon.length; r++)
             for (int col = 0; col < icon[r].length(); col++)

@@ -90,7 +90,7 @@ public class ModMenuScreen extends Screen {
         W = Math.min(560, width - 16);
         H = Math.min(320, height - 16);
         int sw = Math.min(150, W / 3);
-        searchBox = new EditBox(font, left() + W - sw - 12, top() + 14, sw - 8, 12, Component.literal("Search"));
+        searchBox = new EditBox(font, left() + W - sw - 2, top() + 15, sw - 18, 12, Component.literal("Search"));
         searchBox.setBordered(false);
         searchBox.setMaxLength(32);
         searchBox.setTextColor(0xFFFFFFFF);
@@ -143,10 +143,16 @@ public class ModMenuScreen extends Screen {
 
         int x = left(), y = top();
         // panel with a soft drop shadow
-        for (int i = 1; i <= 6; i++) g.fill(x - i, y - i + 3, x + W + i, y + H + i + 3, 0x0C000000);
-        Draw.rect(g, x, y, W, H, 0xF00B0B0B);
-        Draw.outline(g, x, y, W, H, 0x30FFFFFF);
-        g.fill(x, y, x + W, y + 1, Theme.accent(0xC0));
+        for (int i = 1; i <= 10; i++) Draw.rrect(g, x - i, y - i + 4, W + 2 * i, H + 2 * i, 10 + i, 0x07000000);
+        Draw.glow(g, x, y, W, H, 10, Theme.accent(0x90), 4);
+        Draw.rgrad(g, x, y, W, H, 10, 0xF8141418, 0xF808080A);
+        Draw.routline(g, x, y, W, H, 10, 0x2EFFFFFF);
+        // accent light along the top edge, fading out to the sides
+        for (int i = 0; i < W - 40; i++) {
+            float f = 1f - Math.abs(i - (W - 40) / 2f) / ((W - 40) / 2f);
+            g.fill(x + 20 + i, y, x + 21 + i, y + 1, Theme.accent((int) (0xE0 * f)));
+            g.fill(x + 20 + i, y + 1, x + 21 + i, y + 2, Theme.accent((int) (0x40 * f)));
+        }
 
         renderHeader(g, x, y, mouseX, mouseY);
         if (settingsFor == null) {
@@ -163,30 +169,36 @@ public class ModMenuScreen extends Screen {
         if (settingsFor == null) { editing = null; textEdit.visible = false; }
         if (toast != null && now - toastTime < 2000) {
             int tw = Draw.width(toast) + 20;
-            Draw.rect(g, width / 2 - tw / 2, top() - 22 + 0, tw, 16, 0xF0FFFFFF);
-            Draw.centered(g, toast, width / 2, top() - 18, 0xFF000000);
+            Draw.glow(g, width / 2 - tw / 2, top() - 22, tw, 16, 8, Theme.accent(), 3);
+            Draw.rgrad(g, width / 2 - tw / 2, top() - 22, tw, 16, 8, Theme.accent(), Draw.shade(Theme.accent(), 0.8f));
+            Draw.centered(g, toast, width / 2, top() - 18, Theme.onAccent());
         }
         super.render(g, mouseX, mouseY, delta);   // search box on top (not scaled; it sits in the header)
     }
 
     // ---------- header ----------
     private void renderHeader(GuiGraphics g, int x, int y, int mx, int my) {
+        Draw.glow(g, x + 8, y + 5, 30, 30, 8, Theme.accent(0x80), 3);
         Draw.logo(g, x + 8, y + 5, 30);
         g.pose().pushMatrix();
         g.pose().translate(x + 42, y + 10);
         g.pose().scale(1.5f, 1.5f);
         Draw.text(g, "THE RABBITS", 0, 0, 0xFFFFFFFF);
         g.pose().popMatrix();
-        Draw.text(g, "C L I E N T", x + 43, y + 25, 0xFF7A7A7A);
+        Draw.text(g, "C L I E N T", x + 43, y + 25, Theme.accent(0xB0));
 
         if (settingsFor == null && !presetsPage) {
             int sw = Math.min(150, W / 3), sx = x + W - sw - 16, sy = y + 10;
             boolean focus = searchBox.isFocused();
-            Draw.rect(g, sx, sy, sw, 18, 0xFF161616);
-            Draw.outline(g, sx, sy, sw, 18, focus ? 0xC0FFFFFF : 0x40FFFFFF);
+            if (focus) Draw.glow(g, sx, sy, sw, 18, 9, Theme.accent(), 3);
+            Draw.rgrad(g, sx, sy, sw, 18, 9, 0xFF1C1C21, 0xFF141418);
+            Draw.routline(g, sx, sy, sw, 18, 9, focus ? Theme.accent(0xD0) : 0x38FFFFFF);
+            // magnifier
+            Draw.routline(g, sx + 6, sy + 5, 6, 6, 3, 0xFF8C8C94);
+            g.fill(sx + 11, sy + 10, sx + 13, sy + 12, 0xFF8C8C94);
             hits.add(new Hit(sx, sy, sw, 18, () -> { setFocused(searchBox); searchBox.setFocused(true); }));
         }
-        g.fill(x + 10, y + HEADER - 2, x + W - 10, y + HEADER - 1, 0x22FFFFFF);
+        g.fillGradient(x + 10, y + HEADER - 2, x + W - 10, y + HEADER - 1, 0x22FFFFFF, 0x08FFFFFF);
     }
 
     // ---------- category pills ----------
@@ -200,8 +212,7 @@ public class ModMenuScreen extends Screen {
             int w = Draw.width(label) + 28;
             boolean sel = !presetsPage && !favoritesOnly && filter == c;
             boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
-            Draw.rect(g, tx, y, w, TABS_H, sel ? Theme.accent() : hover ? 0xFF262626 : 0xFF151515);
-            if (!sel) Draw.outline(g, tx, y, w, TABS_H, 0x30FFFFFF);
+            pill(g, tx, y, w, sel, hover);
             pixelIcon(g, icon, tx + 7, y + 5, 1, sel ? Theme.onAccent() : 0xFFBBBBBB);
             Draw.text(g, label, tx + 20, y + 5, sel ? Theme.onAccent() : 0xFFD0D0D0);
             final Category fc = c;
@@ -213,8 +224,7 @@ public class ModMenuScreen extends Screen {
             int w = Draw.width(label) + 24;
             boolean sel = !presetsPage && favoritesOnly;
             boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
-            Draw.rect(g, tx, y, w, TABS_H, sel ? Theme.accent() : hover ? 0xFF262626 : 0xFF151515);
-            if (!sel) Draw.outline(g, tx, y, w, TABS_H, 0x30FFFFFF);
+            pill(g, tx, y, w, sel, hover);
             pixelIcon(g, ICON_STAR_SMALL, tx + 7, y + 6, 1, sel ? Theme.onAccent() : 0xFFE8C34A);
             Draw.text(g, label, tx + 16, y + 5, sel ? Theme.onAccent() : 0xFFD0D0D0);
             hits.add(new Hit(tx, y, w, TABS_H, () -> { selectCategory(null); favoritesOnly = true; }));
@@ -223,11 +233,39 @@ public class ModMenuScreen extends Screen {
         String label = "Presets";
         int w = Draw.width(label) + 28, px = x + W - 24 - w;
         boolean hover = Draw.inside(mx, my, px, y, w, TABS_H);
-        Draw.rect(g, px, y, w, TABS_H, presetsPage ? Theme.accent() : hover ? 0xFF262626 : 0xFF151515);
-        if (!presetsPage) Draw.outline(g, px, y, w, TABS_H, 0x30FFFFFF);
+        pill(g, px, y, w, presetsPage, hover);
         pixelIcon(g, ICON_STAR, px + 7, y + 5, 1, presetsPage ? Theme.onAccent() : 0xFFBBBBBB);
         Draw.text(g, label, px + 20, y + 5, presetsPage ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(px, y, w, TABS_H, this::showPresets));
+    }
+
+    /** Rounded category pill: accent gradient + glow when selected. */
+    private static void pill(GuiGraphics g, int x, int y, int w, boolean sel, boolean hover) {
+        if (sel) {
+            Draw.glow(g, x, y, w, TABS_H, TABS_H / 2, Theme.accent(), 3);
+            Draw.rgrad(g, x, y, w, TABS_H, TABS_H / 2, Theme.accent(), Draw.shade(Theme.accent(), 0.78f));
+        } else {
+            Draw.rgrad(g, x, y, w, TABS_H, TABS_H / 2, hover ? 0xFF2A2A30 : 0xFF1A1A1E, hover ? 0xFF202025 : 0xFF131316);
+            Draw.routline(g, x, y, w, TABS_H, TABS_H / 2, hover ? Theme.accent(0x80) : 0x2AFFFFFF);
+        }
+    }
+
+    /** Rounded input / dropdown field. */
+    private static void field(GuiGraphics g, int x, int y, int w, int h, boolean hover, boolean active) {
+        if (active) Draw.glow(g, x, y, w, h, h / 2, Theme.accent(), 2);
+        Draw.rgrad(g, x, y, w, h, h / 2, hover ? 0xFF24242A : 0xFF0F0F12, hover ? 0xFF1B1B20 : 0xFF0B0B0D);
+        Draw.routline(g, x, y, w, h, h / 2, active ? Theme.accent(0xD0) : hover ? Theme.accent(0x80) : 0x30FFFFFF);
+    }
+
+    /** Rounded accent button (filled + glow when hovered). */
+    private static void button(GuiGraphics g, int x, int y, int w, int h, boolean hover) {
+        if (hover) {
+            Draw.glow(g, x, y, w, h, h / 2, Theme.accent(), 3);
+            Draw.rgrad(g, x, y, w, h, h / 2, Theme.accent(), Draw.shade(Theme.accent(), 0.78f));
+        } else {
+            Draw.rgrad(g, x, y, w, h, h / 2, 0xFF24242A, 0xFF1A1A1F);
+            Draw.routline(g, x, y, w, h, h / 2, Theme.accent(0x60));
+        }
     }
 
     private static final String[] ICON_STAR = {
@@ -244,8 +282,9 @@ public class ModMenuScreen extends Screen {
             int cx = ax + i * (cw + GAP);
             boolean active = Presets.active(p);
             boolean hover = Draw.inside(mx, my, cx, cy, cw, ch);
-            Draw.rect(g, cx, cy, cw, ch, active ? Theme.accent() : hover ? 0xFF1E1E1E : 0xFF141414);
-            Draw.outline(g, cx, cy, cw, ch, active ? Theme.accent() : hover ? 0x90FFFFFF : 0x28FFFFFF);
+            if (active || hover) Draw.glow(g, cx, cy, cw, ch, 8, Theme.accent(active ? 0xFF : 0x90), 3);
+            if (active) Draw.rgrad(g, cx, cy, cw, ch, 8, Theme.accent(), Draw.shade(Theme.accent(), 0.7f));
+            else { Draw.rgrad(g, cx, cy, cw, ch, 8, hover ? 0xFF202026 : 0xFF17171B, 0xFF101013); Draw.routline(g, cx, cy, cw, ch, 8, hover ? Theme.accent(0x90) : 0x24FFFFFF); }
             int fg = active ? Theme.onAccent() : 0xFFFFFFFF, sub = active ? 0xFF404040 : 0xFF7A7A7A;
             Draw.text(g, p.name(), cx + 8, cy + 8, fg);
             String d = p.description();
@@ -264,22 +303,20 @@ public class ModMenuScreen extends Screen {
             final int slot = i;
             int cx = ax + i * (scw + GAP);
             boolean has = Presets.hasSlot(i);
-            Draw.rect(g, cx, sy, scw, sch, 0xFF141414);
-            Draw.outline(g, cx, sy, scw, sch, 0x28FFFFFF);
+            Draw.rgrad(g, cx, sy, scw, sch, 8, 0xFF17171B, 0xFF101013);
+            Draw.routline(g, cx, sy, scw, sch, 8, has ? Theme.accent(0x50) : 0x24FFFFFF);
             Draw.text(g, "Custom " + (i + 1), cx + 8, sy + 8, 0xFFFFFFFF);
             Draw.text(g, Presets.slotInfo(i), cx + 8, sy + 20, 0xFF7A7A7A);
             int bw = (scw - 24) / 2, by = sy + sch - 22;
             // Save
             boolean hs = Draw.inside(mx, my, cx + 8, by, bw, 16);
-            Draw.rect(g, cx + 8, by, bw, 16, hs ? Theme.accent() : 0xFF1C1C1C);
-            Draw.outline(g, cx + 8, by, bw, 16, 0x40FFFFFF);
+            button(g, cx + 8, by, bw, 16, hs);
             Draw.centered(g, "Save", cx + 8 + bw / 2, by + 4, hs ? Theme.onAccent() : 0xFFD0D0D0);
             hits.add(new Hit(cx + 8, by, bw, 16, () -> { Presets.saveSlot(slot); toast("Saved to Custom " + (slot + 1)); }));
             // Load
             int lx = cx + 16 + bw;
             boolean hl = has && Draw.inside(mx, my, lx, by, bw, 16);
-            Draw.rect(g, lx, by, bw, 16, !has ? 0xFF101010 : hl ? Theme.accent() : 0xFF1C1C1C);
-            Draw.outline(g, lx, by, bw, 16, has ? 0x40FFFFFF : 0x18FFFFFF);
+            if (has) button(g, lx, by, bw, 16, hl); else { Draw.rrect(g, lx, by, bw, 16, 8, 0xFF101013); Draw.routline(g, lx, by, bw, 16, 8, 0x14FFFFFF); }
             Draw.centered(g, "Load", lx + bw / 2, by + 4, !has ? 0xFF4A4A4A : hl ? Theme.onAccent() : 0xFFD0D0D0);
             if (has) hits.add(new Hit(lx, by, bw, 16, () -> { Presets.loadSlot(slot); toast("Loaded Custom " + (slot + 1)); }));
         }
@@ -334,29 +371,37 @@ public class ModMenuScreen extends Screen {
             int lift = (int) (hv * 2);
             ty -= lift;
 
-            Draw.rect(g, tx, ty, tw, TILE_H, blend(0xFF141414, 0xFF1E1E1E, hv));
-            Draw.outline(g, tx, ty, tw, TILE_H, hv > 0.05f ? Theme.accent((int) (0x28 + 0x90 * hv)) : 0x28FFFFFF);
+            // card: rounded, gradient, accent-tinted and glowing when enabled
+            if (on > 0.02f || hv > 0.02f) Draw.glow(g, tx, ty, tw, TILE_H, 8, Theme.accent((int) (0xFF * Math.max(on * 0.8f, hv))), 3);
+            int topC = Draw.lerp(Draw.lerp(0xFF17171B, 0xFF202026, hv), Draw.lerp(0xFF17171B, Theme.accent(0xFF), 0.16f), on);
+            int botC = Draw.lerp(0xFF101013, 0xFF0F1014, on);
+            Draw.rgrad(g, tx, ty, tw, TILE_H, 8, topC, botC);
+            Draw.routline(g, tx, ty, tw, TILE_H, 8, on > 0.5f ? Theme.accent((int) (0x60 + 0x60 * hv)) : hv > 0.05f ? Theme.accent((int) (0x30 + 0x80 * hv)) : 0x22FFFFFF);
+            g.fill(tx + 8, ty + 1, tx + tw - 8, ty + 2, 0x14FFFFFF);   // top sheen
 
-            // picture badge
+            // icon badge: rounded square, glows when on
             int bx = tx + 8, by = ty + 8;
-            Draw.rect(g, bx, by, 22, 22, blend(0xFF1A1A1A, 0xFF2C2C2C, on));
-            Draw.outline(g, bx, by, 22, 22, Theme.accent((int) (0x30 + 0xA0 * on)));
+            if (on > 0.02f) Draw.glow(g, bx, by, 22, 22, 6, Theme.accent((int) (0xFF * on)), 2);
+            Draw.rgrad(g, bx, by, 22, 22, 6, Draw.lerp(0xFF202026, Draw.shade(Theme.accent(), 0.45f), on), Draw.lerp(0xFF16161A, Draw.shade(Theme.accent(), 0.25f), on));
+            Draw.routline(g, bx, by, 22, 22, 6, Theme.accent((int) (0x30 + 0xA0 * on)));
             ModuleIcons.draw(g, m.name(), bx + 3, by + 3, 16);
-            if (on < 0.99f) Draw.rect(g, bx + 1, by + 1, 20, 20, ((int) (150 * (1 - on)) << 24) | 0x0B0B0B);
+            if (on < 0.99f) Draw.rrect(g, bx + 1, by + 1, 20, 20, 5, ((int) (150 * (1 - on)) << 24) | 0x0B0B0B);
 
             int textX = bx + 28;
             Draw.text(g, m.name(), textX, by + 2, blend(0xFF9A9A9A, 0xFFFFFFFF, on));
             String d = m.description();
             int maxW = tw - (textX - tx) - 8;
             if (Draw.width(d) > maxW) d = Draw.trim(d, maxW - 6 + 6);
-            Draw.text(g, d, textX, by + 13, 0xFF6A6A6A);
+            Draw.text(g, d, textX, by + 13, 0xFF74747C);
 
             // status bar along the bottom
             int sy = ty + TILE_H - 16;
-            Draw.text(g, m.enabled() ? "ENABLED" : "DISABLED", tx + 8, sy + 4, blend(0xFF5A5A5A, 0xFFFFFFFF, on));
-            int barX = tx + 8, barW = tw - 16 - (m.settings().isEmpty() ? 0 : 16);
-            g.fill(barX, sy + 13, barX + barW, sy + 14, 0x30FFFFFF);
-            g.fill(barX, sy + 13, barX + (int) (barW * on), sy + 14, Theme.accent());
+            // animated switch + state label
+            int swx = tx + 8, swy = sy + 3;
+            if (on > 0.02f) Draw.glow(g, swx, swy, 20, 10, 5, Theme.accent((int) (0xFF * on)), 2);
+            Draw.rgrad(g, swx, swy, 20, 10, 5, Draw.lerp(0xFF2E2E34, Theme.accent(), on), Draw.lerp(0xFF222227, Draw.shade(Theme.accent(), 0.75f), on));
+            Draw.rrect(g, swx + 1 + (int) (10 * on), swy + 1, 8, 8, 4, Draw.lerp(0xFF8C8C94, 0xFFFFFFFF, on));
+            Draw.text(g, m.enabled() ? "ON" : "OFF", swx + 25, swy + 1, Draw.lerp(0xFF5A5A62, Theme.accent(), on));
 
             final int ftx = tx, fty = ty;
             if (!m.settings().isEmpty()) {
@@ -415,11 +460,12 @@ public class ModMenuScreen extends Screen {
         ax += off;
 
         boolean backHover = Draw.inside(mx, my, ax, ay, 54, 18);
-        Draw.rect(g, ax, ay, 54, 18, backHover ? Theme.accent() : 0xFF151515);
-        Draw.outline(g, ax, ay, 54, 18, 0x40FFFFFF);
+        pill(g, ax, ay, 54, backHover, false);
         Draw.text(g, "‹ Back", ax + 9, ay + 5, backHover ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(ax, ay, 54, 18, () -> { settingsFor = null; pageChanged = System.currentTimeMillis(); }));
 
+        Draw.glow(g, ax + 64, ay - 2, 22, 22, 6, Theme.accent(m.enabled() ? 0xC0 : 0x40), 2);
+        Draw.rgrad(g, ax + 64, ay - 2, 22, 22, 6, Draw.shade(Theme.accent(), m.enabled() ? 0.45f : 0.15f), 0xFF15151A);
         ModuleIcons.draw(g, m.name(), ax + 66, ay, 18);
         Draw.text(g, m.name(), ax + 90, ay + 1, 0xFFFFFFFF);
         Draw.text(g, m.description(), ax + 90, ay + 11, 0xFF7A7A7A);
@@ -428,7 +474,7 @@ public class ModMenuScreen extends Screen {
         hits.add(new Hit(tgx - 4, ay, 30, 18, m::toggle));
 
         int listY = ay + 28, listH = ah - 28;
-        g.fill(ax, listY - 4, ax + aw - off, listY - 3, 0x22FFFFFF);
+        g.fillGradient(ax, listY - 4, ax + aw - off, listY - 3, Theme.accent(0x50), 0x10FFFFFF);
         int content = m.settings().size() * SETTING_ROW;
         scroll = Mth.clamp(scroll, 0, Math.max(0, content - listH));
         g.enableScissor(ax, listY, ax + aw, listY + listH);
@@ -439,8 +485,9 @@ public class ModMenuScreen extends Screen {
     private void renderSettings(GuiGraphics g, Module m, int x, int y, int w, int mx, int my, int areaY, int areaH) {
         for (Setting<?> s : m.settings()) {
             boolean rowHover = Draw.inside(mx, my, x, y, w, SETTING_ROW - 2) && my >= areaY && my < areaY + areaH;
-            Draw.rect(g, x, y, w, SETTING_ROW - 2, rowHover ? 0xFF181818 : 0xFF121212);
-            Draw.text(g, s.name(), x + 8, y + 6, 0xFFD0D0D0);
+            Draw.rgrad(g, x, y, w, SETTING_ROW - 2, 6, rowHover ? 0xFF1E1E24 : 0xFF17171B, rowHover ? 0xFF17171C : 0xFF111114);
+            if (rowHover) { Draw.routline(g, x, y, w, SETTING_ROW - 2, 6, Theme.accent(0x50)); g.fill(x + 1, y + 4, x + 3, y + SETTING_ROW - 6, Theme.accent()); }
+            Draw.text(g, s.name(), x + 8, y + 6, rowHover ? 0xFFFFFFFF : 0xFFD0D0D6);
             int cy = y + (SETTING_ROW - 2) / 2;
             if (s instanceof BoolSetting b) {
                 int tx = x + w - 28;
@@ -449,17 +496,16 @@ public class ModMenuScreen extends Screen {
             } else if (s instanceof ModeSetting ms) {
                 int bw = 120, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, hover ? 0xFF262626 : 0xFF0C0C0C);
-                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
-                Draw.text(g, "‹", bx + 4, y + 6, 0xFF8A8A8A);
-                Draw.text(g, "›", bx + bw - 8, y + 6, 0xFF8A8A8A);
+                field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, false);
+                Draw.text(g, "‹", bx + 5, y + 6, hover ? Theme.accent() : 0xFF8A8A92);
+                Draw.text(g, "›", bx + bw - 9, y + 6, hover ? Theme.accent() : 0xFF8A8A92);
                 String label = ms.display();
                 int lx = bx + bw / 2 - Draw.width(label) / 2;
                 if (ms.isColor() && !label.equals("Global")) {
                     int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(label);
                     int sw = 0xFF000000 | HudColors.rgb(idx, 0);
                     lx += 5;
-                    Draw.rect(g, lx - 11, y + 6, 7, 7, sw);
+                    Draw.rrect(g, lx - 11, y + 6, 7, 7, 3, sw);
                     Draw.text(g, label, lx, y + 6, sw);
                 } else {
                     Draw.text(g, label, lx, y + 6, 0xFFFFFFFF);
@@ -469,8 +515,7 @@ public class ModMenuScreen extends Screen {
             } else if (s instanceof TextSetting ts) {
                 int bw = Math.min(200, w / 2), bx = x + w - bw - 8;
                 boolean active = editing == ts;
-                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, 0xFF0C0C0C);
-                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, active ? 0xC0FFFFFF : 0x40FFFFFF);
+                field(g, bx, y + 2, bw, SETTING_ROW - 6, false, active);
                 if (active) {
                     textEdit.setX(bx + 4); textEdit.setY(y + 5); textEdit.setWidth(bw - 8);
                     textEdit.visible = y >= areaY && y + SETTING_ROW <= areaY + areaH;
@@ -490,16 +535,15 @@ public class ModMenuScreen extends Screen {
             } else if (s instanceof ActionSetting as) {
                 int bw = 90, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, hover ? Theme.accent() : 0xFF1C1C1C);
-                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
+                button(g, bx, y + 2, bw, SETTING_ROW - 6, hover);
                 Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? Theme.onAccent() : 0xFFD0D0D0);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, as::run);
             } else if (s instanceof KeySetting ks) {
                 int bw = 90, bx = x + w - bw - 8;
                 boolean waiting = bindingKey == ks;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                Draw.rect(g, bx, y + 2, bw, SETTING_ROW - 6, waiting ? Theme.accent() : hover ? 0xFF262626 : 0xFF0C0C0C);
-                Draw.outline(g, bx, y + 2, bw, SETTING_ROW - 6, 0x40FFFFFF);
+                if (waiting) button(g, bx, y + 2, bw, SETTING_ROW - 6, true);
+                else field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, false);
                 Draw.centered(g, waiting ? "Press a key..." : ks.display(), bx + bw / 2, y + 6, waiting ? Theme.onAccent() : 0xFFFFFFFF);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> bindingKey = ks);
             } else if (s instanceof InfoSetting in) {
@@ -509,12 +553,16 @@ public class ModMenuScreen extends Screen {
                 Draw.text(g, v, x + w - 8 - Draw.width(v), y + 6, 0xFFB8B8B8);
             } else if (s instanceof NumberSetting n) {
                 int sw = 140, sx = x + w - sw - 44;
-                Draw.rect(g, sx, cy - 1, sw, 2, 0xFF3A3A3A);
+                Draw.rrect(g, sx, cy - 2, sw, 4, 2, 0xFF2A2A30);
                 int kx = sx + (int) (n.fraction() * sw);
-                Draw.rect(g, sx, cy - 1, kx - sx, 2, 0xFFFFFFFF);
-                Draw.rect(g, kx - 3, cy - 4, 7, 8, 0xFFFFFFFF);
+                if (kx > sx + 1) Draw.rgrad(g, sx, cy - 2, kx - sx, 4, 2, Theme.accent(), Draw.shade(Theme.accent(), 0.75f));
+                Draw.glow(g, kx - 4, cy - 4, 9, 9, 4, Theme.accent(), 2);
+                Draw.rrect(g, kx - 4, cy - 4, 9, 9, 4, 0xFFFFFFFF);
+                Draw.rrect(g, kx - 2, cy - 2, 5, 5, 2, Theme.accent());
                 String v = n.display();
-                Draw.text(g, v, x + w - 8 - Draw.width(v), y + 6, 0xFFFFFFFF);
+                int vw = Draw.width(v) + 8;
+                Draw.rrect(g, x + w - 8 - vw, y + 3, vw, 12, 6, Theme.accent(0x30));
+                Draw.text(g, v, x + w - 4 - vw, y + 5, 0xFFFFFFFF);
                 addClipped(sx - 4, y, sw + 8, SETTING_ROW, areaY, areaH, () -> {
                     draggingSlider = n; sliderX = sx; sliderW = sw;
                 });
@@ -533,20 +581,17 @@ public class ModMenuScreen extends Screen {
         g.fill(x + 10, y, x + W - 10, y + 1, 0x22FFFFFF);
         int bw = 70, bx = x + 12, by = y + 5;
         boolean hover = Draw.inside(mx, my, bx, by, bw, 16);
-        Draw.rect(g, bx, by, bw, 16, hover ? Theme.accent() : 0xFF151515);
-        Draw.outline(g, bx, by, bw, 16, 0x40FFFFFF);
+        button(g, bx, by, bw, 16, hover);
         Draw.centered(g, "Edit HUD", bx + bw / 2, by + 4, hover ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(bx, by, bw, 16, () -> minecraft.setScreen(new HudEditorScreen(this))));
         int cbx = bx + bw + 6, cbw = 76;
         boolean ch = Draw.inside(mx, my, cbx, by, cbw, 16);
-        Draw.rect(g, cbx, by, cbw, 16, ch ? Theme.accent() : 0xFF151515);
-        Draw.outline(g, cbx, by, cbw, 16, 0x40FFFFFF);
+        button(g, cbx, by, cbw, 16, ch);
         Draw.centered(g, "Cosmetics", cbx + cbw / 2, by + 4, ch ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(cbx, by, cbw, 16, () -> minecraft.setScreen(new CosmeticsScreen(parent))));
         int pbx = cbx + cbw + 6, pbw = 52;
         boolean ph = Draw.inside(mx, my, pbx, by, pbw, 16);
-        Draw.rect(g, pbx, by, pbw, 16, ph ? Theme.accent() : 0xFF151515);
-        Draw.outline(g, pbx, by, pbw, 16, 0x40FFFFFF);
+        button(g, pbx, by, pbw, 16, ph);
         Draw.centered(g, "Packs", pbx + pbw / 2, by + 4, ph ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(pbx, by, pbw, 16, () -> minecraft.setScreen(new PackCustomizerScreen(this))));
 
