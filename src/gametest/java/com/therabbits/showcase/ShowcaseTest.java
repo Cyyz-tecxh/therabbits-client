@@ -94,6 +94,34 @@ public class ShowcaseTest implements FabricClientGameTest {
             mc.options.framerateLimit().set(10);   // CI has 2 CPU cores: leave them to the world generator while it loads
         });
 
+        // ================= Menus on the title screen (no world needed, so they are captured even if world loading stalls)
+        try {
+            bigWindow(ctx);
+            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.HubScreen(null)));
+            frames(ctx, "g01hub", 3);
+            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.ModMenuScreen(null)));
+            frames(ctx, "g02mods", 4);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) m.selectCategory(com.therabbits.client.module.Category.HUD); });
+            frames(ctx, "g03hud", 3);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) m.openSettings(ModuleManager.get(com.therabbits.client.module.hud.KeystrokesModule.class)); });
+            frames(ctx, "g04settings", 3);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) m.openSetting("Text Color"); });
+            frames(ctx, "g05picker", 3);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) { m.openSettings(ModuleManager.get(com.therabbits.client.module.combat.CrosshairModule.class)); } });
+            frames(ctx, "g06cross", 2);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) m.openSetting("Style"); });
+            frames(ctx, "g07dropdown", 3);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) m.showPresets(); });
+            frames(ctx, "g08presets", 2);
+            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.CosmeticsScreen(null)));
+            frames(ctx, "g09cosmetics", 3);
+            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.AccountsScreen(null)));
+            frames(ctx, "g10accounts", 2);
+            ctx.runOnClient(mc -> mc.setScreen(null));
+        } catch (Throwable t) {
+            System.out.println("[showcase] menu capture failed: " + t);
+        }
+
         // ================= In-game features (world first: it loads faster in a small window) =================
         // Superflat: the CI machine kept stalling while generating normal terrain ("Preparing spawn area").
         try (TestSingleplayerContext sp = ctx.worldBuilder().adjustSettings(s -> {
@@ -150,19 +178,19 @@ public class ShowcaseTest implements FabricClientGameTest {
             // 1b. HUD style: colors and size
             ctx.runOnClient(mc -> {
                 HudStyleModule st = ModuleManager.get(HudStyleModule.class);
-                st.textColor.set(8);   // Aqua
+                st.textColor.setRgb(0x55FFFF);   // Aqua
                 st.textSize.set(1.15);
             });
             frames(ctx, "c10style", 14);
             ctx.runOnClient(mc -> {
-                ModuleManager.get(HudStyleModule.class).textColor.set(12);  // Chroma
-                ModuleManager.get(FpsModule.class).textColor.set(4);        // FPS: Red (index 3 + Global)
+                ModuleManager.get(HudStyleModule.class).textColor.setChroma(true);  // Chroma
+                ModuleManager.get(FpsModule.class).textColor.setRgb(0xFF5555);        // FPS: red
             });
             frames(ctx, "c10style", 20);
             ctx.runOnClient(mc -> {
                 HudStyleModule st = ModuleManager.get(HudStyleModule.class);
-                st.textColor.set(0); st.textSize.set(1.0);
-                ModuleManager.get(FpsModule.class).textColor.set(0);
+                st.textColor.setRgb(0xFFFFFF); st.textSize.set(1.0);
+                ModuleManager.get(FpsModule.class).textColor.setGlobal(true);
             });
             // style settings in the mod menu
             ctx.runOnClient(mc -> {

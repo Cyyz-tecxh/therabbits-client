@@ -21,14 +21,14 @@ public final class HudStyle {
 
     /** Main text color; offset only matters for Chroma (staggers the rainbow per line). */
     public static int text(float offset) {
-        int override = current == null ? 0 : current.textColor.get();
-        int idx = override > 0 ? override - 1 : (s().enabled() ? s().textColor.get() : 0);
-        return 0xFF000000 | HudColors.rgb(idx, offset);
+        if (current != null && !current.textColor.global()) return 0xFF000000 | current.textColor.color(offset);
+        return 0xFF000000 | (s().enabled() ? s().textColor.color(offset) : 0xFFFFFF);
     }
 
     /** Secondary text color for labels like "Totem Pops" or timers. */
     public static int dim() {
-        return 0xFF000000 | HudColors.rgb(s().enabled() ? s().labelColor.get() : 2, 0);
+        if (current != null && !current.labelColor.global()) return 0xFF000000 | current.labelColor.color(0);
+        return 0xFF000000 | (s().enabled() ? s().labelColor.color(0) : 0x909090);
     }
 
     public static int bg() {

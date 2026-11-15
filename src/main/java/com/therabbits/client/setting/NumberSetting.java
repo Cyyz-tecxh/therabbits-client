@@ -13,6 +13,7 @@ public class NumberSetting extends Setting<Double> {
 
     public double min() { return min; }
     public double max() { return max; }
+    public double step() { return step; }
     public float f() { return value.floatValue(); }
     public int i() { return (int) Math.round(value); }
 

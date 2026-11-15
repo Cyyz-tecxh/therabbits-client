@@ -14,6 +14,7 @@ import com.therabbits.client.setting.TextSetting;
 import com.therabbits.client.setting.ActionSetting;
 import com.therabbits.client.setting.InfoSetting;
 import com.therabbits.client.setting.KeySetting;
+import com.therabbits.client.setting.ColorSetting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -73,6 +74,20 @@ public class ModMenuScreen extends Screen {
         Hit(int x, int y, int w, int h, Runnable action) { this(x, y, w, h, action, null); }
     }
     private boolean favoritesOnly;
+    // easier editing: dropdowns, colour picker, typed numbers, scroll on sliders
+    private ModeSetting openMode;
+    private int modeX, modeY, modeW;
+    private double modeScroll;
+    private ColorSetting openColor;
+    private int colX, colY;
+    private int dragColor;                       // 0 none, 1 saturation/brightness square, 2 hue bar
+    private final float[] hsv = new float[3];
+    private EditBox hexEdit, numEdit;
+    private NumberSetting editingNum;
+    private final List<Hit> popupHits = new ArrayList<>();
+    private int popX, popY, popW, popH;
+    private record SliderArea(int x, int y, int w, int h, NumberSetting n) {}
+    private final List<SliderArea> sliderAreas = new ArrayList<>();
     private static final String[] ICON_STAR_SMALL = {"..#..", ".###.", "#####", ".###.", ".#.#."};
 
     public ModMenuScreen(Screen parent) {
@@ -84,6 +99,9 @@ public class ModMenuScreen extends Screen {
     public void showPresets() { presetsPage = true; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
     public void selectCategory(Category c) { presetsPage = false; filter = c; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
     public void openSettings(Module m) { settingsFor = m; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    private String pendingOpen;
+    /** Test hook: open the dropdown / colour picker of a setting on the current settings page. */
+    public void openSetting(String name) { pendingOpen = name; }
 
     @Override
     protected void init() {
@@ -105,6 +123,19 @@ public class ModMenuScreen extends Screen {
         textEdit.visible = false;
         textEdit.setResponder(v -> { if (editing != null) editing.set(v); });
         addRenderableWidget(textEdit);
+        hexEdit = new EditBox(font, 0, 0, 56, 12, Component.literal("Hex"));
+        hexEdit.setBordered(false);
+        hexEdit.setMaxLength(7);
+        hexEdit.setTextColor(0xFFFFFFFF);
+        hexEdit.visible = false;
+        hexEdit.setResponder(v -> { if (openColor != null && hexEdit.isFocused() && openColor.setHex(v)) syncHsv(); });
+        addRenderableWidget(hexEdit);
+        numEdit = new EditBox(font, 0, 0, 40, 12, Component.literal("Value"));
+        numEdit.setBordered(false);
+        numEdit.setMaxLength(10);
+        numEdit.setTextColor(0xFFFFFFFF);
+        numEdit.visible = false;
+        addRenderableWidget(numEdit);
         addRenderableWidget(searchBox);
     }
 
@@ -132,6 +163,8 @@ public class ModMenuScreen extends Screen {
         float dt = Math.min(0.1f, (now - lastFrame) / 1000f);
         lastFrame = now;
         hits.clear();
+        popupHits.clear();
+        sliderAreas.clear();
 
         // pop-in: scale up from 94% while fading in
         float open = ease((now - opened) / 240f);
@@ -163,6 +196,10 @@ public class ModMenuScreen extends Screen {
             renderSettingsPage(g, x + 12, y + HEADER + 2, W - 24, H - HEADER - FOOTER - 6, mouseX, mouseY, now);
         }
         renderFooter(g, x, y + H - FOOTER, mouseX, mouseY);
+        if (settingsFor == null) { openMode = null; openColor = null; editingNum = null; }
+        renderPopups(g, mouseX, mouseY);
+        hexEdit.visible = openColor != null;
+        numEdit.visible = editingNum != null;
 
         g.pose().popMatrix();
         searchBox.visible = settingsFor == null && !presetsPage;
@@ -248,6 +285,141 @@ public class ModMenuScreen extends Screen {
             Draw.rgrad(g, x, y, w, TABS_H, TABS_H / 2, hover ? 0xFF2A2A30 : 0xFF1A1A1E, hover ? 0xFF202025 : 0xFF131316);
             Draw.routline(g, x, y, w, TABS_H, TABS_H / 2, hover ? Theme.accent(0x80) : 0x2AFFFFFF);
         }
+    }
+
+    // ---------- popups: dropdown list and colour picker ----------
+    private static final int[] PRESETS = {0xFFFFFF, 0xD0D0D0, 0x909090, 0x202020, 0xFF5555, 0xFFAA00, 0xFFFF55, 0x55FF55,
+            0x00C040, 0x55FFFF, 0x6EC6FF, 0x5577FF, 0xAA55FF, 0xFF77DD};
+
+    private void syncHsv() {
+        if (openColor == null) return;
+        int c = openColor.rgb();
+        java.awt.Color.RGBtoHSB((c >> 16) & 255, (c >> 8) & 255, c & 255, hsv);
+        if (!hexEdit.isFocused()) hexEdit.setValue(openColor.hex());
+    }
+
+    private void applyHsv() {
+        if (openColor == null) return;
+        openColor.setRgb(java.awt.Color.HSBtoRGB(hsv[0], hsv[1], hsv[2]));
+        hexEdit.setValue(openColor.hex());
+    }
+
+    private void applyNum() {
+        if (editingNum == null) return;
+        try { editingNum.set(Double.parseDouble(numEdit.getValue().trim().replace(',', '.'))); } catch (NumberFormatException ignored) {}
+        editingNum = null;
+        numEdit.setFocused(false);
+    }
+
+    private void popupPanel(GuiGraphics g, int x, int y, int w, int h) {
+        popX = x; popY = y; popW = w; popH = h;
+        for (int i = 1; i <= 6; i++) Draw.rrect(g, x - i, y - i + 3, w + 2 * i, h + 2 * i, 8 + i, 0x0C000000);
+        Draw.glow(g, x, y, w, h, 8, Theme.accent(0xA0), 3);
+        Draw.rgrad(g, x, y, w, h, 8, 0xFC1C1C22, 0xFC111114);
+        Draw.routline(g, x, y, w, h, 8, Theme.accent(0x70));
+    }
+
+    private void renderPopups(GuiGraphics g, int mx, int my) {
+        popW = 0;
+        if (openMode != null) {
+            ModeSetting ms = openMode;
+            int n = ms.count(), vis = Math.min(n, 9), ih = 14;
+            int h = vis * ih + 6, x = modeX, y = modeY + 17;
+            if (y + h > height - 4) y = modeY - h - 3;
+            modeScroll = Mth.clamp(modeScroll, 0, Math.max(0, n - vis));
+            popupPanel(g, x, y, modeW, h);
+            int first = (int) modeScroll;
+            for (int k = 0; k < vis; k++) {
+                int i = first + k, iy = y + 3 + k * ih;
+                boolean sel = ms.get() == i, hov = Draw.inside(mx, my, x + 3, iy, modeW - 6, ih);
+                if (sel) Draw.rgrad(g, x + 3, iy, modeW - 6, ih, 5, Theme.accent(), Draw.shade(Theme.accent(), 0.8f));
+                else if (hov) Draw.rrect(g, x + 3, iy, modeW - 6, ih, 5, 0x30FFFFFF);
+                String lbl = ms.label(i);
+                int tx = x + 9;
+                if (ms.isColor() && !lbl.equals("Global")) {
+                    int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(lbl);
+                    if (idx >= 0) { Draw.rrect(g, tx, iy + 4, 7, 7, 3, 0xFF000000 | HudColors.rgb(idx, 0)); tx += 11; }
+                }
+                Draw.text(g, Draw.trim(lbl, modeW - (tx - x) - 6), tx, iy + 3, sel ? Theme.onAccent() : 0xFFE0E0E6);
+                final int fi = i;
+                popupHits.add(new Hit(x + 3, iy, modeW - 6, ih, () -> { ms.set(fi); openMode = null; }));
+            }
+            if (n > vis) {   // scroll hint
+                int bh = Math.max(10, h * vis / n), by = y + (int) ((h - bh) * (modeScroll / (n - vis)));
+                g.fill(x + modeW - 3, by, x + modeW - 2, by + bh, Theme.accent(0xA0));
+            }
+        }
+        if (openColor != null) {
+            ColorSetting cs = openColor;
+            int w = 176, h = 124, x = Math.min(colX + 120 - w, width - w - 6), y = colY + 17;
+            if (y + h > height - 4) y = colY - h - 3;
+            popupPanel(g, x, y, w, h);
+            // saturation / brightness square (2px cells)
+            int sx = x + 8, sy = y + 8, ss = 80;
+            for (int i = 0; i < ss; i += 2)
+                for (int j = 0; j < ss; j += 2)
+                    g.fill(sx + i, sy + j, sx + i + 2, sy + j + 2, 0xFF000000 | java.awt.Color.HSBtoRGB(hsv[0], i / (float) ss, 1f - j / (float) ss));
+            Draw.routline(g, sx - 1, sy - 1, ss + 2, ss + 2, 2, 0x40FFFFFF);
+            int kx = sx + (int) (hsv[1] * ss), ky = sy + (int) ((1 - hsv[2]) * ss);
+            Draw.routline(g, kx - 3, ky - 3, 7, 7, 3, 0xFFFFFFFF);
+            // hue bar
+            int hx = sx + ss + 6, hw = 10;
+            for (int j = 0; j < ss; j++) g.fill(hx, sy + j, hx + hw, sy + j + 1, 0xFF000000 | java.awt.Color.HSBtoRGB(j / (float) ss, 1f, 1f));
+            int hy = sy + (int) (hsv[0] * ss);
+            g.fill(hx - 2, hy - 1, hx + hw + 2, hy + 1, 0xFFFFFFFF);
+            // right column: preview + hex + options
+            int rx = hx + hw + 8, rw = x + w - 8 - rx;
+            int cur = 0xFF000000 | cs.color(0);
+            Draw.glow(g, rx, sy, rw, 14, 5, cur, 2);
+            Draw.rrect(g, rx, sy, rw, 14, 5, cur);
+            field(g, rx, sy + 18, rw, 14, false, hexEdit.isFocused());
+            hexEdit.setX(rx + 5); hexEdit.setY(sy + 21); hexEdit.setWidth(rw - 8);
+            int by = sy + 36;
+            if (cs.allowGlobal()) {
+                boolean gh = Draw.inside(mx, my, rx, by, rw, 14);
+                chip(g, rx, by, rw, "Global", cs.global(), gh);
+                popupHits.add(new Hit(rx, by, rw, 14, () -> cs.setGlobal(!cs.global())));
+                by += 17;
+            }
+            boolean ch = Draw.inside(mx, my, rx, by, rw, 14);
+            chip(g, rx, by, rw, "Chroma", cs.chroma(), ch);
+            popupHits.add(new Hit(rx, by, rw, 14, () -> cs.setChroma(!cs.chroma())));
+            by += 17;
+            boolean rh = Draw.inside(mx, my, rx, by, rw, 14);
+            chip(g, rx, by, rw, "Reset", false, rh);
+            popupHits.add(new Hit(rx, by, rw, 14, () -> { cs.reset(); syncHsv(); }));
+            // preset swatches
+            int py = sy + ss + 8, pw = (w - 16 - (PRESETS.length - 1) * 2) / PRESETS.length;
+            for (int k = 0; k < PRESETS.length; k++) {
+                int px = x + 8 + k * (pw + 2), c = PRESETS[k];
+                boolean sel = !cs.global() && !cs.chroma() && cs.rgb() == c;
+                if (sel) Draw.glow(g, px, py, pw, pw, 3, 0xFF000000 | c, 2);
+                Draw.rrect(g, px, py, pw, pw, 3, 0xFF000000 | c);
+                if (sel || Draw.inside(mx, my, px, py, pw, pw)) Draw.routline(g, px - 1, py - 1, pw + 2, pw + 2, 3, 0xFFFFFFFF);
+                popupHits.add(new Hit(px, py, pw, pw, () -> { cs.setRgb(c); syncHsv(); }));
+            }
+        }
+    }
+
+    private static void chip(GuiGraphics g, int x, int y, int w, String label, boolean on, boolean hover) {
+        if (on) { Draw.rgrad(g, x, y, w, 14, 7, Theme.accent(), Draw.shade(Theme.accent(), 0.78f)); }
+        else { Draw.rgrad(g, x, y, w, 14, 7, hover ? 0xFF2A2A30 : 0xFF1C1C21, 0xFF151518); Draw.routline(g, x, y, w, 14, 7, hover ? Theme.accent(0x90) : 0x30FFFFFF); }
+        Draw.centered(g, label, x + w / 2, y + 3, on ? Theme.onAccent() : 0xFFD8D8DE);
+    }
+
+    private boolean pickColor(double mx, double my, boolean start) {
+        if (openColor == null || popW == 0) return false;
+        int sx = popX + 8, sy = popY + 8, ss = 80, hx = sx + ss + 6;
+        if (start) {
+            if (Draw.inside(mx, my, sx, sy, ss, ss)) dragColor = 1;
+            else if (Draw.inside(mx, my, hx - 2, sy, 14, ss)) dragColor = 2;
+            else return false;
+        }
+        if (dragColor == 1) { hsv[1] = (float) Mth.clamp((mx - sx) / ss, 0, 1); hsv[2] = (float) Mth.clamp(1 - (my - sy) / ss, 0, 1); }
+        else if (dragColor == 2) hsv[0] = (float) Mth.clamp((my - sy) / ss, 0, 0.999);
+        else return false;
+        applyHsv();
+        return true;
     }
 
     /** Rounded input / dropdown field. */
@@ -488,6 +660,13 @@ public class ModMenuScreen extends Screen {
             Draw.rgrad(g, x, y, w, SETTING_ROW - 2, 6, rowHover ? 0xFF1E1E24 : 0xFF17171B, rowHover ? 0xFF17171C : 0xFF111114);
             if (rowHover) { Draw.routline(g, x, y, w, SETTING_ROW - 2, 6, Theme.accent(0x50)); g.fill(x + 1, y + 4, x + 3, y + SETTING_ROW - 6, Theme.accent()); }
             Draw.text(g, s.name(), x + 8, y + 6, rowHover ? 0xFFFFFFFF : 0xFFD0D0D6);
+            if (!(s instanceof ActionSetting) && !(s instanceof InfoSetting) && !s.isDefault()) {   // reset to default
+                int rx = x + 14 + Draw.width(s.name());
+                boolean rh = Draw.inside(mx, my, rx - 2, y + 3, 12, 12);
+                Draw.text(g, "\u21BA", rx, y + 6, rh ? Theme.accent() : 0xFF6A6A72);
+                final Setting<?> fs = s;
+                addClipped(rx - 2, y, 12, SETTING_ROW, areaY, areaH, () -> { fs.reset(); if (fs == openColor) syncHsv(); toast("Reset " + fs.name()); });
+            }
             int cy = y + (SETTING_ROW - 2) / 2;
             if (s instanceof BoolSetting b) {
                 int tx = x + w - 28;
@@ -496,9 +675,8 @@ public class ModMenuScreen extends Screen {
             } else if (s instanceof ModeSetting ms) {
                 int bw = 120, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, false);
-                Draw.text(g, "‹", bx + 5, y + 6, hover ? Theme.accent() : 0xFF8A8A92);
-                Draw.text(g, "›", bx + bw - 9, y + 6, hover ? Theme.accent() : 0xFF8A8A92);
+                field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, openMode == ms);
+                Draw.text(g, openMode == ms ? "\u25B4" : "\u25BE", bx + bw - 10, y + 6, hover || openMode == ms ? Theme.accent() : 0xFF8A8A92);
                 String label = ms.display();
                 int lx = bx + bw / 2 - Draw.width(label) / 2;
                 if (ms.isColor() && !label.equals("Global")) {
@@ -510,8 +688,12 @@ public class ModMenuScreen extends Screen {
                 } else {
                     Draw.text(g, label, lx, y + 6, 0xFFFFFFFF);
                 }
-                addClipped(bx, y, bw / 2, SETTING_ROW, areaY, areaH, ms::previous);
-                addClipped(bx + bw / 2, y, bw - bw / 2, SETTING_ROW, areaY, areaH, ms::next);
+                final int fbx = bx, fby = y + 2;
+                if (ms.name().equals(pendingOpen)) { pendingOpen = null; openColor = null; openMode = ms; modeX = fbx; modeY = fby; modeW = 120; }
+                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> {
+                    if (openMode == ms) { openMode = null; return; }
+                    openColor = null; openMode = ms; modeX = fbx; modeY = fby; modeW = 120; modeScroll = Math.max(0, ms.get() - 3);
+                });
             } else if (s instanceof TextSetting ts) {
                 int bw = Math.min(200, w / 2), bx = x + w - bw - 8;
                 boolean active = editing == ts;
@@ -551,6 +733,22 @@ public class ModMenuScreen extends Screen {
                 int maxW = w - Draw.width(s.name()) - 28;
                 if (Draw.width(v) > maxW) v = Draw.trim(v, maxW);
                 Draw.text(g, v, x + w - 8 - Draw.width(v), y + 6, 0xFFB8B8B8);
+            } else if (s instanceof ColorSetting cs) {
+                int bw = 120, bx = x + w - bw - 8;
+                boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
+                field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, openColor == cs);
+                int sw = 0xFF000000 | (cs.global() ? 0x808080 : cs.color(0));
+                Draw.glow(g, bx + 5, y + 5, 10, 8, 3, sw, 2);
+                Draw.rrect(g, bx + 5, y + 5, 10, 8, 3, sw);
+                Draw.text(g, cs.display(), bx + 20, y + 6, cs.global() ? 0xFF9A9AA2 : 0xFFFFFFFF);
+                Draw.text(g, "\u25BE", bx + bw - 10, y + 6, hover || openColor == cs ? Theme.accent() : 0xFF8A8A92);
+                final int fbx = bx, fby = y + 2;
+                if (cs.name().equals(pendingOpen)) { pendingOpen = null; openMode = null; openColor = cs; colX = fbx; colY = fby; syncHsv(); hexEdit.setValue(cs.hex()); }
+                addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> {
+                    if (openColor == cs) { openColor = null; return; }
+                    openMode = null; openColor = cs; colX = fbx; colY = fby; syncHsv();
+                    hexEdit.setValue(cs.hex());
+                });
             } else if (s instanceof NumberSetting n) {
                 int sw = 140, sx = x + w - sw - 44;
                 Draw.rrect(g, sx, cy - 2, sw, 4, 2, 0xFF2A2A30);
@@ -560,9 +758,21 @@ public class ModMenuScreen extends Screen {
                 Draw.rrect(g, kx - 4, cy - 4, 9, 9, 4, 0xFFFFFFFF);
                 Draw.rrect(g, kx - 2, cy - 2, 5, 5, 2, Theme.accent());
                 String v = n.display();
-                int vw = Draw.width(v) + 8;
-                Draw.rrect(g, x + w - 8 - vw, y + 3, vw, 12, 6, Theme.accent(0x30));
-                Draw.text(g, v, x + w - 4 - vw, y + 5, 0xFFFFFFFF);
+                int vw = Math.max(30, Draw.width(v) + 10), vx = x + w - 8 - vw;
+                boolean vh = Draw.inside(mx, my, vx, y + 3, vw, 12);
+                if (editingNum == n) {
+                    field(g, vx, y + 2, vw, 14, false, true);
+                    numEdit.setX(vx + 5); numEdit.setY(y + 5); numEdit.setWidth(vw - 8);
+                } else {
+                    Draw.rrect(g, vx, y + 3, vw, 12, 6, Theme.accent(vh ? 0x60 : 0x30));
+                    Draw.centered(g, v, vx + vw / 2, y + 5, 0xFFFFFFFF);
+                }
+                addClipped(vx, y, vw, SETTING_ROW, areaY, areaH, () -> {   // click the number to type an exact value
+                    applyNum();
+                    editingNum = n; numEdit.setValue(n.display()); numEdit.moveCursorToEnd(false);
+                    setFocused(numEdit); numEdit.setFocused(true);
+                });
+                if (y >= areaY && y + SETTING_ROW <= areaY + areaH) sliderAreas.add(new SliderArea(sx - 4, y, sw + 8, SETTING_ROW, n));
                 addClipped(sx - 4, y, sw + 8, SETTING_ROW, areaY, areaH, () -> {
                     draggingSlider = n; sliderX = sx; sliderW = sw;
                 });
@@ -608,7 +818,18 @@ public class ModMenuScreen extends Screen {
             for (Hit h : List.copyOf(hits))
                 if (h.right() != null && Draw.inside(event.x(), event.y(), h.x(), h.y(), h.w(), h.h())) { h.right().run(); return true; }
         }
+        if (event.button() == 0 && (openMode != null || openColor != null)) {
+            double mx = event.x(), my = event.y();
+            if (openColor != null && hexEdit.mouseClicked(event, doubleClick)) { setFocused(hexEdit); return true; }
+            for (Hit h : List.copyOf(popupHits))
+                if (Draw.inside(mx, my, h.x(), h.y(), h.w(), h.h())) { h.action().run(); return true; }
+            if (pickColor(mx, my, true)) return true;
+            if (Draw.inside(mx, my, popX, popY, popW, popH)) return true;
+            openMode = null; openColor = null; hexEdit.setFocused(false);   // click outside closes the popup
+        }
         if (event.button() == 0) {
+            if (editingNum != null && numEdit.mouseClicked(event, doubleClick)) return true;
+            applyNum();
             if (settingsFor == null && searchBox.mouseClicked(event, doubleClick)) return true;
             if (editing != null && textEdit.visible && textEdit.mouseClicked(event, doubleClick)) return true;
             if (editing != null) { editing = null; textEdit.visible = false; textEdit.setFocused(false); }
@@ -628,6 +849,12 @@ public class ModMenuScreen extends Screen {
 
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        int key = event.key();
+        if (editingNum != null && (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || key == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER)) { applyNum(); return true; }
+        if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE && (openMode != null || openColor != null || editingNum != null)) {
+            openMode = null; openColor = null; editingNum = null; numEdit.setFocused(false); hexEdit.setFocused(false);
+            return true;
+        }
         if (bindingKey != null) {
             bindingKey.bind(event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE ? -1 : event.key());
             bindingKey = null;
@@ -638,6 +865,7 @@ public class ModMenuScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (dragColor != 0 && pickColor(event.x(), event.y(), false)) return true;
         if (draggingSlider != null) {
             updateSlider(event.x());
             return true;
@@ -652,11 +880,16 @@ public class ModMenuScreen extends Screen {
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         draggingSlider = null;
+        dragColor = 0;
         return super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (openMode != null) { modeScroll -= Math.signum(scrollY); return true; }
+        if (openColor != null) return true;
+        for (SliderArea a : sliderAreas)   // scroll over a slider to nudge it one step
+            if (Draw.inside(mouseX, mouseY, a.x(), a.y(), a.w(), a.h())) { a.n().set(a.n().get() + Math.signum(scrollY) * a.n().step()); return true; }
         scroll = Math.max(0, scroll - scrollY * 20);
         return true;
     }
