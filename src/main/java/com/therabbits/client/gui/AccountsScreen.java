@@ -100,8 +100,8 @@ public class AccountsScreen extends Screen {
 
     private PlayerSkin selectedSkin() { return skinOf(selected(accounts())); }
 
-    private static String kindLabel(int k) { return k == 0 ? "Launcher" : k == 1 ? "Microsoft" : "Cracked"; }
-    private static int kindColor(int k) { return k == 0 ? 0xFF9AA0AA : k == 1 ? Theme.accent() : 0xFFD9A05A; }
+    private static String kindLabel(int k) { return k == 0 ? (AccountSwitcher.mainIsPremium() ? "Premium" : "Offline") : k == 1 ? "Microsoft" : "Cracked"; }
+    private static int kindColor(int k) { return k == 0 ? (AccountSwitcher.mainIsPremium() ? Theme.accent() : 0xFF9AA0AA) : k == 1 ? Theme.accent() : 0xFFD9A05A; }
 
     // ---------------------------------------------------------------- render
     @Override
@@ -165,7 +165,7 @@ public class AccountsScreen extends Screen {
         g.pose().scale(2f, 2f);
         Draw.text(g, sel.name(), 0, 0, 0xFFFFFFFF);
         g.pose().popMatrix();
-        String sub = sel.kind() == 0 ? (AccountSwitcher.mainIsPremium() ? "Launcher account · Premium" : "Launcher account")
+        String sub = sel.kind() == 0 ? (AccountSwitcher.mainIsPremium() ? "Premium · works on every server" : "Offline account")
                 : sel.kind() == 1 ? "Microsoft · Premium · works on every server" : "Cracked · offline servers, LAN, singleplayer";
         Draw.centered(g, sub, rx + rw / 2, iy + 22, kindColor(sel.kind()));
         int by = iy + 38;
