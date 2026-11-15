@@ -405,6 +405,23 @@ public class ShowcaseTest implements FabricClientGameTest {
                 wm.aura.set(2); wm.hat.set(0);
             });
             frames(ctx, "c29snow", 16);
+            // New auras (Clockwork, Petals, Koi, Card Master decks, dragons) and pets, wider view
+            ctx.runOnClient(mc -> mc.options.fov().set(70));
+            for (int a = 3; a < com.therabbits.client.cosmetics.Wearables.AURA_IDS.length; a++) {
+                final int aa = a;
+                ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).aura.set(aa));
+                frames(ctx, "c34aura_" + com.therabbits.client.cosmetics.Wearables.AURA_IDS[a], 8);
+            }
+            ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).aura.set(0));
+            for (int pt = 1; pt < com.therabbits.client.cosmetics.Wearables.PET_IDS.length; pt++) {
+                final int pp = pt;
+                ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).pet.set(pp));
+                frames(ctx, "c35pet_" + com.therabbits.client.cosmetics.Wearables.PET_IDS[pt], 8);
+            }
+            ctx.runOnClient(mc -> {
+                ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).pet.set(0);
+                mc.options.fov().set(30);
+            });
             ctx.runOnClient(mc -> ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class).aura.set(0));
             // 17. Pack Customizer (mix tab + picker) and purple accent menus
             ctx.runOnClient(mc -> {
