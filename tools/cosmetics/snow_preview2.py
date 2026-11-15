@@ -19,7 +19,7 @@ def animate(t):
         fall = ((y0 - top) + t * (2.2 + h * 1.6)) % span
         xr, zr = (x0 * c - z0 * s) * K, (x0 * s + z0 * c) * K
         f['pivot'] = [xr + math.sin(t * (0.9 + h * 0.5) + i * 1.3) * 0.6, top + fall, zr]
-        f['rot'] = [0, FACE[0] + math.degrees(math.sin(t * (0.5 + h * 0.4) + i * 1.7) * 0.45), math.degrees(t * (0.25 + h * 0.3) * (-1 if i % 3 == 0 else 1))]
+        f['rot'] = [0, math.degrees(math.atan2(f['pivot'][0], f['pivot'][2]) + math.sin(t * (0.5 + h * 0.4) + i * 1.7) * 0.3), math.degrees(t * (0.25 + h * 0.3) * (-1 if i % 3 == 0 else 1))]
         u = fall / span
         a = u / 0.1 if u < 0.1 else (1 - u) / 0.12 if u > 0.88 else 1
         sc = (0.9 + h * 0.3) * max(0, a)

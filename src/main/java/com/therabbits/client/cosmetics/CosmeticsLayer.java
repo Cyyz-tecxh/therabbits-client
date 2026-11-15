@@ -488,7 +488,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             float fall = ((ip.y() - top) + t * (2.2f + h * 1.6f)) % span;
             f.y = top + fall;
             f.x += net.minecraft.util.Mth.sin(t * (0.9f + h * 0.5f) + i * 1.3f) * 0.6f;   // slight side-to-side sway
-            f.yRot = face + net.minecraft.util.Mth.sin(t * (0.5f + h * 0.4f) + i * 1.7f) * 0.45f;   // crystals turn toward you, with a gentle wobble
+            f.yRot = (float) Math.atan2(f.x, f.z) + net.minecraft.util.Mth.sin(t * (0.5f + h * 0.4f) + i * 1.7f) * 0.3f;   // each crystal faces outward from you, gently wobbling
             f.zRot = t * (0.25f + h * 0.3f) * (i % 3 == 0 ? -1 : 1);
             float u = fall / span;   // fade in at the top, fade out at the feet
             float a = u < 0.1f ? u / 0.1f : u > 0.88f ? (1f - u) / 0.12f : 1f;
