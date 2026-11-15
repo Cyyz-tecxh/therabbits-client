@@ -69,21 +69,23 @@ public class CosmeticsScreen extends Screen {
     public void renderBackground(GuiGraphics g, int mx, int my, float delta) {
         if (minecraft.level == null) super.renderBackground(g, mx, my, delta);
         g.fill(0, 0, width, height, 0xB80A0A0C);
+        g.fillGradient(0, 0, width, 46, 0x60000000, 0x00000000);
     }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
         hits.clear();
         // header
+        Draw.glow(g, 12, 8, 22, 22, 6, Theme.accent(0x80), 3);
         Draw.logo(g, 12, 8, 22);
         Draw.text(g, "COSMETICS", 40, 12, 0xFFFFFFFF);
-        Draw.text(g, "Your look", 40, 23, 0xFF7A7A7A);
+        Draw.text(g, "Your look", 40, 23, Theme.accent(0xB0));
         int tx = gridX();
         for (Tab t : Tab.values()) {
             int w = Draw.width(t.label) + 18;
             boolean sel = t == tab, hov = Draw.inside(mx, my, tx, 10, w, 18);
-            Draw.rect(g, tx, 10, w, 18, sel ? Theme.accent() : hov ? 0xFF262626 : 0xFF151515);
-            if (!sel) Draw.outline(g, tx, 10, w, 18, 0x30FFFFFF);
+            if (sel) { Draw.glow(g, tx, 10, w, 18, 9, Theme.accent(), 3); Draw.rgrad(g, tx, 10, w, 18, 9, Theme.accent(), Draw.shade(Theme.accent(), 0.78f)); }
+            else { Draw.rgrad(g, tx, 10, w, 18, 9, hov ? 0xFF2A2A30 : 0xFF1A1A1E, hov ? 0xFF202025 : 0xFF131316); Draw.routline(g, tx, 10, w, 18, 9, hov ? Theme.accent(0x80) : 0x2AFFFFFF); }
             Draw.centered(g, t.label, tx + w / 2, 15, sel ? Theme.onAccent() : 0xFFD0D0D0);
             hits.add(new Hit(tx, 10, w, 18, () -> { tab = t; scroll = 0; if (t == Tab.CODES) openCodes(); }));
             tx += w + 4;
@@ -92,8 +94,15 @@ public class CosmeticsScreen extends Screen {
 
         // preview panel
         int px = panelX(), pw = panelW(), py = 40, ph = height - 52;
-        Draw.rect(g, px, py, pw, ph, 0xC0121214);
-        Draw.outline(g, px, py, pw, ph, 0x30FFFFFF);
+        Draw.glow(g, px, py, pw, ph, 10, Theme.accent(0x70), 4);
+        Draw.rgrad(g, px, py, pw, ph, 10, 0xE81A1A20, 0xE80B0B0E);
+        Draw.routline(g, px, py, pw, ph, 10, 0x2EFFFFFF);
+        for (int i = 0; i < pw - 30; i++) {   // accent light along the top
+            float f = 1f - Math.abs(i - (pw - 30) / 2f) / ((pw - 30) / 2f);
+            g.fill(px + 15 + i, py, px + 16 + i, py + 1, Theme.accent((int) (0xD0 * f)));
+        }
+        // soft spotlight floor under the player
+        for (int i = 0; i < 6; i++) Draw.rrect(g, px + pw / 2 - 30 + i * 4, py + ph - 58 + i, 60 - i * 8, 10 - i * 2, 5, Theme.accent(0x10));
         Draw.centered(g, minecraft.getUser().getName(), px + pw / 2, py + 6, 0xFFEDEDED);
         PlayerSkinWidgetAccessor acc = (PlayerSkinWidgetAccessor) preview;
         if (!preview.isHovered()) acc.therabbits$setRotationY(acc.therabbits$getRotationY() + delta * 0.6f);
@@ -148,15 +157,16 @@ public class CosmeticsScreen extends Screen {
         if (items.isEmpty()) Draw.centered(g, "Opening codes...", gx + gw / 2, gy + 40, 0xFF8A8A8A);
         if (toast != null && System.currentTimeMillis() - toastAt < 2200) {
             int w = Draw.width(toast) + 20;
-            Draw.rect(g, width / 2 - w / 2, height - 30, w, 18, 0xF0FFFFFF);
-            Draw.centered(g, toast, width / 2, height - 25, 0xFF000000);
+            Draw.glow(g, width / 2 - w / 2, height - 30, w, 18, 9, Theme.accent(), 3);
+            Draw.rgrad(g, width / 2 - w / 2, height - 30, w, 18, 9, Theme.accent(), Draw.shade(Theme.accent(), 0.8f));
+            Draw.centered(g, toast, width / 2, height - 25, Theme.onAccent());
         }
     }
 
     private void button(GuiGraphics g, int mx, int my, int x, int y, int w, int h, String label, Runnable r) {
         boolean hov = Draw.inside(mx, my, x, y, w, h);
-        Draw.rect(g, x, y, w, h, hov ? Theme.accent() : 0xFF151515);
-        Draw.outline(g, x, y, w, h, 0x40FFFFFF);
+        if (hov) { Draw.glow(g, x, y, w, h, h / 2, Theme.accent(), 3); Draw.rgrad(g, x, y, w, h, h / 2, Theme.accent(), Draw.shade(Theme.accent(), 0.78f)); }
+        else { Draw.rgrad(g, x, y, w, h, h / 2, 0xFF24242A, 0xFF1A1A1F); Draw.routline(g, x, y, w, h, h / 2, Theme.accent(0x60)); }
         Draw.centered(g, label, x + w / 2, y + (h - 8) / 2, hov ? Theme.onAccent() : 0xFFD0D0D0);
         hits.add(new Hit(x, y, w, h, r));
     }
@@ -189,9 +199,12 @@ public class CosmeticsScreen extends Screen {
         boolean equipped = it.setting().get() == it.index();
         boolean locked = Account.isLocked(it.id());
         boolean hov = Draw.inside(mx, my, x, y, w, h) && my >= areaY && my < areaY + areaH;
-        Draw.rect(g, x, y, w, h, hov ? 0xF0202024 : 0xF0141417);
-        Draw.outline(g, x, y, w, h, sel ? Theme.accent() : hov ? 0x70FFFFFF : 0x28FFFFFF);
-        if (sel) Draw.outline(g, x + 1, y + 1, w - 2, h - 2, Theme.accent(0x60));
+        if (sel || hov) Draw.glow(g, x, y, w, h, 8, Theme.accent(sel ? 0xFF : 0x90), sel ? 4 : 2);
+        Draw.rgrad(g, x, y, w, h, 8, sel ? Draw.lerp(0xFF1C1C22, Theme.accent(), 0.16f) : hov ? 0xFF222228 : 0xFF18181C, 0xFF0F0F12);
+        Draw.routline(g, x, y, w, h, 8, sel ? Theme.accent() : hov ? Theme.accent(0x90) : 0x24FFFFFF);
+        g.fill(x + 8, y + 1, x + w - 8, y + 2, 0x14FFFFFF);
+        // rarity-style badge strip behind the icon
+        Draw.rgrad(g, x + 4, y + 4, w - 8, w - 8, 6, sel ? Draw.shade(Theme.accent(), 0.35f) : 0xFF1E1E24, 0xFF121215);
         int ix = x + 5, iy = y + 5, is = w - 10;
         if (it.id().equals("none")) {
             Draw.centered(g, "-", x + w / 2, iy + is / 2 - 4, 0xFF6A6A6A);
@@ -205,12 +218,15 @@ public class CosmeticsScreen extends Screen {
             g.blit(RenderPipelines.GUI_TEXTURED, icon, ix, iy, 0, 0, is, is, 128, 128, 128, 128);
         }
         if (locked) {
-            g.fill(x + 1, y + 1, x + w - 1, y + is + 6, 0x90000000);
+            Draw.rrect(g, x + 4, y + 4, w - 8, is + 2, 6, 0xA0000000);
             Draw.centered(g, "LOCKED", x + w / 2, iy + is / 2 - 4, 0xFFFFFFFF);
         }
         Draw.centered(g, Draw.trim(it.name(), w - 6), x + w / 2, y + h - 22, 0xFFEDEDED);
-        Draw.centered(g, trying ? "Trying on" : equipped ? "Equipped" : locked ? "Locked" : "Free", x + w / 2, y + h - 11,
-                trying ? Theme.accent() : equipped ? 0xFF6AD48A : 0xFF6A6A6A);
+        String st = trying ? "Trying on" : equipped ? "Equipped" : locked ? "Locked" : "Free";
+        int stc = trying ? Theme.accent() : equipped ? 0xFF6AD48A : locked ? 0xFFFF7A7A : 0xFF7A7A82;
+        int sw = Draw.width(st) + 10;
+        Draw.rrect(g, x + w / 2 - sw / 2, y + h - 13, sw, 11, 5, (stc & 0x00FFFFFF) | 0x28000000);
+        Draw.centered(g, st, x + w / 2, y + h - 11, stc);
         int top = Math.max(y, areaY), bottom = Math.min(y + h, areaY + areaH);
         if (bottom > top) hits.add(new Hit(x, top, w, bottom - top, () -> select(it, locked)));
     }

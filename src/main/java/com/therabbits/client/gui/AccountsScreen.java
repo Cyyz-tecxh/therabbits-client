@@ -62,6 +62,27 @@ public class AccountsScreen extends Screen {
                     () -> AccountSwitcher.useOffline(n), () -> AccountSwitcher.remove(n));
             if (y > height - 100) break;
         }
+        if (AccountSwitcher.premium().isEmpty() && AccountSwitcher.offline().isEmpty() && code == null && y + 96 < height - 90) {
+            // empty state: explain the two kinds of account instead of a blank panel
+            int cw = (pw - 18) / 2, cy = y + 8;
+            for (int k = 0; k < 2; k++) {
+                int cx = px + 6 + k * (cw + 6);
+                boolean hov = Draw.inside(mx, my, cx, cy, cw, 84);
+                if (hov) Draw.glow(g, cx, cy, cw, 84, 8, Theme.accent(), 3);
+                Draw.rgrad(g, cx, cy, cw, 84, 8, hov ? 0xFF222228 : 0xFF18181C, 0xFF0F0F12);
+                Draw.routline(g, cx, cy, cw, 84, 8, hov ? Theme.accent(0xC0) : 0x28FFFFFF);
+                Draw.rgrad(g, cx + 8, cy + 8, 18, 18, 6, Draw.shade(Theme.accent(), k == 0 ? 0.6f : 0.35f), 0xFF15151A);
+                Draw.centered(g, k == 0 ? "M" : "C", cx + 17, cy + 13, 0xFFFFFFFF);
+                Draw.text(g, k == 0 ? "Premium account" : "Cracked name", cx + 32, cy + 9, 0xFFFFFFFF);
+                Draw.text(g, k == 0 ? "Microsoft sign-in" : "Offline / LAN", cx + 32, cy + 19, Theme.accent(0xC0));
+                String[] lines = k == 0 ? new String[]{"Works on every server.", "Sign in at microsoft.com/link", "- no password here."}
+                                        : new String[]{"Pick any name.", "For offline servers, LAN", "and singleplayer."};
+                for (int j = 0; j < 3; j++) Draw.text(g, lines[j], cx + 8, cy + 36 + j * 11, 0xFF9A9AA2);
+                Draw.text(g, k == 0 ? "Click to add \u203A" : "Type a name below \u2193", cx + 8, cy + 72, hov ? Theme.accent() : 0xFF6A6A72);
+                if (k == 0) hits.add(new Hit(cx, cy, cw, 84, this::startMicrosoft));
+                else hits.add(new Hit(cx, cy, cw, 84, () -> { setFocused(name); name.setFocused(true); }));
+            }
+        }
         Draw.text(g, "Cracked names work on offline servers, LAN and singleplayer.", px + 8, height - 78, 0xFF6A6A6A);
         Draw.text(g, "Premium servers need a premium (launcher or Microsoft) account.", px + 8, height - 67, 0xFF6A6A6A);
         if (code != null) {
