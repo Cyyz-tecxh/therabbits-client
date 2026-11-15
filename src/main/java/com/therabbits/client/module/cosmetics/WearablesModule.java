@@ -14,7 +14,7 @@ import net.minecraft.world.entity.player.Player;
 public class WearablesModule extends Module {
     private static WearablesModule instance;
 
-    public final ModeSetting hat = add(new ModeSetting("Hat", 2, false, Wearables.HAT_NAMES).labels(i -> lockLabel(Wearables.HAT_NAMES[i], Wearables.HAT_IDS[i])));
+    public final ModeSetting hat = add(new ModeSetting("Mask", 0, false, Wearables.HAT_NAMES).labels(i -> lockLabel(Wearables.HAT_NAMES[i], Wearables.HAT_IDS[i])));
     public final ModeSetting arms = add(new ModeSetting("Arms", 0, false, Wearables.ARM_NAMES).labels(i -> lockLabel(Wearables.ARM_NAMES[i], Wearables.ARM_IDS[i])));
     public final ModeSetting shield = add(new ModeSetting("Shield", 0, false, Wearables.SHIELD_NAMES).labels(i -> lockLabel(Wearables.SHIELD_NAMES[i], Wearables.SHIELD_IDS[i])));
 
@@ -25,7 +25,7 @@ public class WearablesModule extends Module {
     public final ModeSetting pet = add(new ModeSetting("Pet", 0, false, Wearables.PET_NAMES).labels(i -> lockLabel(Wearables.PET_NAMES[i], Wearables.PET_IDS[i])));
 
     public WearablesModule() {
-        super("Hats & Arms", "Hats, masks, claws, shields, auras, pets", Category.COSMETICS, true);
+        super("Hats & Arms", "Masks, claws, shields, auras, pets", Category.COSMETICS, true);
         instance = this;
     }
 

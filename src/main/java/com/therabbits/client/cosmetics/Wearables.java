@@ -4,8 +4,8 @@ package com.therabbits.client.cosmetics;
 public final class Wearables {
     private Wearables() {}
 
-    public static final String[] HAT_IDS = {"none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat", "oni_mask", "kitsune_mask", "oni_menpo"};
-    public static final String[] HAT_NAMES = {"None", "Black Fedora", "Spiked Crown", "Rabbit Ears", "Royal Crown", "Gold Crown", "Cat Ears", "Bucket Hat", "Santa Hat", "Frog Hat", "Bunny Hat", "Oni Mask", "Kitsune Mask", "Oni Menpo"};
+    public static final String[] HAT_IDS = {"none", "oni_mask", "kitsune_mask", "oni_menpo"};
+    public static final String[] HAT_NAMES = {"None", "Oni Mask", "Kitsune Mask", "Oni Menpo"};
     public static final String[] ARM_IDS = {"none", "claws"};
     public static final String[] ARM_NAMES = {"None", "Claws"};
 

@@ -385,7 +385,7 @@ public class ShowcaseTest implements FabricClientGameTest {
             }
             ctx.runOnClient(mc -> {
                 var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
-                wm.hat.set(2); wm.arms.set(1);
+                wm.hat.set(0); wm.arms.set(1);
             });
             sp.getServer().runOnServer(server -> {
                 ServerPlayer p = server.getPlayerList().getPlayers().get(0);
@@ -401,7 +401,7 @@ public class ShowcaseTest implements FabricClientGameTest {
             frames(ctx, "c25hub", 3);
             ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.CosmeticsScreen(null)));
             frames(ctx, "c26locker", 3);
-            ctx.runOnClient(mc -> { com.therabbits.client.cosmetics.CosmeticPreview.set("hat", "royal_crown"); com.therabbits.client.cosmetics.CosmeticPreview.set("aura", "snow_aura"); });
+            ctx.runOnClient(mc -> { com.therabbits.client.cosmetics.CosmeticPreview.set("hat", "kitsune_mask"); com.therabbits.client.cosmetics.CosmeticPreview.set("aura", "snow_aura"); });
             frames(ctx, "c26tryon", 3);
             ctx.runOnClient(mc -> {
                 mc.setScreen(null);
@@ -425,7 +425,7 @@ public class ShowcaseTest implements FabricClientGameTest {
                 mc.options.hideGui = true;
                 mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
                 var wm = ModuleManager.get(com.therabbits.client.module.cosmetics.WearablesModule.class);
-                wm.aura.set(1); wm.hat.set(4);
+                wm.aura.set(1); wm.hat.set(0);
             });
             frames(ctx, "c28aura", 12);
             ctx.runOnClient(mc -> {

@@ -26,7 +26,7 @@ import java.util.List;
 /** Cosmetics locker: tabs for capes / hats / arms / shields / codes, picture cards, live player preview. */
 public class CosmeticsScreen extends Screen {
     private enum Tab {
-        CAPES("Capes"), HATS("Hats"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), PETS("Pets"), CODES("Online & Codes");
+        CAPES("Capes"), HATS("Masks"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), PETS("Pets"), CODES("Online & Codes");
         final String label;
         Tab(String l) { label = l; }
     }
