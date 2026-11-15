@@ -47,17 +47,36 @@ public final class Draw {
 
     private static Component styled(String s, Style st) { return Component.literal(s).withStyle(st); }
 
+    private static final java.util.Map<String, Integer> WIDTHS = new java.util.HashMap<>();
+
     public static int width(String s) {
         Style st = style();
-        return st == null ? font().width(s) : font().width(styled(s, st));
+        if (st == null) return font().width(s);
+        String key = cachedFile + "|" + s;
+        Integer w = WIDTHS.get(key);
+        if (w == null) {
+            if (WIDTHS.size() > 4000) WIDTHS.clear();
+            w = font().width(styled(s, st));
+            WIDTHS.put(key, w);
+        }
+        return w;
     }
 
     /** Cut a string to fit maxW pixels (adds ".." when cut). */
+    private static final java.util.Map<String, String> TRIMS = new java.util.HashMap<>();
+
     public static String trim(String s, int maxW) {
-        if (width(s) <= maxW) return s;
+        String key = (style() == null ? "" : cachedFile) + "|" + maxW + "|" + s;
+        String hit = TRIMS.get(key);
+        if (hit != null) return hit;
         String out = s;
-        while (out.length() > 1 && width(out + "..") > maxW) out = out.substring(0, out.length() - 1);
-        return out + "..";
+        if (width(s) > maxW) {
+            while (out.length() > 1 && width(out + "..") > maxW) out = out.substring(0, out.length() - 1);
+            out = out + "..";
+        }
+        if (TRIMS.size() > 2000) TRIMS.clear();
+        TRIMS.put(key, out);
+        return out;
     }
 
     private static void draw(GuiGraphics g, String s, int x, int y, int color, boolean shadow) {
@@ -103,10 +122,15 @@ public final class Draw {
     /** Rounded rectangle with a vertical gradient. */
     public static void rgrad(GuiGraphics g, int x, int y, int w, int h, int r, int top, int bottom) {
         r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
-        for (int i = 0; i < h; i++) {
-            int in = i < r ? inset(r, i) : i >= h - r ? inset(r, h - 1 - i) : 0;
-            g.fill(x + in, y + i, x + w - in, y + i + 1, lerp(top, bottom, h <= 1 ? 0 : (float) i / (h - 1)));
+        float k = h <= 1 ? 0 : 1f / (h - 1);
+        // only the rounded rows need their own fill; the straight middle is one gradient quad
+        for (int i = 0; i < r; i++) {
+            int in = inset(r, i);
+            g.fill(x + in, y + i, x + w - in, y + i + 1, lerp(top, bottom, i * k));
+            int j = h - 1 - i;
+            g.fill(x + in, y + j, x + w - in, y + j + 1, lerp(top, bottom, j * k));
         }
+        if (h - 2 * r > 0) g.fillGradient(x, y + r, x + w, y + h - r, lerp(top, bottom, r * k), lerp(top, bottom, (h - 1 - r) * k));
     }
 
     /** 1px rounded outline. */
