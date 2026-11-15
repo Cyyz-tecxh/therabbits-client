@@ -261,28 +261,17 @@ def paint(mat, face, w, h):
         img[..., :3] = (150, 215, 255)
         glow = img.copy()
     elif mat == 'snowflake':
-        img[..., :3] = 0
-        if w >= 9 and h >= 9:
-            pat = [
-                "....#....",
-                ".#..#..#.",
-                "..#.#.#..",
-                "...###...",
-                "####@####",
-                "...###...",
-                "..#.#.#..",
-                ".#..#..#.",
-                "....#....",
-            ]
-            k = max(1, min(w, h) // 9)
-            ox, oy = (w - 9 * k) // 2, (h - 9 * k) // 2
-            for r, row in enumerate(pat):
-                for c, ch in enumerate(row):
-                    if ch == '.': continue
-                    col = (235, 252, 255) if ch == '@' else ((150, 235, 255) if (r == 4 or c == 4) and abs(r - 4) + abs(c - 4) <= 2 else (60, 200, 255))
-                    img[oy + r * k: oy + (r + 1) * k, ox + c * k: ox + (c + 1) * k, :3] = col
-        img[..., 3] = np.where(img[..., :3].sum(-1) > 0, 255, 0)
+        img[...] = 0
+        F = snowflake_sprite()
+        n = F.shape[0]
+        if w >= n and h >= n:
+            k = max(1, min(w, h) // n)
+            ox, oy = (w - n * k) // 2, (h - n * k) // 2
+            img[oy:oy + n * k, ox:ox + n * k, :] = np.kron(F, np.ones((k, k, 1)))
+        else:
+            img[..., 3] = 0
         glow = img.copy()
+        glow[..., :3] = np.where((img[..., :3].sum(-1) > 600)[..., None], img[..., :3] * 0.6, 0)
     elif mat.startswith('pulse:'):
         _, hx, seg = mat.split(':')
         c = np.array([int(hx[i:i + 2], 16) for i in (0, 2, 4)], float)
@@ -651,17 +640,19 @@ for i in range(16):
 MODELS['aura'] = dict(attach='aura', parts=au)
 
 
-# Snow Aura - sparse glowing snowflakes scattered around the body (animated in-game)
+# Snow Aura - lots of ice crystals drifting close around the whole body (animated in-game)
 sa = []
-srng = np.random.default_rng(21)
-for i in range(28):
-    a = srng.random() * 2 * math.pi
-    y = -9.5 + srng.random() * 34.0
-    r = 4.6 + srng.random() * 3.6 if y > 0 else 5.2 + srng.random() * 2.6
-    size = 1.125
+srng = np.random.default_rng(33)
+NF = 60
+for i in range(NF):
+    a = (i * 2.399963) % (2 * math.pi) + srng.random() * 0.3      # golden-angle spread so no side is empty
+    y = -9.0 + (i + srng.random()) / NF * 33.5
+    head = y < 0
+    rx = (4.2 if head else 5.0) + srng.random() * 1.2              # an oval that wraps just outside the arms
+    rz = (4.0 if head else 3.0) + srng.random() * 1.2
+    size = 2.6
     n = 'f%d' % i
-    sa.append(P(n, (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', pivot=(math.cos(a) * r, y, math.sin(a) * r), rot=(0, srng.random() * 180, 0)))
-    sa.append(P(n + 'x', (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', rot=(0, 90, 0), parent=n))
+    sa.append(P(n, (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', pivot=(math.cos(a) * rx, y, math.sin(a) * rz), rot=(0, 0, 0)))
 MODELS['snow_aura'] = dict(attach='aura', parts=sa)
 
 
@@ -842,6 +833,34 @@ FACES = ['top', 'bottom', 'right', 'front', 'left', 'back']
 def face_regions(u, v, w, h, d):
     return dict(top=(u + d, v, w, d), bottom=(u + d + w, v, w, d), right=(u, v + d, d, h),
                 front=(u + d, v + d, w, h), left=(u + d + w, v + d, d, h), back=(u + 2 * d + w, v + d, w, h))
+
+
+SNOWFLAKE = [
+    ".....b.....",
+    "..b..b..b..",
+    "...b.l.b...",
+    ".b..lll..b.",
+    "...l.l.l...",
+    "bblllcllldb",
+    "...l.l.l...",
+    ".b..lll..b.",
+    "...b.l.b...",
+    "..b..b..b..",
+    ".....b.....",
+]
+
+def snowflake_sprite():
+    """Hand-drawn 11x11 ice crystal (8 arms, barbed tips, bright core) with a dark blue rim -> 13x13."""
+    g = [r.replace('d', 'b') for r in SNOWFLAKE]
+    n = len(g) + 2   # 1px clear border so mipmaps don't bleed
+    out = np.zeros((n, n, 4), float)
+    col = {'b': (38, 140, 236), 'l': (118, 206, 255), 'c': (240, 252, 255)}
+    body = np.zeros((n, n), bool)
+    for r, row in enumerate(g):
+        for c, ch in enumerate(row):
+            if ch in col:
+                out[r + 1, c + 1, :3] = col[ch]; out[r + 1, c + 1, 3] = 255; body[r + 1, c + 1] = True
+    return out
 
 def build_atlas(parts, width=64):
     x = y = row = 0

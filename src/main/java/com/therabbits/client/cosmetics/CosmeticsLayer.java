@@ -67,7 +67,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
                 pose.translate(0, -12f / 16f, 0);
             }
             if (root.hasChild("f0") || root.hasChild("ring0") || root.hasChild("p0")) {
-                if (root.hasChild("f0")) { drawAuraSpread(pose, out, aura, k); }
+                if (root.hasChild("f0")) { drawAuraSpread(pose, out, aura, k, cardFacing(p)); }
                 else drawAura(pose, out, aura);
             } else {
                 animateAura(aura, now, p);
@@ -151,11 +151,12 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         }
     }
 
-    private static void drawAuraSpread(PoseStack pose, Sink out, CosmeticModel m, float k) {
+    private static void drawAuraSpread(PoseStack pose, Sink out, CosmeticModel m, float k, float facing) {
         float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
-        animateSnow(m.root, t);
-        for (int i = 0; m.root.hasChild("f" + i); i++) { ModelPart f = m.root.getChild("f" + i); f.x *= k; f.z *= k; }
-        out.part(m.root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT);
+        animateSnow(m.root, t, facing);
+        float spread = 1f + (k - 1f) * 0.5f;   // snow hugs the body; Aura Size only nudges it outward
+        for (int i = 0; m.root.hasChild("f" + i); i++) { ModelPart f = m.root.getChild("f" + i); f.x *= spread; f.z *= spread; }
+        draw(pose, out, FULL_BRIGHT, m, m.root);   // solid crystals (readable on white skins), faint glow on the core
     }
 
     // ------------------------------------------------------------------ helpers
@@ -472,7 +473,8 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     }
 
     /** Snow Aura: each flake drifts slowly around you, bobs, turns, and fades in and out on its own timer. */
-    private static void animateSnow(ModelPart root, float t) {
+    private static void animateSnow(ModelPart root, float t, float facing) {
+        float face = facing * (float) (Math.PI / 180);
         for (int i = 0; root.hasChild("f" + i); i++) {
             ModelPart f = root.getChild("f" + i);
             var ip = f.getInitialPose();
@@ -482,13 +484,13 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             f.x = ip.x() * c - ip.z() * sn;
             f.z = ip.x() * sn + ip.z() * c;
             f.y = ip.y() + net.minecraft.util.Mth.sin(t * (0.7f + h * 0.6f) + i * 1.3f) * (0.5f + h * 0.7f);
-            f.yRot = ip.yRot() + t * (0.4f + h * 0.5f);
+            f.yRot = face + net.minecraft.util.Mth.sin(t * (0.5f + h * 0.4f) + i * 1.7f) * 0.45f;   // crystals turn toward you, with a gentle wobble
             f.zRot = t * (0.25f + h * 0.3f) * (i % 3 == 0 ? -1 : 1);
             // life: fade in, stay, fade out, short gap; plus a gentle flicker
             float life = (t * (0.11f + h * 0.08f) + h * 7.3f) % 1f;
             float a = life < 0.15f ? life / 0.15f : life < 0.75f ? 1f : life < 0.9f ? (0.9f - life) / 0.15f : 0f;
             a *= 0.85f + 0.15f * net.minecraft.util.Mth.sin(t * 9f + i * 2.1f);
-            float size = (1.0f + h * 0.8f) * Math.max(0f, a);
+            float size = (0.9f + h * 0.3f) * Math.max(0f, a);
             f.visible = size > 0.04f;
             f.xScale = f.yScale = f.zScale = size;
         }
@@ -499,7 +501,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         ModelPart root = m.root;
         if (root.hasChild("f0")) {
-            animateSnow(root, t);
+            animateSnow(root, t, 0f);
             out.part(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT);
             return;
         }
