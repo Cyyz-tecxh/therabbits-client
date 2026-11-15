@@ -28,7 +28,9 @@ const CAPES = ["none", "black_nebula"];
 const HATS = ["none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat", "oni_mask", "kitsune_mask", "oni_menpo"];
 const ARMS = ["none", "claws"];
 const SHIELDS = ["none", "neon_shield"];
-const AURAS = ["none", "aura", "snow_aura", "clockwork_aura", "petal_aura", "koi_aura"];
+const AURAS = ["none", "aura", "snow_aura", "clockwork_aura", "petal_aura", "koi_aura",
+  "cards_blood", "cards_royal", "cards_frost", "cards_heartbreaker", "cards_void", "cards_emerald",
+  "dragon_eternal", "dragon_shadow", "dragon_frost", "dragon_infernal", "dragon_celestial"];
 const PETS = ["none", "pet_eternal", "pet_shadow", "pet_frost", "pet_infernal", "pet_celestial", "spirit_bunny"];
 const SLOTS = { cape: CAPES, hat: HATS, arms: ARMS, shield: SHIELDS, aura: AURAS, pet: PETS };
 const ALL = [...CAPES, ...HATS, ...ARMS, ...SHIELDS, ...AURAS, ...PETS].filter((x) => x !== "none");

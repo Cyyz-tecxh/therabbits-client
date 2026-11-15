@@ -1,10 +1,17 @@
 import copy, numpy as np
 from PIL import Image, ImageFilter
-import gen, render as R, picks as PK, mythics as MY, export_picks as EX
+import sys
+import gen, render as R, picks as PK, mythics as MY, export_picks as EX, cards as CA
 R.AMB, R.DIF = 0.7, 0.5
 OUT = '/home/claude/repo/src/main/resources/assets/therabbits/textures/gui/cosmetic_icons'
 def posed(key, parts):
     if key == 'koi_aura': return PK.pose_koi(2.0, parts)
+    if key.startswith(('cards_', 'dragon_')):
+        uv = {p['name']: p['uv'] for p in parts}
+        out = CA.pose_cards(key, 1.2, cam_yaw=-25) if key.startswith('cards_') else MY.pose_premium(key[7:] + '_dragon', 5.2 if key == 'dragon_eternal' else 2.0)
+        out = [p for p in out if p['name'] in uv and not p['name'].startswith(('d_p', 'd_k'))]
+        for p in out: p['uv'] = uv[p['name']]
+        return out
     if key.startswith('pet_'):
         k = key[4:] + '_dragon'
         uv = {p['name']: p['uv'] for p in parts}
@@ -14,6 +21,7 @@ def posed(key, parts):
     return parts
 VIEW = {'oni_mask': (0, 0), 'kitsune_mask': (0, 0), 'oni_menpo': (0, 0)}
 for key, (attach, parts) in EX.MODELS.items():
+    if len(sys.argv) > 1 and not key.startswith(tuple(sys.argv[1:])): continue
     tex, glow, ts = EX.atlas(copy.deepcopy(parts))
     ps = copy.deepcopy(parts)
     tex, glow, ts = gen.build_atlas(ps, width=tex.shape[1] // gen.S)

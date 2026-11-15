@@ -12,8 +12,12 @@ public final class Wearables {
     public static final String[] SHIELD_IDS = {"none", "neon_shield"};
     public static final String[] SHIELD_NAMES = {"None", "Neon Royal Shield"};
 
-    public static final String[] AURA_IDS = {"none", "aura", "snow_aura", "clockwork_aura", "petal_aura", "koi_aura"};
-    public static final String[] AURA_NAMES = {"None", "Electric Aura", "Snow Aura", "Clockwork Orbit", "Petal Storm", "Koi Spirits"};
+    public static final String[] AURA_IDS = {"none", "aura", "snow_aura", "clockwork_aura", "petal_aura", "koi_aura",
+        "cards_blood", "cards_royal", "cards_frost", "cards_heartbreaker", "cards_void", "cards_emerald",
+        "dragon_eternal", "dragon_shadow", "dragon_frost", "dragon_infernal", "dragon_celestial"};
+    public static final String[] AURA_NAMES = {"None", "Electric Aura", "Snow Aura", "Clockwork Orbit", "Petal Storm", "Koi Spirits",
+        "Card Master: Blood", "Card Master: Royal", "Card Master: Frost", "Card Master: Heartbreaker", "Card Master: Void", "Card Master: Emerald",
+        "Eternal Dragon Aura", "Shadow Dragon Aura", "Frost Dragon Aura", "Infernal Dragon Aura", "Celestial Dragon Aura"};
 
     public static final String[] PET_IDS = {"none", "pet_eternal", "pet_shadow", "pet_frost", "pet_infernal", "pet_celestial", "spirit_bunny"};
     public static final String[] PET_NAMES = {"None", "Eternal Dragon", "Shadow Dragon", "Frost Dragon", "Infernal Dragon", "Celestial Dragon", "Spirit Bunny"};

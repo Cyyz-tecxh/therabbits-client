@@ -36,7 +36,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         float now = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         if (aura != null && "aura".equals(aura.attach)) {
             if (aura.root.hasChild("f0") || aura.root.hasChild("ring0") || aura.root.hasChild("p0")) drawAura(pose, out, aura);
-            else { animateAura(aura.root, now, p); draw(pose, out, light, aura, aura.root); }
+            else { animateAura(aura, now, p); draw(pose, out, light, aura, aura.root); }
         }
         CosmeticModel pet = CosmeticModel.get(WearablesModule.petFor(p));
         if (pet != null && "pet".equals(pet.attach)) { animatePet(pet.root, now); draw(pose, out, light, pet, pet.root); }
@@ -108,8 +108,11 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     // ------------------------------------------------------------------ auras (Clockwork, Petal Storm, Koi)
     private static final java.util.Map<Integer, float[]> CLOCK_PHASE = new java.util.HashMap<>();
 
-    private static void animateAura(ModelPart root, float t, Player p) {
-        if (root.hasChild("clock")) animateClockwork(root, t, p);
+    private static void animateAura(CosmeticModel m, float t, Player p) {
+        ModelPart root = m.root;
+        if (root.hasChild("d_head")) animateDragon(root, t, dragonStyle(m.id));
+        else if (root.hasChild("c0") && root.hasChild("t0")) animateCards(root, t, cardFacing(p));
+        else if (root.hasChild("clock")) animateClockwork(root, t, p);
         else if (root.hasChild("pt0")) animatePetals(root, t);
         else if (root.hasChild("ka0")) animateKoi(root, t);
     }
@@ -193,17 +196,45 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         else if (root.hasChild("bb")) animateBunny(root, t);
     }
 
-    private static float[] petPath(float s, float i, float t) {
-        float ii = Math.max(i, -1.6f), r = 4.2f + 0.08f * ii;
-        return new float[]{17f + r * cos(s * 1.7f), -4f + ii * 0.75f + 1.5f * sin(t * 1.2f), 8f + r * sin(s * 1.7f)};
+    static final int ETERNAL = 0, TILTED = 1, HELIX = 2, FAST = 3, LOOP = 4, PET = 5;
+
+    private static int dragonStyle(String id) {
+        return switch (id) {
+            case "dragon_shadow" -> TILTED; case "dragon_frost" -> HELIX; case "dragon_infernal" -> FAST;
+            case "dragon_celestial" -> LOOP; default -> ETERNAL;
+        };
     }
 
-    /** Dragon companion: hovers in a slow coil beside you, head up, whiskers and mane swaying, jaw opening now and then. */
-    private static void animateDragonPet(ModelPart root, float t) {
-        float th0 = t * 0.85f + 1f, d = 0.19f;
-        float[] hp = petPath(th0 + d * 1.6f, -1f, t), prev = hp, first = null;
-        for (int i = 0; root.hasChild("d_s" + i); i++) {
-            float[] pt = petPath(th0 - i * d, i, t);
+    /** Flight path of each dragon (model pixels, around the body). i = body segment index (-1 = head). */
+    private static float[] dragonPath(int style, float s, float i, float t) {
+        switch (style) {
+            case PET -> {
+                float ii = Math.max(i, -1.6f), r = 4.2f + 0.08f * ii;
+                return new float[]{17f + r * cos(s * 1.7f), -4f + ii * 0.75f + 1.5f * sin(t * 1.2f), 8f + r * sin(s * 1.7f)};
+            }
+            case TILTED -> { return new float[]{12f * cos(s), 5f + 6.6f * sin(s), 12f * sin(s) * 0.85f}; }
+            case HELIX -> { return new float[]{10.5f * cos(s), -7f + Math.max(i, -1.5f) + 3f * sin(t * 0.7f), 10.5f * sin(s)}; }
+            case FAST -> { return new float[]{11f * cos(s), 8f + 1.8f * sin(3f * s + t), 11f * sin(s)}; }
+            case LOOP -> { float r = 11.5f + 3f * sin(2f * s); return new float[]{r * cos(s), 2f + 5f * sin(s), r * sin(s)}; }
+            default -> {
+                float r = 11.5f + 0.8f * sin(2f * s + 0.6f * t), y = 5f + 3f * sin(1.4f * s - t);
+                float w = Math.max(0f, sin(2f * (float) Math.PI * (t - 0.5f) / 9f));
+                float rise = w * w * 12f * (float) Math.exp(-Math.max(i, 0f) / 5f);
+                return new float[]{r * cos(s), y - rise, r * sin(s)};
+            }
+        }
+    }
+
+    private static void animateDragonPet(ModelPart root, float t) { animateDragon(root, t, PET); }
+
+    /** Dragons: the body follows the flight path, head leads, whiskers and mane sway, jaw opens and fires an energy orb. */
+    private static void animateDragon(ModelPart root, float t, int style) {
+        float th0 = style == FAST ? t * 1.6f + 1f : t * 0.85f + 1f, d = 0.19f;
+        int n = 0;
+        while (root.hasChild("d_s" + n)) n++;
+        float[] hp = dragonPath(style, th0 + d * 1.6f, -1f, t), prev = hp, first = null;
+        for (int i = 0; i < n; i++) {
+            float[] pt = dragonPath(style, th0 - i * d, i, t);
             ModelPart seg = root.getChild("d_s" + i);
             place(seg, pt);
             look(seg, pt, prev);
@@ -234,6 +265,112 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         for (int j = 0; head.hasChild("d_mane" + j); j++) {
             ModelPart m = head.getChild("d_mane" + j);
             m.xRot = m.getInitialPose().xRot() + rad(10f * sin(t * 3f + j));
+        }
+        if (root.hasChild("d_orb") && first != null) {
+            ModelPart orb = root.getChild("d_orb");
+            float u = (tau - 0.18f) / 0.32f;
+            if (u > 0 && u < 1) {
+                float fx = hp[0] - first[0], fy = hp[1] - first[1], fz = hp[2] - first[2];
+                float l = (float) Math.sqrt(fx * fx + fy * fy + fz * fz); if (l < 1e-4f) l = 1;
+                float k = 7f + u * 12f;
+                orb.x = hp[0] + fx / l * k; orb.y = hp[1] + fy / l * k + 0.8f; orb.z = hp[2] + fz / l * k;
+                orb.yRot = t * 4f;
+                scale(orb, (0.6f + 1.4f * u) * (1f - u * u * u * u));
+            } else scale(orb, 0f);
+        }
+        for (int k = 0; root.hasChild("d_p" + k) && n > 2; k++) {
+            float life = (t * 0.4f + k / 20f) % 1f;
+            int j = 1 + (k * 7) % (n - 2);
+            float[] q = dragonPath(style, th0 - j * d - life * 0.35f, j, t);
+            float r = (float) Math.sqrt(q[0] * q[0] + q[2] * q[2]); if (r < 1e-4f) r = 1;
+            ModelPart sp = root.getChild("d_p" + k);
+            sp.x = q[0] + q[0] / r * life * 2f + sin(k * 3f) * 0.8f; sp.y = q[1] - life * 3.5f; sp.z = q[2] + q[2] / r * life * 2f;
+            float tw = sin(t * 12f + k);
+            scale(sp, 1.3f * (1f - life) * (0.6f + 0.4f * tw * tw));
+        }
+        for (int k = 0; root.hasChild("d_k" + k) && n > 4; k++) {
+            float life = (t * 0.25f + k / 10f) % 1f;
+            int j = 3 + (k * 3) % (n - 4);
+            float[] q = dragonPath(style, th0 - j * d - life * 0.3f, j, t);
+            ModelPart sm = root.getChild("d_k" + k);
+            sm.x = q[0]; sm.y = q[1] - life * 1.5f; sm.z = q[2];
+            sm.xRot = t * 0.3f; sm.yRot = -th0 + rad(k * 40f); sm.zRot = rad(k * 30f);
+            scale(sm, (0.8f + 1.2f * life) * (1f - life * life));
+        }
+    }
+
+    // ------------------------------------------------------------------ Card Master
+    private static final float[] CARD_SIZES = {0.62f, 0.52f, 0.58f, 0.5f, 0.56f, 0.66f, 0.5f, 0.58f, 0.68f, 0.54f, 0.6f, 0.5f};
+    private static final float[][] TRAILS = {{10f, 14.5f, 16f, 1.6f, 1.0f}, {4f, 13f, -12f, -1.2f, 0.8f}, {16f, 12f, 8f, 2.1f, 0.7f}};
+
+    private static float smooth(float x) { x = Math.max(0f, Math.min(1f, x)); return x * x * (3f - 2f * x); }
+
+    /** Yaw (degrees, model space) that turns a card's face toward whoever is looking at this player. */
+    private static float cardFacing(Player p) {
+        Minecraft mc = Minecraft.getInstance();
+        float theta;
+        if (mc.player == null || p == mc.player) {
+            float yr = p.getYRot();
+            theta = mc.options.getCameraType() == net.minecraft.client.CameraType.THIRD_PERSON_FRONT ? yr + 180f : yr;
+        } else {
+            double cx = mc.player.getX() - p.getX(), cz = mc.player.getZ() - p.getZ();
+            theta = (float) Math.toDegrees(Math.atan2(cx, -cz));
+        }
+        return theta + 180f - p.yBodyRot;
+    }
+
+    /** Cards orbit in a scattered band, fly out and back, flip now and then, snap into a ring every 12 s; light trails + sparkles. */
+    private static void animateCards(ModelPart root, float t, float facing) {
+        int n = 0;
+        while (root.hasChild("c" + n)) n++;
+        if (n == 0) return;
+        float ph = t % 12f;
+        float form = smooth((ph - 7.5f) / 0.8f) * (1f - smooth((ph - 10.5f) / 0.8f));
+        float[][] pos = new float[n][];
+        float tau2 = (float) (Math.PI * 2);
+        for (int k = 0; k < n; k++) {
+            float h = (k * 0.6180339f) % 1f;
+            float a = t * (0.55f + 0.12f * h) + (float) k / n * tau2;
+            float r = 15.5f + sin(t * 0.8f + k);
+            float y = 9f + 6f * sin(a + 0.6f) + 14f * ((k * 0.37f) % 1f - 0.5f) + sin(t * 1.4f + k * 1.7f);
+            float fo = (t * 0.14f + h * 3.7f) % 1f;
+            if (fo > 0.85f) r += 9f * sin((float) Math.PI * smooth((fo - 0.85f) / 0.15f));
+            float fl = (t * 0.2f + h * 5.1f) % 1f;
+            float flip = 180f * smooth((fl - 0.80f) / 0.06f) - 180f * smooth((fl - 0.93f) / 0.06f);
+            float af = t * 0.4f + (float) k / n * tau2;
+            float ox = cos(a) * r, oz = sin(a) * r, fx = cos(af) * 16f, fz = sin(af) * 16f;
+            ModelPart c = root.getChild("c" + k);
+            c.x = ox + (fx - ox) * form; c.y = y + (7f - y) * form; c.z = oz + (fz - oz) * form;
+            c.xRot = rad(14f * sin(t * 1.1f + k * 0.7f));
+            c.yRot = rad(facing + 22f * sin(t * 1.3f + k) + flip);
+            c.zRot = rad(24f * sin(t * 0.7f + k * 2.1f));
+            scale(c, k < CARD_SIZES.length ? CARD_SIZES[k] : 0.55f);
+            pos[k] = new float[]{c.x, c.y, c.z};
+        }
+        for (int k = 0; root.hasChild("s" + k); k++) {
+            float life = (t * 0.5f + k / 18f) % 1f;
+            float[] c = k % 3 != 0 ? pos[(k * 5) % n] : new float[]{sin(k) * 12f, 2f + cos(k * 2f) * 4f, cos(k) * 12f};
+            ModelPart sp = root.getChild("s" + k);
+            sp.x = c[0] + sin(k * 2.3f) * 3.5f; sp.y = c[1] - 2.5f + cos(k) * 2.5f - life; sp.z = c[2] + cos(k * 1.7f) * 3.5f;
+            sp.yRot = rad(facing);
+            float w = sin((float) Math.PI * life);
+            scale(sp, w * w * (0.6f + 0.4f * (k % 2)));
+        }
+        for (int r = 0; r < TRAILS.length && root.hasChild("t" + r); r++) {
+            float[] tr = TRAILS[r];
+            ModelPart ring = root.getChild("t" + r);
+            ring.x = 0; ring.y = tr[0]; ring.z = 0; ring.xRot = rad(tr[2]); ring.zRot = rad(tr[2] * 0.4f);
+            int nt = 0;
+            while (ring.hasChild("t" + r + "_" + nt)) nt++;
+            float head = t * tr[3] + r * 2.1f;
+            for (int j = 0; j < nt; j++) {
+                float a = head - Math.signum(tr[3]) * j * 0.085f * tr[4];
+                ModelPart q = ring.getChild("t" + r + "_" + j);
+                q.x = cos(a) * tr[1]; q.y = 0; q.z = sin(a) * tr[1];
+                q.yRot = -a - (float) (Math.PI / 2);
+                float f = Math.max(0.001f, 1f - (float) j / nt);
+                q.xScale = 1.3f; q.yScale = f; q.zScale = f;
+            }
         }
     }
 

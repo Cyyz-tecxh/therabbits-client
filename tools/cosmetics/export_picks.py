@@ -2,7 +2,7 @@
 import json, math, os, copy
 import numpy as np
 from PIL import Image
-import gen, picks as PK, mythics as MY, render as R
+import gen, picks as PK, mythics as MY, render as R, cards as CA
 OUT = '/home/claude/repo/src/main/resources/assets/therabbits'
 gen.export('/tmp/exp_body')
 
@@ -31,7 +31,13 @@ for k in ('eternal_dragon', 'shadow_dragon', 'frost_dragon', 'infernal_dragon', 
     ps = [p for p in copy.deepcopy(MY.MODELS[k]['parts']) if not p['name'].startswith(('d_p', 'd_k', 'd_orb', 'd_halo'))]
     MODELS['pet_' + k.replace('_dragon', '')] = ('pet', ps)
 MODELS['spirit_bunny'] = ('pet', copy.deepcopy(PK.M['spirit_bunny']['parts']))
+for deck in CA.DECKS:
+    MODELS['cards_' + deck] = ('aura', copy.deepcopy(CA.MODELS['cards_' + deck]['parts']))
+for k in ('eternal_dragon', 'shadow_dragon', 'frost_dragon', 'infernal_dragon', 'celestial_dragon'):
+    MODELS['dragon_' + k.replace('_dragon', '')] = ('aura', copy.deepcopy(MY.MODELS[k]['parts']))
 
 if __name__ == '__main__':
+    import sys
     for key, (attach, parts) in MODELS.items():
+        if len(sys.argv) > 1 and not any(key.startswith(a) for a in sys.argv[1:]): continue
         write(key, attach, parts)
