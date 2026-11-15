@@ -26,6 +26,9 @@ public final class AccountSwitcher {
     private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("therabbits/accounts.json");
     private static User main;
     private static final List<String> OFFLINE = new ArrayList<>();
+    /** Extra premium (Microsoft) accounts: name, uuid, refresh token. Stored only on this computer. */
+    public record Premium(String name, String uuid, String refresh) {}
+    private static final List<Premium> PREMIUM = new ArrayList<>();
     private static boolean loaded;
 
     private static void load() {
@@ -35,7 +38,11 @@ public final class AccountSwitcher {
         try {
             if (Files.exists(FILE)) {
                 JsonObject o = JsonParser.parseString(Files.readString(FILE)).getAsJsonObject();
-                for (var e : o.getAsJsonArray("offline")) OFFLINE.add(e.getAsString());
+                if (o.has("offline")) for (var e : o.getAsJsonArray("offline")) OFFLINE.add(e.getAsString());
+                if (o.has("premium")) for (var e : o.getAsJsonArray("premium")) {
+                    JsonObject p = e.getAsJsonObject();
+                    PREMIUM.add(new Premium(p.get("name").getAsString(), p.get("uuid").getAsString(), p.get("refresh").getAsString()));
+                }
             }
         } catch (Exception e) {
             RabbitsClient.LOG.warn("Could not read accounts", e);
@@ -48,6 +55,13 @@ public final class AccountSwitcher {
             JsonArray a = new JsonArray();
             OFFLINE.forEach(a::add);
             o.add("offline", a);
+            JsonArray pa = new JsonArray();
+            for (Premium p : PREMIUM) {
+                JsonObject po = new JsonObject();
+                po.addProperty("name", p.name()); po.addProperty("uuid", p.uuid()); po.addProperty("refresh", p.refresh());
+                pa.add(po);
+            }
+            o.add("premium", pa);
             Files.createDirectories(FILE.getParent());
             Files.writeString(FILE, o.toString());
         } catch (Exception e) {
@@ -87,6 +101,49 @@ public final class AccountSwitcher {
     }
 
     public static void useMain() { load(); set(main); }
+
+    public static List<Premium> premium() { load(); return List.copyOf(PREMIUM); }
+
+    public static boolean isCurrentPremium(Premium p) {
+        User u = Minecraft.getInstance().getUser();
+        return u != main && u.getProfileId().toString().equals(p.uuid());
+    }
+
+    /** Saves (or updates) a premium account after signing in. */
+    public static void addPremium(MicrosoftAuth.Result r) {
+        load();
+        PREMIUM.removeIf(p -> p.uuid().equals(r.uuid().toString()));
+        PREMIUM.add(new Premium(r.name(), r.uuid().toString(), r.refreshToken()));
+        save();
+    }
+
+    public static void removePremium(Premium p) {
+        load();
+        if (isCurrentPremium(p)) useMain();
+        PREMIUM.removeIf(q -> q.uuid().equals(p.uuid()));
+        save();
+    }
+
+    /** Signs in with a saved premium account (on a background thread) and switches to it. */
+    public static java.util.concurrent.CompletableFuture<String> usePremium(Premium p) {
+        return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+            try {
+                MicrosoftAuth.Result r = MicrosoftAuth.refresh(p.refresh());
+                addPremium(r);   // keep the newest refresh token
+                Minecraft.getInstance().execute(() -> playAs(r));
+                return "Now playing as " + r.name();
+            } catch (MicrosoftAuth.AuthException e) {
+                return e.getMessage();
+            } catch (Exception e) {
+                RabbitsClient.LOG.warn("Premium sign-in failed", e);
+                return "Couldn't sign in - check your internet";
+            }
+        });
+    }
+
+    public static void playAs(MicrosoftAuth.Result r) {
+        set(new User(r.name(), r.uuid(), r.mcToken(), Optional.ofNullable(r.xuid()), Optional.empty()));
+    }
 
     public static void useOffline(String name) {
         load();
