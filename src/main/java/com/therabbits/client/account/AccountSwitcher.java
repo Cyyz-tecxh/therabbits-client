@@ -169,7 +169,8 @@ public final class AccountSwitcher {
                 catch (MicrosoftAuth.AuthException e) { throw e; }
                 catch (Exception first) { Thread.sleep(1200); r = MicrosoftAuth.refresh(p.refresh()); }   // one retry on a network hiccup
                 addPremium(r);   // keep the newest refresh token
-                Minecraft.getInstance().execute(() -> playAs(r));
+                MicrosoftAuth.Result fr = r;
+                Minecraft.getInstance().execute(() -> playAs(fr));
                 return "Now playing as " + r.name();
             } catch (MicrosoftAuth.AuthException e) {
                 return e.getMessage();
