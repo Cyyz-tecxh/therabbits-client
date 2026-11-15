@@ -24,6 +24,11 @@ public class WearablesModule extends Module {
 
     public final ModeSetting pet = add(new ModeSetting("Pet", 0, false, Wearables.PET_NAMES).labels(i -> lockLabel(Wearables.PET_NAMES[i], Wearables.PET_IDS[i])));
 
+    public final com.therabbits.client.setting.NumberSetting auraSize = add(new com.therabbits.client.setting.NumberSetting("Aura Size", 1.6, 1.0, 2.5, 0.1));
+
+    /** How far auras spread around you (1 = hugging the body). */
+    public static float auraSize() { return instance == null ? 1.6f : instance.auraSize.f(); }
+
     public WearablesModule() {
         super("Hats & Arms", "Masks, claws, shields, auras, pets", Category.COSMETICS, true);
         instance = this;

@@ -9,13 +9,13 @@ from gen import P
 _prev = gen.paint
 def paint(mat, face, w, h):
     if mat.startswith('koipat:'):
-        _, seed, base, spot, spot2 = mat.split(':')
+        parts_ = mat.split(':'); seed, base, spot, spot2 = parts_[1:5]; thr = float(parts_[5]) if len(parts_) > 5 else 0.04
         rng = np.random.default_rng(int(seed))
         B, Sp, S2 = (np.array(I.hexc(x), float) for x in (base, spot, spot2))
         yy, xx = np.mgrid[0:h, 0:w].astype(float)
         col = np.ones((h, w, 3)) * B
-        f = gen.noise(h, w, 2.2, 2.2, 1)
-        blob = f > 0.05
+        f = gen.noise(h, w, 2.4, 2.4, 1)
+        blob = f > thr
         col[blob] = Sp
         if spot2 != '000000' and True:
             blob2 = gen.noise(h, w, 2.6, 2.6, 1) > 0.32
@@ -32,7 +32,7 @@ def paint(mat, face, w, h):
         rib = (np.abs(((xx / max(1, w)) * 6) % 1 - 0.5) < 0.12)
         img = np.zeros((h, w, 4)); img[..., :3] = c * (0.8 + 0.3 * (yy / max(1, h)))[..., None]; img[rib, :3] = c * 1.15; img[..., 3] = 255
         img[..., :3] = np.clip(img[..., :3], 0, 255)
-        glow = img.copy(); glow[..., :3] *= 0.55
+        glow = img.copy(); glow[..., :3] *= 0.18
         return img, glow
     return _prev(mat, face, w, h)
 gen.paint = paint
@@ -40,51 +40,55 @@ gen.paint = paint
 M = {}
 def add(key, name, cat, desc, parts, **kw): M[key] = dict(name=name, cat=cat, desc=desc, parts=parts, **kw)
 
-# ---------------- Koi Spirits (rebuilt): two continuous koi, tapered bodies, fins, flowing tails
-KOI_N = 11
-KOIS = [('a', 'koipat:3:FFFFFF:E8301C:000000', 'fin:FFD8C8'),      # kohaku: white with red
-        ('b', 'koipat:7:FFC23A:FFFFFF:111111', 'fin:FFE7A8')]      # gold with white + black
+# ---------------- Koi Spirits v2: three koi (kohaku, gold, black karasu) with long flowing fins
+KOI_N = 14
+KOI_W = [2.5, 3.1, 3.5, 3.7, 3.7, 3.5, 3.2, 2.8, 2.4, 2.0, 1.6, 1.2, 0.85, 0.6]
+KOIS = [('a', 'koipat:3:FFFFFF:E8301C:000000:0.02', 'fin:FFE4DA'),      # kohaku: white with red
+        ('b', 'koipat:7:FFC23A:FFF6E0:000000', 'fin:FFE7A8'),      # yamabuki: gold
+        ('c', 'koipat:11:131316:F2F2EE:000000:0.24', 'fin:2A2A32')]     # karasu: black with white + orange
 def build_koi():
     ps = []
     for f, mat, fin in KOIS:
         for i in range(KOI_N):
-            t = i / (KOI_N - 1)
-            w = 3.7 * (1 - t) ** 0.8 * (0.75 + 0.6 * math.sin(min(1, t * 2.2 + 0.25) * math.pi * 0.5)) + 0.35
+            w = KOI_W[i]
             n = 'k%s%d' % (f, i)
-            ps.append(P(n, (-w / 2, -w * 0.42, -1.4), (w, w * 0.84, 2.8), mat))
-            if 2 <= i <= 6:
-                ps.append(P(n + 'd', (-0.06, -w * 0.42 - 0.9, -0.9), (0.12, 0.9, 1.8), fin, parent=n))
+            ps.append(P(n, (-w / 2, -w * 0.4, -1.2), (w, w * 0.8, 2.4), mat))
+            if 3 <= i <= 9:
+                hh = 0.5 + 0.9 * math.sin((i - 2) / 8 * math.pi)
+                ps.append(P(n + 'd', (-0.05, -w * 0.4 - hh, -1.0), (0.1, hh, 2.0), fin, parent=n))
         h0 = 'k%s0' % f
         for sx in (-1, 1):
-            ps.append(P('k%seye%d' % (f, sx), (-0.1, -0.22, -0.22), (0.2, 0.44, 0.44), 'neon:101010', pivot=(sx * 1.45, -0.35, -0.6), parent=h0))
-            ps.append(P('k%sbar%d' % (f, sx), (-0.06, -0.06, -1.2), (0.12, 0.12, 1.2), fin, pivot=(sx * 0.6, 0.6, -0.9), rot=(20, sx * 20, 0), parent=h0))
-            ps.append(P('k%spec%d' % (f, sx), (0 if sx > 0 else -2.6, -0.06, -0.8), (2.6, 0.12, 1.8), fin, pivot=(sx * 1.4, 0.9, 0.6), rot=(0, sx * -25, sx * -25), parent='k%s1' % f))
+            ps.append(P('k%seye%d' % (f, sx), (-0.1, -0.2, -0.2), (0.2, 0.4, 0.4), 'neon:101010', pivot=(sx * 1.2, -0.3, -0.7), parent=h0))
+            ps.append(P('k%sbar%d' % (f, sx), (-0.05, -0.05, -1.3), (0.1, 0.1, 1.3), fin, pivot=(sx * 0.55, 0.55, -1.1), rot=(25, sx * 22, 0), parent=h0))
+            ps.append(P('k%spec%d' % (f, sx), (0 if sx > 0 else -3.2, -0.05, -0.9), (3.2, 0.1, 2.2), fin, pivot=(sx * 1.6, 1.0, 0.4), rot=(0, sx * -30, sx * -28), parent='k%s2' % f))
+            ps.append(P('k%spel%d' % (f, sx), (0 if sx > 0 else -1.8, -0.05, -0.6), (1.8, 0.1, 1.3), fin, pivot=(sx * 0.9, 0.8, 0.2), rot=(0, sx * -35, sx * -30), parent='k%s7' % f))
         tl = 'k%s%d' % (f, KOI_N - 1)
-        for j, a in enumerate((-32, 32)):
-            ps.append(P('k%stail%d' % (f, j), (-0.08, -1.3, 0), (0.16, 2.6, 3.6), fin, pivot=(0, 0, 1.0), rot=(a, 0, 0), parent=tl))
-    for i in range(10):
+        for j, a in enumerate((-30, 0, 30)):   # long flowing butterfly tail
+            ps.append(P('k%stail%d' % (f, j), (-0.06, -1.4 if a else -0.8, 0), (0.12, 2.8 if a else 1.6, 5.0 if a else 3.6), fin, pivot=(0, 0, 0.9), rot=(a, 0, 0), parent=tl))
+        ps.append(P('k%smouth' % f, (-0.5, -0.4, -0.3), (1.0, 0.8, 0.4), mat, pivot=(0, 0.1, -1.3), parent=h0))
+    for i in range(12):
         ps.append(P('kbub%d' % i, (-0.25, -0.25, -0.25), (0.5, 0.5, 0.5), 'neon:CFF4FF'))
     return ps
-add('koi', 'Koi Spirits', 'AURAS', 'Two spirit koi swim figure-eights around you · bubbles rise', build_koi())
+add('koi', 'Koi Spirits', 'AURAS', 'Three spirit koi (red, gold, black) swim around you · bubbles rise', build_koi())
+
+def koi_path(s, k):
+    return (math.sin(s) * 13.5, 7 + 3.0 * math.sin(s * 2 + 1) + (k - 1) * 4.5, math.sin(2 * s) * 9.5)
 
 def pose_koi(t, ps0):
     ps = copy.deepcopy(ps0); by = {p['name']: p for p in ps}
     for k, (f, _, _) in enumerate(KOIS):
-        ph = k * math.pi
-        def path(s):
-            return (math.sin(s) * 13.5, 7 + 3.0 * math.sin(s * 2 + 1) - 4 * k + 2, math.sin(2 * s) * 9.5)
-        s0 = t * 0.55 + ph
-        pts = [path(s0 - i * 0.1) for i in range(KOI_N + 1)]
-        hp = path(s0 + 0.1)
+        s0 = t * 0.55 + k * 2 * math.pi / 3
+        pts = [koi_path(s0 - i * 0.085, k) for i in range(KOI_N + 1)]
+        hp = koi_path(s0 + 0.085, k)
         for i in range(KOI_N):
             p = by['k%s%d' % (f, i)]; p['pivot'] = list(pts[i])
             r = MY.look(pts[i], pts[i - 1] if i else hp)
-            r[1] += 9 * math.sin(t * 5 - i * 0.7) * (i / KOI_N)      # swimming wiggle toward the tail
+            r[1] += 10 * math.sin(t * 5 - i * 0.6) * (i / KOI_N)
             p['rot'] = r
-        for j, a in enumerate((-32, 32)):
-            by['k%stail%d' % (f, j)]['rot'] = [a, 20 * math.sin(t * 5 - 7), 0]
-    for i in range(10):
-        life = (t * 0.3 + i / 10) % 1; a = i * 2.3
+        for j, a in enumerate((-30, 0, 30)):
+            by['k%stail%d' % (f, j)]['rot'] = [a, 22 * math.sin(t * 5 - 8), 0]
+    for i in range(12):
+        life = (t * 0.3 + i / 12) % 1; a = i * 2.3
         p = by['kbub%d' % i]; p['pivot'] = [math.cos(a) * (10 + i % 3 * 2), 20 - life * 26, math.sin(a) * (10 + i % 3 * 2)]
         MY.scaled(p, 0.6 + 0.6 * (1 - life))
     return ps

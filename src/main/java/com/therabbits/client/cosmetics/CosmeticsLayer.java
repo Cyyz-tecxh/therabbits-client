@@ -35,8 +35,24 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         CosmeticModel aura = CosmeticModel.get(WearablesModule.auraFor(p));
         float now = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         if (aura != null && "aura".equals(aura.attach)) {
-            if (aura.root.hasChild("f0") || aura.root.hasChild("ring0") || aura.root.hasChild("p0")) drawAura(pose, out, aura);
-            else { animateAura(aura, now, p); draw(pose, out, light, aura, aura.root); }
+            float k = WearablesModule.auraSize();
+            ModelPart root = aura.root;
+            boolean chain = root.hasChild("d_head") || root.hasChild("ka0");   // dragons and koi: grow as a whole so bodies stay connected
+            pose.pushPose();
+            if (chain || root.hasChild("ring0")) {
+                pose.translate(0, 12f / 16f, 0);
+                if (chain) pose.scale(k, k, k); else pose.scale(k, 1f, k);
+                pose.translate(0, -12f / 16f, 0);
+            }
+            if (root.hasChild("f0") || root.hasChild("ring0") || root.hasChild("p0")) {
+                if (root.hasChild("f0")) { drawAuraSpread(pose, out, aura, k); }
+                else drawAura(pose, out, aura);
+            } else {
+                animateAura(aura, now, p);
+                if (!chain) spread(root, k);
+                draw(pose, out, light, aura, root);
+            }
+            pose.popPose();
         }
         CosmeticModel pet = CosmeticModel.get(WearablesModule.petFor(p));
         if (pet != null && "pet".equals(pet.attach)) {
@@ -92,6 +108,33 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             b.xRot = ib.xRot() + (4.0f * net.minecraft.util.Mth.sin(ph + 0.8f) - 14f * atk) * rad;
             c.xRot = ic.xRot() + (6.0f * net.minecraft.util.Mth.sin(ph + 1.6f) + 10f * atk) * rad;
         }
+    }
+
+    /** Push loose parts (cards, petals, gears, sparkles, light trails) further out from you; their size stays the same. */
+    private static void spread(ModelPart root, float k) {
+        if (k == 1f) return;
+        for (int i = 0; ; i++) {
+            boolean any = false;
+            for (String pre : new String[]{"c", "s", "pt", "g", "ch", "kbub"}) {
+                if (root.hasChild(pre + i)) { ModelPart q = root.getChild(pre + i); q.x *= k; q.z *= k; any = true; }
+            }
+            if (!any && i > 40) break;
+        }
+        if (root.hasChild("clock")) { ModelPart c = root.getChild("clock"); c.x *= k; c.z *= k; }
+        for (int r = 0; root.hasChild("t" + r); r++) {
+            ModelPart ring = root.getChild("t" + r);
+            for (int j = 0; ring.hasChild("t" + r + "_" + j); j++) {
+                ModelPart q = ring.getChild("t" + r + "_" + j);
+                q.x *= k; q.z *= k; q.xScale *= k;
+            }
+        }
+    }
+
+    private static void drawAuraSpread(PoseStack pose, SubmitNodeCollector out, CosmeticModel m, float k) {
+        float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
+        animateSnow(m.root, t);
+        for (int i = 0; m.root.hasChild("f" + i); i++) { ModelPart f = m.root.getChild("f" + i); f.x *= k; f.z *= k; }
+        out.submitModelPart(m.root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
     }
 
     // ------------------------------------------------------------------ helpers
@@ -168,34 +211,34 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     }
 
     private static float[] koiPath(float s, int k) {
-        return new float[]{sin(s) * 13.5f, 7f + 3f * sin(s * 2f + 1f) - 4f * k + 2f, sin(2f * s) * 9.5f};
+        return new float[]{sin(s) * 13.5f, 7f + 3f * sin(s * 2f + 1f) + (k - 1) * 4.5f, sin(2f * s) * 9.5f};
     }
 
     /** Two koi swim figure-eights around you, tails swishing; bubbles rise. */
     private static void animateKoi(ModelPart root, float t) {
-        String[] fish = {"a", "b"};
-        for (int k = 0; k < 2; k++) {
+        String[] fish = {"a", "b", "c"};
+        for (int k = 0; k < fish.length; k++) {
             String f = fish[k];
             int n = 0;
             while (root.hasChild("k" + f + n)) n++;
             if (n == 0) continue;
-            float s0 = t * 0.55f + k * (float) Math.PI;
-            float[] prev = koiPath(s0 + 0.1f, k);
+            float s0 = t * 0.55f + k * (float) (Math.PI * 2 / 3);
+            float[] prev = koiPath(s0 + 0.085f, k);
             for (int i = 0; i < n; i++) {
-                float[] pt = koiPath(s0 - i * 0.1f, k);
+                float[] pt = koiPath(s0 - i * 0.085f, k);
                 ModelPart seg = root.getChild("k" + f + i);
                 place(seg, pt);
                 look(seg, pt, prev);
-                seg.yRot += rad(9f * sin(t * 5f - i * 0.7f) * i / n);
+                seg.yRot += rad(10f * sin(t * 5f - i * 0.6f) * i / n);
                 prev = pt;
             }
             ModelPart tailSeg = root.getChild("k" + f + (n - 1));
-            for (int j = 0; j < 2; j++)
-                if (tailSeg.hasChild("k" + f + "tail" + j)) tailSeg.getChild("k" + f + "tail" + j).yRot = rad(20f * sin(t * 5f - 7f));
+            for (int j = 0; j < 3; j++)
+                if (tailSeg.hasChild("k" + f + "tail" + j)) tailSeg.getChild("k" + f + "tail" + j).yRot = rad(22f * sin(t * 5f - 8f));
         }
         for (int i = 0; root.hasChild("kbub" + i); i++) {
             ModelPart b = root.getChild("kbub" + i);
-            float life = (t * 0.3f + i / 10f) % 1f, a = i * 2.3f, r = 10f + (i % 3) * 2f;
+            float life = (t * 0.3f + i / 12f) % 1f, a = i * 2.3f, r = 10f + (i % 3) * 2f;
             b.x = cos(a) * r; b.y = 20f - life * 26f; b.z = sin(a) * r;
             scale(b, 0.6f + 0.6f * (1f - life));
         }
