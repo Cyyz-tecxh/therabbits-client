@@ -95,7 +95,13 @@ public class ShowcaseTest implements FabricClientGameTest {
         });
 
         // ================= In-game features (world first: it loads faster in a small window) =================
-        try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
+        // Superflat: the CI machine kept stalling while generating normal terrain ("Preparing spawn area").
+        try (TestSingleplayerContext sp = ctx.worldBuilder().adjustSettings(s -> {
+            java.util.List<net.minecraft.client.gui.screens.worldselection.WorldCreationUiState.WorldTypeEntry> all = new java.util.ArrayList<>(s.getNormalPresetList());
+            all.addAll(s.getAltPresetList());
+            for (var e : all)
+                if (e.preset() != null && e.preset().is(net.minecraft.world.level.levelgen.presets.WorldPresets.FLAT)) { s.setWorldType(e); break; }
+        }).create()) {
             ctx.runOnClient(mc -> mc.options.framerateLimit().set(60));
             sp.getServer().runOnServer(server -> {
                 ServerPlayer p = server.getPlayerList().getPlayers().get(0);
