@@ -23,10 +23,10 @@ import net.minecraft.util.Mth;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Cosmetics locker: tabs for capes / hats / arms / shields / codes, picture cards, live player preview. */
+/** Cosmetics locker: tabs for capes / masks / arms / shields / auras / pets, picture cards, live player preview. */
 public class CosmeticsScreen extends Screen {
     private enum Tab {
-        CAPES("Capes"), HATS("Masks"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), PETS("Pets"), CODES("Online & Codes");
+        CAPES("Capes"), HATS("Masks"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), PETS("Pets");
         final String label;
         Tab(String l) { label = l; }
     }
@@ -87,7 +87,7 @@ public class CosmeticsScreen extends Screen {
             if (sel) { Draw.glow(g, tx, 10, w, 18, 9, Theme.accent(), 3); Draw.rgrad(g, tx, 10, w, 18, 9, Theme.accent(), Draw.shade(Theme.accent(), 0.78f)); }
             else { Draw.rgrad(g, tx, 10, w, 18, 9, hov ? 0xFF2A2A30 : 0xFF1A1A1E, hov ? 0xFF202025 : 0xFF131316); Draw.routline(g, tx, 10, w, 18, 9, hov ? Theme.accent(0x80) : 0x2AFFFFFF); }
             Draw.centered(g, t.label, tx + w / 2, 15, sel ? Theme.onAccent() : 0xFFD0D0D0);
-            hits.add(new Hit(tx, 10, w, 18, () -> { tab = t; scroll = 0; if (t == Tab.CODES) openCodes(); }));
+            hits.add(new Hit(tx, 10, w, 18, () -> { tab = t; scroll = 0; }));
             tx += w + 4;
         }
         button(g, mx, my, width - 62, 10, 50, 18, "Mods", () -> minecraft.setScreen(new ModMenuScreen(parent)));
@@ -154,7 +154,7 @@ public class CosmeticsScreen extends Screen {
             card(g, it, x, y, cw, ch, mx, my, gy, gh);
         }
         g.disableScissor();
-        if (items.isEmpty()) Draw.centered(g, "Opening codes...", gx + gw / 2, gy + 40, 0xFF8A8A8A);
+        if (items.isEmpty()) Draw.centered(g, "No cosmetics match your search", gx + gw / 2, gy + 40, 0xFF8A8A8A);
         if (toast != null && System.currentTimeMillis() - toastAt < 2200) {
             int w = Draw.width(toast) + 20;
             Draw.glow(g, width / 2 - w / 2, height - 30, w, 18, 9, Theme.accent(), 3);
@@ -185,7 +185,6 @@ public class CosmeticsScreen extends Screen {
             case SHIELDS -> { for (int i = 0; i < Wearables.SHIELD_IDS.length; i++) out.add(new Item(Wearables.SHIELD_IDS[i], Wearables.SHIELD_NAMES[i], w.shield, i, false, "shield")); }
             case AURAS -> { for (int i = 0; i < Wearables.AURA_IDS.length; i++) out.add(new Item(Wearables.AURA_IDS[i], Wearables.AURA_NAMES[i], w.aura, i, false, "aura")); }
             case PETS -> { for (int i = 0; i < Wearables.PET_IDS.length; i++) out.add(new Item(Wearables.PET_IDS[i], Wearables.PET_NAMES[i], w.pet, i, false, "pet")); }
-            case CODES -> {}
         }
         String q = search == null ? "" : search.getValue().trim().toLowerCase(java.util.Locale.ROOT);
         if (!q.isEmpty()) out.removeIf(i -> !i.name().toLowerCase(java.util.Locale.ROOT).contains(q));
@@ -291,20 +290,16 @@ public class CosmeticsScreen extends Screen {
         return parts.isEmpty() ? "Nothing equipped" : String.join(" · ", parts);
     }
 
-    private void openCodes() {
-        ModMenuScreen menu = new ModMenuScreen(this);
-        minecraft.setScreen(menu);
-        menu.openSettings(ModuleManager.get(AccountModule.class));
-        tab = Tab.HATS;
-    }
 
     private void toast(String s) { toast = s; toastAt = System.currentTimeMillis(); }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent e, boolean dbl) {
         if (e.button() == 0) {
-            if (search.mouseClicked(e, dbl)) return true;
-            search.setFocused(false);
+            if (Draw.inside(e.x(), e.y(), search.getX(), search.getY(), search.getWidth(), search.getHeight())) {
+                setFocused(search); search.setFocused(true); search.mouseClicked(e, dbl); return true;
+            }
+            search.setFocused(false); if (getFocused() == search) setFocused(null);
             for (Hit h : List.copyOf(hits))
                 if (Draw.inside(e.x(), e.y(), h.x(), h.y(), h.w(), h.h())) { h.action().run(); return true; }
         }
