@@ -643,14 +643,14 @@ MODELS['aura'] = dict(attach='aura', parts=au)
 # Snow Aura - lots of ice crystals drifting close around the whole body (animated in-game)
 sa = []
 srng = np.random.default_rng(33)
-NF = 60
+NF = 26
 for i in range(NF):
     a = (i * 2.399963) % (2 * math.pi) + srng.random() * 0.3      # golden-angle spread so no side is empty
     y = -9.0 + (i + srng.random()) / NF * 33.5
     head = y < 0
     rx = (4.2 if head else 5.0) + srng.random() * 1.2              # an oval that wraps just outside the arms
     rz = (4.0 if head else 3.0) + srng.random() * 1.2
-    size = 3.1
+    size = 3.3
     n = 'f%d' % i
     sa.append(P(n, (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', pivot=(math.cos(a) * rx, y, math.sin(a) * rz), rot=(0, 0, 0)))
 MODELS['snow_aura'] = dict(attach='aura', parts=sa)
@@ -836,25 +836,25 @@ def face_regions(u, v, w, h, d):
 
 
 SNOWFLAKE = [
-    ".....b.....",
-    "..b..b..b..",
-    "...b.l.b...",
-    ".b..lll..b.",
-    "...l.l.l...",
-    "bblllcllldb",
-    "...l.l.l...",
-    ".b..lll..b.",
-    "...b.l.b...",
-    "..b..b..b..",
-    ".....b.....",
+    "....DBD....",
+    ".DD.DLD.DD.",
+    ".DBD.L.DBD.",
+    "..DLDLDLD..",
+    "DD.DLCLD.DD",
+    "BLLLCCCLLLB",
+    "DD.DLCLD.DD",
+    "..DLDLDLD..",
+    ".DBD.L.DBD.",
+    ".DD.DLD.DD.",
+    "....DBD....",
 ]
 
 def snowflake_sprite():
     """Hand-drawn 11x11 ice crystal (8 arms, barbed tips, bright core) with a dark blue rim -> 13x13."""
-    g = [r.replace('d', 'b') for r in SNOWFLAKE]
+    g = SNOWFLAKE
     n = len(g) + 2   # 1px clear border so mipmaps don't bleed
     out = np.zeros((n, n, 4), float)
-    col = {'b': (38, 140, 236), 'l': (118, 206, 255), 'c': (240, 252, 255)}
+    col = {'D': (22, 92, 196), 'B': (52, 156, 240), 'L': (122, 210, 255), 'C': (225, 247, 255)}
     body = np.zeros((n, n), bool)
     for r, row in enumerate(g):
         for c, ch in enumerate(row):
