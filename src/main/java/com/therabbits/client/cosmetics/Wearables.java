@@ -9,8 +9,8 @@ public final class Wearables {
     public static final String[] ARM_IDS = {"none", "claws"};
     public static final String[] ARM_NAMES = {"None", "Claws"};
 
-    public static final String[] SHIELD_IDS = {"none", "neon_shield"};
-    public static final String[] SHIELD_NAMES = {"None", "Neon Royal Shield"};
+    public static final String[] SHIELD_IDS = {"none", "neon_shield", "blood_moon_shield"};
+    public static final String[] SHIELD_NAMES = {"None", "Neon Royal Shield", "Blood Moon Shield"};
 
     public static final String[] AURA_IDS = {"none", "aura", "snow_aura", "clockwork_aura", "petal_aura", "koi_aura",
         "cards_blood", "cards_royal", "cards_frost", "cards_heartbreaker", "cards_void", "cards_emerald",
