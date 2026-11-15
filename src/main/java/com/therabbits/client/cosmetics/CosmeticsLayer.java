@@ -39,7 +39,18 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             else { animateAura(aura, now, p); draw(pose, out, light, aura, aura.root); }
         }
         CosmeticModel pet = CosmeticModel.get(WearablesModule.petFor(p));
-        if (pet != null && "pet".equals(pet.attach)) { animatePet(pet.root, now); draw(pose, out, light, pet, pet.root); }
+        if (pet != null && "pet".equals(pet.attach)) {
+            animatePet(pet.root, now);
+            if (pet.root.hasChild("d_head")) {
+                // dragon pets are pocket-sized: shrink the coil around its centre and float it by your shoulder
+                pose.pushPose();
+                pose.translate(9f / 16f, -5f / 16f, 3f / 16f);
+                pose.scale(0.36f, 0.36f, 0.36f);
+                pose.translate(-17f / 16f, -6f / 16f, -8f / 16f);
+                draw(pose, out, light, pet, pet.root);
+                pose.popPose();
+            } else draw(pose, out, light, pet, pet.root);
+        }
         PlayerModel model = getParentModel();
         if (hat != null && !hat.arms) {
             pose.pushPose();
