@@ -395,11 +395,6 @@ public class RabbitsTitleScreen extends Screen {
 
         icon(g, e.icon, x + 10 + (int) (2 * h), y + (BTN_H - 9) / 2, withAlpha(dark ? 0x000000 : 0xFFFFFF, alpha));
         Draw.text(g, e.label, x + 26 + (int) (3 * h), ty, withAlpha(dark ? 0x000000 : 0xF2F2F2, alpha));
-        // the grey hint never overlaps the label: shortened to fit, hidden if there's no room
-        int labelEnd = x + 26 + (int) (3 * h) + Draw.width(e.label) + 10;
-        int room = x + BTN_W - 14 - labelEnd;
-        String hint = room >= 30 ? Draw.trim(e.hint, room) : "";
-        if (!hint.isEmpty()) Draw.text(g, hint, x + BTN_W - Draw.width(hint) - 14, ty, withAlpha(dark ? 0x505050 : 0x5A5A5A, alpha));
         Draw.text(g, "›", x + BTN_W - 8 + (int) (2 * h), ty, withAlpha(dark ? 0x000000 : 0x5A5A5A, alpha));
     }
 
