@@ -483,13 +483,15 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             float c = net.minecraft.util.Mth.cos(drift), sn = net.minecraft.util.Mth.sin(drift);
             f.x = ip.x() * c - ip.z() * sn;
             f.z = ip.x() * sn + ip.z() * c;
-            f.y = ip.y() + net.minecraft.util.Mth.sin(t * (0.7f + h * 0.6f) + i * 1.3f) * (0.5f + h * 0.7f);
+            // falls from above your head to your feet, then starts again at the top
+            float span = 36f, top = -11f;
+            float fall = ((ip.y() - top) + t * (2.2f + h * 1.6f)) % span;
+            f.y = top + fall;
+            f.x += net.minecraft.util.Mth.sin(t * (0.9f + h * 0.5f) + i * 1.3f) * 0.6f;   // slight side-to-side sway
             f.yRot = face + net.minecraft.util.Mth.sin(t * (0.5f + h * 0.4f) + i * 1.7f) * 0.45f;   // crystals turn toward you, with a gentle wobble
             f.zRot = t * (0.25f + h * 0.3f) * (i % 3 == 0 ? -1 : 1);
-            // life: fade in, stay, fade out, short gap; plus a gentle flicker
-            float life = (t * (0.11f + h * 0.08f) + h * 7.3f) % 1f;
-            float a = life < 0.15f ? life / 0.15f : life < 0.75f ? 1f : life < 0.9f ? (0.9f - life) / 0.15f : 0f;
-            a *= 0.85f + 0.15f * net.minecraft.util.Mth.sin(t * 9f + i * 2.1f);
+            float u = fall / span;   // fade in at the top, fade out at the feet
+            float a = u < 0.1f ? u / 0.1f : u > 0.88f ? (1f - u) / 0.12f : 1f;
             float size = (0.9f + h * 0.3f) * Math.max(0f, a);
             f.visible = size > 0.04f;
             f.xScale = f.yScale = f.zScale = size;

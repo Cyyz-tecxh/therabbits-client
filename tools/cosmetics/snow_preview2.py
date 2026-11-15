@@ -15,11 +15,13 @@ def animate(t):
         h = (i * 0.6180339) % 1
         drift = t * (0.10 + h * 0.12) * (1 if i % 2 == 0 else -1)
         x0, y0, z0 = ip['pivot']; c, s = math.cos(drift), math.sin(drift)
-        f['pivot'] = [(x0 * c - z0 * s) * K, y0 + math.sin(t * (0.7 + h * 0.6) + i * 1.3) * (0.5 + h * 0.7), (x0 * s + z0 * c) * K]
+        span, top = 36.0, -11.0
+        fall = ((y0 - top) + t * (2.2 + h * 1.6)) % span
+        xr, zr = (x0 * c - z0 * s) * K, (x0 * s + z0 * c) * K
+        f['pivot'] = [xr + math.sin(t * (0.9 + h * 0.5) + i * 1.3) * 0.6, top + fall, zr]
         f['rot'] = [0, FACE[0] + math.degrees(math.sin(t * (0.5 + h * 0.4) + i * 1.7) * 0.45), math.degrees(t * (0.25 + h * 0.3) * (-1 if i % 3 == 0 else 1))]
-        life = (t * (0.11 + h * 0.08) + h * 7.3) % 1
-        a = life / 0.15 if life < 0.15 else 1 if life < 0.75 else (0.9 - life) / 0.15 if life < 0.9 else 0
-        a *= 0.85 + 0.15 * math.sin(t * 9 + i * 2.1)
+        u = fall / span
+        a = u / 0.1 if u < 0.1 else (1 - u) / 0.12 if u > 0.88 else 1
         sc = (0.9 + h * 0.3) * max(0, a)
         f['frm'] = [v * sc for v in f['frm']]; f['size'] = [max(1e-4, v * sc) for v in f['size']]
         i += 1

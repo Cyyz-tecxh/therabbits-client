@@ -650,7 +650,7 @@ for i in range(NF):
     head = y < 0
     rx = (4.2 if head else 5.0) + srng.random() * 1.2              # an oval that wraps just outside the arms
     rz = (4.0 if head else 3.0) + srng.random() * 1.2
-    size = 2.6
+    size = 3.1
     n = 'f%d' % i
     sa.append(P(n, (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'snowflake', pivot=(math.cos(a) * rx, y, math.sin(a) * rz), rot=(0, 0, 0)))
 MODELS['snow_aura'] = dict(attach='aura', parts=sa)
