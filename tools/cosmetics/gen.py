@@ -47,7 +47,7 @@ def honeycomb(base, w, h, t):
 
 FAB = {'fab_red': (200, 26, 34), 'fab_green': (96, 200, 58), 'fab_dkgreen': (44, 120, 36), 'fab_black': (30, 30, 34),
        'fab_black2': (20, 20, 23), 'fab_white': (240, 240, 244), 'fab_lav': (176, 146, 236), 'fab_pink': (244, 132, 186),
-       'fab_velvet': (140, 16, 30), 'fab_pupil': (16, 16, 18)}
+       'fab_velvet': (140, 16, 30), 'fab_pupil': (16, 16, 18), 'fab_purple': (92, 50, 168), 'fab_cream': (236, 226, 200)}
 def noise(h, w, sx=1.0, sy=1.0, octaves=3):
     out = np.zeros((h, w))
     amp = 1.0
@@ -283,6 +283,18 @@ def paint(mat, face, w, h):
                     img[oy + r * k: oy + (r + 1) * k, ox + c * k: ox + (c + 1) * k, :3] = col
         img[..., 3] = np.where(img[..., :3].sum(-1) > 0, 255, 0)
         glow = img.copy()
+    elif mat.startswith('pulse:'):
+        _, hx, seg = mat.split(':')
+        c = np.array([int(hx[i:i + 2], 16) for i in (0, 2, 4)], float)
+        yy = np.linspace(0, 1, h)[:, None] * np.ones((1, w))
+        if face in ('top', 'bottom'):
+            yy = np.zeros((h, w)) + (0.0 if face == 'top' else 1.0)
+        chain = float(seg) + yy
+        centre = PHASE * 5.0 - 1.5
+        band = np.exp(-((chain - centre) ** 2) / 0.12) + 0.6 * np.exp(-((chain - centre + 2.5) ** 2) / 0.12)
+        k_ = 0.45 + 0.9 * band
+        img[..., :3] = np.clip(c[None, None] * k_[..., None] + 120 * np.clip(band - 0.5, 0, 1)[..., None], 0, 255)
+        glow = img.copy()
     elif mat.startswith('neon:') or mat.startswith('metal:'):
         kind, hx = mat.split(':')
         c = np.array([int(hx[i:i + 2], 16) for i in (0, 2, 4)], float)
@@ -364,6 +376,27 @@ def paint(mat, face, w, h):
                 img[cross, :3] = (230, 180, 60)
                 img[cross & ((np.abs(u - 0.5) > 0.07) | (np.abs(v - 0.38) > 0.045)), :3] = (180, 130, 30)
         bevel(img, face, 0.2)
+    elif mat.startswith('sprite:'):
+        kind = mat[7:]
+        img[..., :3] = 0
+        pats = {
+            'heart': (["..........", ".##....##.", "####..####", "##########", "##########", ".########.", "..######..", "...####...", "....##....", ".........."],
+                      {'#': (255, 92, 150)}),
+            'star': (["....#....", "....#....", "...###...", "#########", ".#######.", "..#####..", "..##.##..", ".##...##.", "#.......#"],
+                     {'#': (255, 214, 92)}),
+            'ember': (["...#...", "..##...", "..###..", ".####..", ".#####.", "##@@###", "##@@@##", ".#@@@#.", "..###.."],
+                      {'#': (255, 110, 30), '@': (255, 220, 120)}),
+        }
+        pat, cols = pats[kind]
+        ph, pw_ = len(pat), len(pat[0])
+        k = max(1, min(w // pw_, h // ph))
+        ox, oy = (w - pw_ * k) // 2, (h - ph * k) // 2
+        for r, row in enumerate(pat):
+            for c, ch in enumerate(row):
+                if ch in cols:
+                    img[oy + r * k: oy + (r + 1) * k, ox + c * k: ox + (c + 1) * k, :3] = cols[ch]
+        img[..., 3] = np.where(img[..., :3].sum(-1) > 0, 255, 0)
+        glow = img.copy()
     elif mat == 'skin':
         base((214, 168, 134)); img[..., :3] *= (1 + fine(h, w, 0.04))[..., None]
     elif mat == 'face':
@@ -413,6 +446,7 @@ def P(name, frm, size, mat, pivot=(0, 0, 0), rot=(0, 0, 0), parent=None):
 def box_c(name, cx, y0, cz, w, h, d, mat, **k):
     return P(name, (cx - w / 2, y0, cz - d / 2), (w, h, d), mat, **k)
 
+PHASE = 0.0
 MODELS = {}
 
 # Black Fedora — curved brim, pinched crown, red satin band, silver rabbit pin, red feather
@@ -584,14 +618,11 @@ for sx in (-1, 1):
 MODELS['bunny_hat'] = dict(attach='head', parts=u6)
 
 
-# Neon Royal Shield — black/purple plate, gold-orange honeycomb, neon frame, purple+gold corners, glossy core, handle
+# Neon Royal Shield — black/purple plate, gold-orange honeycomb, neon frame (no corner blocks), glossy core, handle
 sd = [P('plate', (-6, -11, -0.75), (12, 22, 1.5), 'shield_face')]
 for n, frm, size in (('ft', (-6.5, -11.5, -1.05), (13, 0.9, 2.1)), ('fb', (-6.5, 10.6, -1.05), (13, 0.9, 2.1)),
                      ('fl', (-6.5, -10.6, -1.05), (0.9, 21.2, 2.1)), ('fr', (5.6, -10.6, -1.05), (0.9, 21.2, 2.1))):
     sd.append(P(n, frm, size, 'neon'))
-for i, (cx_, cy_) in enumerate(((-6.0, -11.0), (6.0, -11.0), (-6.0, 11.0), (6.0, 11.0))):
-    sd.append(box_c('cn%d' % i, cx_, cy_ - 1.05, -0.0, 2.1, 2.1, 2.7, 'purple_metal'))
-    sd.append(box_c('cg%d' % i, cx_, cy_ - 0.55, -1.45, 1.1, 1.1, 0.4, 'gold'))
 sd.append(P('core', (-2.2, -2.2, -0.35), (4.4, 4.4, 0.7), 'void', pivot=(0, 0, -1.0), rot=(0, 0, 45)))
 sd.append(P('core_ring', (-2.7, -2.7, -0.2), (5.4, 5.4, 0.35), 'gold', pivot=(0, 0, -0.8), rot=(0, 0, 45)))
 sd.append(P('core_glow', (-0.8, -0.8, -0.25), (1.6, 1.6, 0.5), 'neon', pivot=(0, 0, -1.5), rot=(0, 0, 45)))
@@ -661,6 +692,85 @@ SHIELD_DRAFTS = {
 for k, (_, m_, _c) in SHIELD_DRAFTS.items():
     MODELS[k] = m_
 
+
+# ---------------- batch 2: hats, arms, auras
+def particle_aura(sprite, n, prefix, seed, size=1.25):
+    out = []
+    r_ = np.random.default_rng(seed)
+    for i in range(n):
+        a = r_.random() * 2 * math.pi
+        y = -9.5 + r_.random() * 34.0
+        r = 4.6 + r_.random() * 3.6 if y > 0 else 5.2 + r_.random() * 2.6
+        nm = '%s%d' % (prefix, i)
+        out.append(P(nm, (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'sprite:' + sprite, pivot=(math.cos(a) * r, y, math.sin(a) * r), rot=(0, r_.random() * 180, 0)))
+        out.append(P(nm + 'x', (-size / 2, -size / 2, -0.01), (size, size, 0.02), 'sprite:' + sprite, rot=(0, 90, 0), parent=nm))
+    return dict(attach='aura', parts=out)
+
+MODELS['heart_aura'] = particle_aura('heart', 22, 'f', 31)
+MODELS['star_aura'] = particle_aura('star', 24, 'f', 32, 1.125)
+MODELS['flame_aura'] = particle_aura('ember', 26, 'e', 33, 1.0)
+
+# Halo - glowing gold ring floating above the head
+h = []
+for i in range(16):
+    a = i / 16 * 2 * math.pi
+    h.append(P('h%d' % i, (-0.9, -0.3, -0.3), (1.8, 0.6, 0.6), 'neon:FFD966', pivot=(math.cos(a) * 4.0, -11.6, math.sin(a) * 4.0), rot=(0, -math.degrees(a) - 90, 0)))
+MODELS['halo'] = dict(attach='head', parts=h)
+
+# Devil Horns - curved red horns with dark tips
+dh = []
+for sx in (-1, 1):
+    n = 'horn%d' % sx
+    dh.append(P(n, (-0.9, -2.0, -0.9), (1.8, 2.0, 1.8), 'metal:B3202A', pivot=(2.6 * sx, -7.6, -1.2), rot=(-10, 0, 18 * sx)))
+    dh.append(P(n + 'b', (-0.7, -1.8, -0.7), (1.4, 1.8, 1.4), 'metal:9A1820', pivot=(0, -2.0, 0), rot=(-8, 0, 22 * sx), parent=n))
+    dh.append(P(n + 'c', (-0.45, -1.5, -0.45), (0.9, 1.5, 0.9), 'metal:6E0F16', pivot=(0, -1.8, 0), rot=(0, 0, 30 * sx), parent=n + 'b'))
+    dh.append(P(n + 'd', (-0.25, -1.0, -0.25), (0.5, 1.0, 0.5), 'metal:1E1E22', pivot=(0, -1.5, 0), rot=(0, 0, 30 * sx), parent=n + 'c'))
+MODELS['devil_horns'] = dict(attach='head', parts=dh)
+
+# Headphones - black band over the head, cups with light-blue glow rings
+hp = []
+for i in range(9):
+    a = math.pi * (0.08 + 0.84 * i / 8)
+    hp.append(P('band%d' % i, (-0.7, -0.4, -0.9), (1.4, 0.8, 1.8), 'metal:6A6A76', pivot=(-math.cos(a) * 4.8, -4.4 - math.sin(a) * 5.0, 0.4), rot=(0, 0, math.degrees(a) - 90)))
+for sx in (-1, 1):
+    hp.append(box_c('cup%d' % sx, 4.75 * sx, -5.6, 0.4, 1.4, 3.6, 3.6, 'metal:3A3A42'))
+    hp.append(box_c('ring%d' % sx, 5.5 * sx, -5.3, 0.4, 0.25, 3.0, 3.0, 'neon:6EC6FF'))
+MODELS['headphones'] = dict(attach='head', parts=hp)
+
+# Wizard Hat - tall purple cone that bends, gold band and stars
+wz = [box_c('brim', 0, -8.6, 0, 11.5, 0.5, 11.5, 'fab_purple'), box_c('band', 0, -10.0, 0, 8.4, 1.3, 8.4, 'metal:D9AE45')]
+prev, y = None, -8.6
+for i, (wd, hh, rx) in enumerate(((8.0, 2.2, 0), (6.6, 2.2, -6), (5.2, 2.2, -10), (3.8, 2.1, -16), (2.4, 2.0, -22), (1.2, 1.6, -26))):
+    n = 'c%d' % i
+    wz.append(P(n, (-wd / 2, -hh, -wd / 2), (wd, hh, wd), 'fab_purple', pivot=(0, y if prev is None else -prev, 0), rot=(rx * 0.6, 0, 0), parent=None if i == 0 else 'c%d' % (i - 1)))
+    prev = hh; y = None
+for i, (x, yy_, z) in enumerate(((-2.5, -12.2, -4.05), (1.8, -14.0, -3.3), (-0.4, -11.0, -4.05))):
+    wz.append(box_c('st%d' % i, x, yy_, z, 0.7, 0.7, 0.25, 'neon:FFD966'))
+MODELS['wizard_hat'] = dict(attach='head', parts=wz)
+
+# Viking Helmet - steel dome over the head, nose guard, cream horns
+vk = [box_c('dome', 0, -8.8, 0, 9.0, 4.2, 9.0, 'metal:9AA0AA'), box_c('top', 0, -9.6, 0, 7.4, 0.8, 7.4, 'metal:8A909A'),
+      box_c('ridge', 0, -9.9, 0, 1.0, 0.6, 9.2, 'metal:6C5A3A'),
+      box_c('rim', 0, -5.2, 0, 9.4, 0.8, 9.4, 'metal:6C5A3A'), box_c('nose', 0, -5.0, -4.6, 1.0, 2.6, 0.4, 'metal:9AA0AA')]
+horn = [P('vh', (0, -0.9, -0.9), (2.4, 1.8, 1.8), 'fab_cream', pivot=(4.4, -7.4, 0), rot=(0, 0, -20)),
+        P('vhb', (0, -0.7, -0.7), (2.0, 1.4, 1.4), 'fab_cream', pivot=(2.2, 0, 0), rot=(0, 0, -40), parent='vh'),
+        P('vhc', (0, -0.45, -0.45), (1.5, 0.9, 0.9), 'fab_cream', pivot=(1.8, 0, 0), rot=(0, 0, -40), parent='vhb')]
+vk += horn
+for p0 in horn:
+    p_ = json.loads(json.dumps(p0))
+    p_['frm'][0] = -(p0['frm'][0] + p0['size'][0]); p_['pivot'][0] = -p0['pivot'][0]
+    p_['rot'][1] = -p0['rot'][1]; p_['rot'][2] = -p0['rot'][2]
+    p_['name'] = 'L' + p0['name']; p_['parent'] = ('L' + p0['parent']) if p0['parent'] else None
+    vk.append(p_)
+MODELS['viking_helmet'] = dict(attach='head', parts=vk)
+
+# Energy Gauntlets - dark gauntlets with glowing blue rings
+eg = [P('gaunt', (-3.4, 4.0, -2.4), (4.8, 6.4, 4.8), 'metal:26262C'), P('cuff', (-3.6, 3.7, -2.6), (5.2, 0.8, 5.2), 'metal:4A4A54')]
+for k_, y_ in enumerate((5.6, 7.4, 9.2)):
+    eg.append(P('ring%d' % k_, (-3.55, y_, -2.55), (5.1, 0.35, 5.1), 'neon:6EC6FF'))
+eg.append(P('core', (-1.6, 6.0, -2.75), (1.6, 1.6, 0.3), 'neon:BFEAFF'))
+MODELS['energy_gauntlets'] = dict(attach='arms', parts=eg)
+
 # Rabbit Ears — two-segment furry ears that flop back at the tip, pink inner
 e = []
 for side, sgn in (('l', -1), ('r', 1)):
@@ -672,17 +782,29 @@ for side, sgn in (('l', -1), ('r', 1)):
     e.append(P('tip_' + side, (-0.7, -0.8, -0.35), (1.4, 0.8, 0.7), 'fur_tip', pivot=(0, -4.0, 0), rot=(-12, 0, 0), parent='ear2_' + side))
 MODELS['ears'] = dict(attach='head', parts=e)
 
-# Claws — stitched leather gauntlet, silver cuff, glowing seam, three curved steel blades (right arm; left mirrored)
+# Claws v3 — armoured onyx gauntlet, angled outer plates, wrist reactor and three broad hooked blades.
+# Energy (pulse material) flows from the bracer lines down every blade edge; the client also flexes the blades
+# while idle and snaps them forward when you attack (CosmeticsLayer.animateClaws).
 k = []
-k.append(P('gaunt', (-3.4, 4.5, -2.4), (4.8, 5.9, 4.8), 'leather'))
-k.append(P('cuff', (-3.6, 4.2, -2.6), (5.2, 0.9, 5.2), 'silver'))
-k.append(P('seam', (-3.45, 6.6, -2.45), (4.9, 0.25, 4.9), 'glow'))
-k.append(P('knuck', (-3.0, 8.4, -2.8), (4.0, 1.6, 0.6), 'gunmetal'))
-for i, bx in enumerate((-2.35, -1.0, 0.35)):
+k.append(P('gaunt', (-3.4, 2.8, -2.4), (4.8, 7.5, 4.8), 'onyx'))
+k.append(P('cuffr', (-3.65, 2.5, -2.65), (5.3, 1.0, 5.3), 'metal:2A2A30'))
+k.append(P('cline', (-3.7, 3.5, -2.7), (5.4, 0.25, 5.4), 'pulse:6EC6FF:-2'))
+k.append(P('plate0', (-0.45, 0, -2.1), (0.9, 3.0, 4.2), 'metal:24242A', pivot=(-3.6, 4.4, 0), rot=(0, 0, 8)))
+k.append(P('plate1', (-0.45, 0, -2.0), (0.9, 2.6, 4.0), 'metal:24242A', pivot=(-3.5, 7.2, 0), rot=(0, 0, 8)))
+k.append(P('pline0', (-0.55, 1.3, -1.9), (0.2, 0.3, 3.8), 'pulse:6EC6FF:-2', parent='plate0'))
+k.append(P('pline1', (-0.55, 1.1, -1.8), (0.2, 0.3, 3.6), 'pulse:6EC6FF:-1', parent='plate1'))
+k.append(P('rframe', (-2.35, 5.0, -2.95), (2.1, 2.1, 0.6), 'metal:3A3A42'))
+k.append(P('core', (-1.95, 5.4, -3.1), (1.3, 1.3, 0.3), 'pulse:BFEAFF:-1'))
+k.append(P('knuck', (-3.3, 9.0, -3.2), (4.6, 1.5, 1.1), 'metal:1E1E24'))
+k.append(P('kline', (-3.35, 10.5, -3.25), (4.7, 0.2, 1.2), 'pulse:6EC6FF:-1'))
+for i, bx in enumerate((-2.55, -1.0, 0.55)):
     n = 'blade%d' % i
-    k.append(P(n, (-0.25, 0, -0.45), (0.5, 4.0, 0.9), 'blade', pivot=(bx, 9.2, -2.6), rot=(28, 0, 0)))
-    k.append(P(n + 'b', (-0.2, 0, -0.35), (0.4, 3.0, 0.7), 'blade', pivot=(0, 4.0, 0), rot=(18, 0, 0), parent=n))
-    k.append(P(n + 'c', (-0.12, 0, -0.2), (0.25, 1.8, 0.4), 'blade', pivot=(0, 3.0, 0), rot=(20, 0, 0), parent=n + 'b'))
+    k.append(P(n, (-0.17, 0, -0.75), (0.34, 4.2, 1.5), 'blade', pivot=(bx, 10.2, -2.7), rot=(10, 0, 0)))
+    k.append(P(n + 'e', (-0.19, 0.2, -0.84), (0.38, 3.8, 0.14), 'pulse:6EC6FF:0', parent=n))
+    k.append(P(n + 'b', (-0.15, 0, -0.6), (0.3, 3.4, 1.2), 'blade', pivot=(0, 4.2, 0.05), rot=(20, 0, 0), parent=n))
+    k.append(P(n + 'be', (-0.17, 0, -0.69), (0.34, 3.3, 0.13), 'pulse:6EC6FF:1', parent=n + 'b'))
+    k.append(P(n + 'c', (-0.12, 0, -0.42), (0.24, 2.6, 0.8), 'blade', pivot=(0, 3.4, 0.0), rot=(38, 0, 0), parent=n + 'b'))
+    k.append(P(n + 'ce', (-0.14, 0, -0.5), (0.28, 2.2, 0.12), 'pulse:6EC6FF:2', parent=n + 'c'))
 MODELS['claws'] = dict(attach='arms', parts=k)
 
 ASTRO = dict(

@@ -63,7 +63,7 @@ jobs:
         run: |
           mkdir -p out
           find . -path ./out -prune -o -name '*.png' -path '*screenshot*' -print -exec cp {} out/ \; || true
-          (cd out && for f in *.png; do ffmpeg -loglevel error -y -i "$f" -q:v 2 "${f%.png}.jpg" && rm "$f"; done; zip -q ../screenshots.zip *.jpg) || true
+          (cd out && for f in *.png; do ffmpeg -loglevel error -y -i "$f" -q:v 1 -qmin 1 "${f%.png}.jpg" && rm "$f"; done; zip -q ../screenshots.zip *.jpg) || true
           ls -la screenshots.zip || true
           find . -name latest.log -path '*run*' -exec cp {} out-latest.log \; || true
           gh release delete showcase --yes --cleanup-tag || true

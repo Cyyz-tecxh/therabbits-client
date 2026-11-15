@@ -24,7 +24,7 @@
 //
 // KV binding name: CAPES.
 
-const CAPES = ["none", "sheen_black", "sheen_white", "pulse", "scanline", "black_nebula"];
+const CAPES = ["none", "black_nebula"];
 const HATS = ["none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat"];
 const ARMS = ["none", "claws"];
 const SHIELDS = ["none", "neon_shield"];

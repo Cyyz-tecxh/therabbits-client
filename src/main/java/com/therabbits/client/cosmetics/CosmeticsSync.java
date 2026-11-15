@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Talks to the TheRabbits cosmetics server:
- *  GET  /cosmetics?uuids=a,b,c  -> {"a":{"cape":"pulse","hat":"crown","arms":"none"}, ...}
+ *  GET  /cosmetics?uuids=a,b,c  -> {"a":{"cape":"black_nebula","hat":"crown","arms":"none"}, ...}
  *  GET  /challenge              -> {"serverId":"..."}
  *  POST /cape {name, serverId, cape, hat, arms}  (server checks Mojang hasJoined, so only you can set your cape)
  */

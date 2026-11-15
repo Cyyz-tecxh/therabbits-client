@@ -44,12 +44,36 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         if (arms != null && arms.arms) {
             pose.pushPose();
             model.rightArm.translateAndRotate(pose);
+            animateClaws(arms.root, s.attackTime);
+            animateClaws(arms.mirrored, s.attackTime);
             draw(pose, out, light, arms, arms.root);
             pose.popPose();
             pose.pushPose();
             model.leftArm.translateAndRotate(pose);
             draw(pose, out, light, arms, arms.mirrored);
             pose.popPose();
+        }
+    }
+
+    /**
+     * Claws: the blades flex slowly on their own while idle, and snap forward (then hook back) when you attack.
+     * attackTime is the swing progress 0..1 (0 when not swinging). Models without blades are left alone.
+     */
+    public static void animateClaws(ModelPart root, float attackTime) {
+        if (!root.hasChild("blade0")) return;
+        float t = (System.currentTimeMillis() % 600000L) / 1000f;
+        float atk = attackTime > 0 ? net.minecraft.util.Mth.sin(attackTime * (float) Math.PI) : 0f;
+        float rad = (float) (Math.PI / 180);
+        for (int i = 0; root.hasChild("blade" + i); i++) {
+            ModelPart a = root.getChild("blade" + i);
+            ModelPart b = a.getChild("blade" + i + "b");
+            ModelPart c = b.getChild("blade" + i + "c");
+            float ph = t * 2.2f + i * 0.9f;
+            var ia = a.getInitialPose(); var ib = b.getInitialPose(); var ic = c.getInitialPose();
+            a.xRot = ia.xRot() + (3.5f * net.minecraft.util.Mth.sin(ph) - 22f * atk) * rad;
+            a.y = ia.y() + 0.9f * atk;
+            b.xRot = ib.xRot() + (4.0f * net.minecraft.util.Mth.sin(ph + 0.8f) - 14f * atk) * rad;
+            c.xRot = ic.xRot() + (6.0f * net.minecraft.util.Mth.sin(ph + 1.6f) + 10f * atk) * rad;
         }
     }
 

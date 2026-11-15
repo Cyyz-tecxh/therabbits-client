@@ -45,3 +45,9 @@ fabricApi {
         eula = true
     }
 }
+
+// Showcase game test: more heap so the integrated server isn't stalled by GC while the test world loads
+loom.runs.matching { it.name.toLowerCase().contains('gametest') }.configureEach {
+    vmArg '-Xmx3G'
+    vmArg '-XX:+UseG1GC'
+}

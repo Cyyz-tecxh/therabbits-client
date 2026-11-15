@@ -59,9 +59,9 @@ public class ShowcaseTest implements FabricClientGameTest {
     }
 
     private void bigWindow(ClientGameTestContext ctx) {
-        ctx.getInput().resizeWindow(1280, 720);
+        ctx.getInput().resizeWindow(1920, 1080);   // full HD frames for the showcase video (GUI scale 3 keeps the 640x360 layout)
         ctx.runOnClient(mc -> {
-            mc.options.guiScale().set(2);
+            mc.options.guiScale().set(3);
             mc.resizeDisplay();
         });
         ctx.waitTicks(5);

@@ -35,6 +35,7 @@ public class AvatarRendererMixin {
         PlayerModel model = ((AvatarRenderer<?>) (Object) this).getModel();
         pose.pushPose();
         (left ? model.leftArm : model.rightArm).translateAndRotate(pose);
+        CosmeticsLayer.animateClaws(left ? arms.mirrored : arms.root, player.getAttackAnim(0.5f));
         CosmeticsLayer.draw(pose, out, light, arms, left ? arms.mirrored : arms.root);
         pose.popPose();
     }
