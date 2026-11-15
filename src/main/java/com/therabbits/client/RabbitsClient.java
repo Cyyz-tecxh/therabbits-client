@@ -73,6 +73,7 @@ public class RabbitsClient implements ClientModInitializer {
             }
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(c -> Config.save());
+        ClientLifecycleEvents.CLIENT_STARTED.register(c -> com.therabbits.client.account.AccountSwitcher.restoreLast());
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "hud"), HudRenderer::render);
         LOG.info("TheRabbits Client loaded");

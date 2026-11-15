@@ -25,7 +25,9 @@ public final class MicrosoftAuth {
     private static final String SCOPE = "service::user.auth.xboxlive.com::MBI_SSL";
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
-    public record DeviceCode(String userCode, String deviceCode, String url, int interval, long expiresAt) {}
+    public record DeviceCode(String userCode, String deviceCode, String url, int interval, long expiresAt) {
+        public String directUrl() { return "https://www.microsoft.com/link?otc=" + userCode; }
+    }
     public record Result(String name, UUID uuid, String mcToken, String refreshToken, String xuid) {}
 
     /** Thrown with a short message suitable for showing to the player. */

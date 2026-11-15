@@ -30,6 +30,9 @@ public final class AccountSwitcher {
     public record Premium(String name, String uuid, String refresh) {}
     private static final List<Premium> PREMIUM = new ArrayList<>();
     private static boolean loaded;
+    /** Account picked last time ("main", "premium:<uuid>" or "offline:<name>"), restored at startup. */
+    private static String last = "main";
+    public static final java.util.concurrent.atomic.AtomicBoolean BUSY = new java.util.concurrent.atomic.AtomicBoolean();
 
     private static void load() {
         if (loaded) return;
@@ -38,6 +41,7 @@ public final class AccountSwitcher {
         try {
             if (Files.exists(FILE)) {
                 JsonObject o = JsonParser.parseString(Files.readString(FILE)).getAsJsonObject();
+                if (o.has("last")) last = o.get("last").getAsString();
                 if (o.has("offline")) for (var e : o.getAsJsonArray("offline")) OFFLINE.add(e.getAsString());
                 if (o.has("premium")) for (var e : o.getAsJsonArray("premium")) {
                     JsonObject p = e.getAsJsonObject();
@@ -62,6 +66,7 @@ public final class AccountSwitcher {
                 pa.add(po);
             }
             o.add("premium", pa);
+            o.addProperty("last", last);
             Files.createDirectories(FILE.getParent());
             Files.writeString(FILE, o.toString());
         } catch (Exception e) {
@@ -100,7 +105,37 @@ public final class AccountSwitcher {
         save();
     }
 
-    public static void useMain() { load(); set(main); }
+    public static void useMain() { load(); set(main); remember("main"); }
+
+    private static void remember(String key) { last = key; save(); }
+
+    /** Called once when the game starts: switch back to the account you used last time. */
+    public static void restoreLast() {
+        load();
+        try {
+            if (last.startsWith("offline:")) {
+                String n = last.substring(8);
+                if (OFFLINE.contains(n)) useOffline(n);
+            } else if (last.startsWith("premium:")) {
+                String id = last.substring(8);
+                for (Premium p : PREMIUM) if (p.uuid().equals(id)) { usePremium(p); break; }
+            }
+        } catch (Exception e) {
+            RabbitsClient.LOG.warn("Could not restore last account", e);
+        }
+    }
+
+    /** Short reason a cracked name can't be used, or null if it's fine. */
+    public static String nameProblem(String n) {
+        n = n == null ? "" : n.trim();
+        if (n.isEmpty()) return null;
+        if (n.length() < 3) return "At least 3 characters";
+        if (n.length() > 16) return "16 characters max";
+        if (!n.matches("[A-Za-z0-9_]+")) return "Only letters, numbers and _";
+        load();
+        for (String o : OFFLINE) if (o.equalsIgnoreCase(n)) return "You already have that name";
+        return null;
+    }
 
     public static List<Premium> premium() { load(); return List.copyOf(PREMIUM); }
 
@@ -126,6 +161,7 @@ public final class AccountSwitcher {
 
     /** Signs in with a saved premium account (on a background thread) and switches to it. */
     public static java.util.concurrent.CompletableFuture<String> usePremium(Premium p) {
+        if (!BUSY.compareAndSet(false, true)) return java.util.concurrent.CompletableFuture.completedFuture("Already signing in...");
         return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
             try {
                 MicrosoftAuth.Result r = MicrosoftAuth.refresh(p.refresh());
@@ -137,17 +173,21 @@ public final class AccountSwitcher {
             } catch (Exception e) {
                 RabbitsClient.LOG.warn("Premium sign-in failed", e);
                 return "Couldn't sign in - check your internet";
+            } finally {
+                BUSY.set(false);
             }
         });
     }
 
     public static void playAs(MicrosoftAuth.Result r) {
         set(new User(r.name(), r.uuid(), r.mcToken(), Optional.ofNullable(r.xuid()), Optional.empty()));
+        remember("premium:" + r.uuid());
     }
 
     public static void useOffline(String name) {
         load();
         set(new User(name, UUIDUtil.createOfflinePlayerUUID(name), "0", Optional.empty(), Optional.empty()));
+        remember("offline:" + name);
     }
 
     private static void set(User u) {
