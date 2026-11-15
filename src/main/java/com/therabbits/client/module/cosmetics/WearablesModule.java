@@ -22,14 +22,17 @@ public class WearablesModule extends Module {
     private static String unlocked(String id) { return Account.isLocked(id) ? "none" : id; }
     public final ModeSetting aura = add(new ModeSetting("Aura", 0, false, Wearables.AURA_NAMES).labels(i -> lockLabel(Wearables.AURA_NAMES[i], Wearables.AURA_IDS[i])));
 
+    public final ModeSetting pet = add(new ModeSetting("Pet", 0, false, Wearables.PET_NAMES).labels(i -> lockLabel(Wearables.PET_NAMES[i], Wearables.PET_IDS[i])));
+
     public WearablesModule() {
-        super("Hats & Arms", "Hats, claws, shields, auras", Category.COSMETICS, true);
+        super("Hats & Arms", "Hats, masks, claws, shields, auras, pets", Category.COSMETICS, true);
         instance = this;
     }
 
     public static WearablesModule get() { return instance; }
 
     public String hatId() { return enabled() ? unlocked(Wearables.HAT_IDS[hat.get()]) : "none"; }
+    public String petId() { return enabled() ? unlocked(Wearables.PET_IDS[pet.get()]) : "none"; }
     public String auraId() { return enabled() ? unlocked(Wearables.AURA_IDS[aura.get()]) : "none"; }
     public String shieldId() { return enabled() ? unlocked(Wearables.SHIELD_IDS[shield.get()]) : "none"; }
     public String armsId() { return enabled() ? unlocked(Wearables.ARM_IDS[arms.get()]) : "none"; }
@@ -55,6 +58,12 @@ public class WearablesModule extends Module {
         if (instance == null) return null;
         if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("aura"); return t != null ? t : instance.auraId(); }
         return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.auraOf(p.getUUID()) : null;
+    }
+
+    public static String petFor(Player p) {
+        if (instance == null) return null;
+        if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("pet"); return t != null ? t : instance.petId(); }
+        return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.petOf(p.getUUID()) : null;
     }
 
     public static String ownShield() {

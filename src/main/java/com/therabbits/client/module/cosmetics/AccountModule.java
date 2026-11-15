@@ -83,7 +83,7 @@ public class AccountModule extends Module {
         WearablesModule w = WearablesModule.get();
         String cape = c != null && c.enabled() ? c.capeId() : "none";
         CosmeticsSync.publish(url(), cape, w != null ? w.hatId() : "none", w != null ? w.armsId() : "none",
-                w != null ? w.shieldId() : "none", w != null ? w.auraId() : "none").thenAccept(msg -> { share.set("Share Now"); result = msg; });
+                w != null ? w.shieldId() : "none", w != null ? w.auraId() : "none", w != null ? w.petId() : "none").thenAccept(msg -> { share.set("Share Now"); result = msg; });
         lastShared = signature();
         lastUrl = url();
     }
@@ -92,7 +92,7 @@ public class AccountModule extends Module {
     private String signature() {
         CapesModule c = CapesModule.get();
         WearablesModule w = WearablesModule.get();
-        return (c != null && c.enabled() ? c.capeId() : "none") + "|" + (w != null ? w.hatId() + "|" + w.armsId() + "|" + w.shieldId() + "|" + w.auraId() : "");
+        return (c != null && c.enabled() ? c.capeId() : "none") + "|" + (w != null ? w.hatId() + "|" + w.armsId() + "|" + w.shieldId() + "|" + w.auraId() + "|" + w.petId() : "");
     }
 
     @Override

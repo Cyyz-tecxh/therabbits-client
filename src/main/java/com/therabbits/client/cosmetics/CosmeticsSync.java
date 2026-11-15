@@ -35,6 +35,7 @@ public final class CosmeticsSync {
     private static final Map<UUID, String> ARMS = new ConcurrentHashMap<>();
     private static final Map<UUID, String> SHIELDS = new ConcurrentHashMap<>();
     private static final Map<UUID, String> AURAS = new ConcurrentHashMap<>();
+    private static final Map<UUID, String> PETS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> FETCHED = new ConcurrentHashMap<>();
     private static final long REFRESH_MS = 5 * 60_000;
     private static long lastBatch;
@@ -53,6 +54,11 @@ public final class CosmeticsSync {
 
     public static String auraOf(UUID id) {
         String c = AURAS.get(id);
+        return c == null || c.equals("none") ? null : c;
+    }
+
+    public static String petOf(UUID id) {
+        String c = PETS.get(id);
         return c == null || c.equals("none") ? null : c;
     }
 
@@ -112,6 +118,8 @@ public final class CosmeticsSync {
                     SHIELDS.put(u, Wearables.validShield(sh) ? sh : "none");
                     String au = str(c, "aura");
                     AURAS.put(u, Wearables.validAura(au) ? au : "none");
+                    String pe = str(c, "pet");
+                    PETS.put(u, Wearables.validPet(pe) ? pe : "none");
                 }
             } catch (Exception e) {
                 RabbitsClient.LOG.debug("Cosmetics lookup parse failed", e);
@@ -120,7 +128,7 @@ public final class CosmeticsSync {
     }
 
     /** Publish your cape choice. Completes with a short status message for the menu. */
-    public static CompletableFuture<String> publish(String serverUrl, String cape, String hat, String arms, String shield, String aura) {
+    public static CompletableFuture<String> publish(String serverUrl, String cape, String hat, String arms, String shield, String aura, String pet) {
         if (serverUrl == null || serverUrl.isBlank()) return CompletableFuture.completedFuture("Set the Server URL first (Account & Codes)");
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -140,6 +148,7 @@ public final class CosmeticsSync {
                 body.addProperty("arms", arms);
                 body.addProperty("shield", shield);
                 body.addProperty("aura", aura);
+                body.addProperty("pet", pet);
                 HttpResponse<String> res = HTTP.send(HttpRequest.newBuilder(URI.create(b + "/cape")).timeout(Duration.ofSeconds(10))
                                 .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body.toString())).build(),
                         HttpResponse.BodyHandlers.ofString());
@@ -150,6 +159,7 @@ public final class CosmeticsSync {
                         ARMS.put(mc.player.getUUID(), arms);
                         SHIELDS.put(mc.player.getUUID(), shield);
                         AURAS.put(mc.player.getUUID(), aura);
+                        PETS.put(mc.player.getUUID(), pet);
                     }
                     return "Synced!";
                 }

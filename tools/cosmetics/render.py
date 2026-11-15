@@ -34,7 +34,7 @@ def quads_for(parts, tex, texsize, glow, base):
             right=((x0, y0, z1), (x0, y0, z0), (x0, y1, z1)), left=((x1, y0, z0), (x1, y0, z1), (x1, y1, z0)),
             top=((x0, y0, z1), (x1, y0, z1), (x0, y0, z0)), bottom=((x0, y1, z0), (x1, y1, z0), (x0, y1, z1)))
         cen = (m @ np.array([(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, 1]))[:3]
-        for face, (fu, fv, fw, fh) in gen.face_regions(*p['uv'], w, h, d).items():
+        for face, (fu, fv, fw, fh) in gen.face_regions(*p['uv'], *p.get('uvsize', (w, h, d))).items():
             pts = [(m @ np.array([*c, 1]))[:3] for c in corners[face]]
             out.append((pts, (round(fu * gen.S), round(fv * gen.S), max(1, round(fw * gen.S)), max(1, round(fh * gen.S))), tex, glow, cen))
     return out
@@ -69,7 +69,7 @@ def render(quads, W, H, yaw, pitch, scale, cx, cy):
         inside = (s >= 0) & (s < 1) & (t >= 0) & (t < 1)
         if not inside.any(): continue
         z = wp[0][2] + s * e1[2] + t * e2[2]
-        tu = np.clip((u + s * tw).astype(int), u, u + tw - 1); tv = np.clip((v + t * th).astype(int), v, v + th - 1)
+        tu = np.clip((u + s * tw).astype(int), 0, tex.shape[1] - 1); tv = np.clip((v + t * th).astype(int), 0, tex.shape[0] - 1)
         texel = tex[tv, tu].astype(float)
         inside &= texel[..., 3] > 8
         sub = zb[Y0:Y1, X0:X1]

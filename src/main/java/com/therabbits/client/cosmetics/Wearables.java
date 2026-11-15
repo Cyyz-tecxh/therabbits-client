@@ -4,17 +4,21 @@ package com.therabbits.client.cosmetics;
 public final class Wearables {
     private Wearables() {}
 
-    public static final String[] HAT_IDS = {"none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat"};
-    public static final String[] HAT_NAMES = {"None", "Black Fedora", "Spiked Crown", "Rabbit Ears", "Royal Crown", "Gold Crown", "Cat Ears", "Bucket Hat", "Santa Hat", "Frog Hat", "Bunny Hat"};
+    public static final String[] HAT_IDS = {"none", "fedora", "crown", "ears", "royal_crown", "gold_crown", "cat_hat", "bucket_hat", "santa_hat", "frog_hat", "bunny_hat", "oni_mask", "kitsune_mask", "oni_menpo"};
+    public static final String[] HAT_NAMES = {"None", "Black Fedora", "Spiked Crown", "Rabbit Ears", "Royal Crown", "Gold Crown", "Cat Ears", "Bucket Hat", "Santa Hat", "Frog Hat", "Bunny Hat", "Oni Mask", "Kitsune Mask", "Oni Menpo"};
     public static final String[] ARM_IDS = {"none", "claws"};
     public static final String[] ARM_NAMES = {"None", "Claws"};
 
     public static final String[] SHIELD_IDS = {"none", "neon_shield"};
     public static final String[] SHIELD_NAMES = {"None", "Neon Royal Shield"};
 
-    public static final String[] AURA_IDS = {"none", "aura", "snow_aura"};
-    public static final String[] AURA_NAMES = {"None", "Electric Aura", "Snow Aura"};
+    public static final String[] AURA_IDS = {"none", "aura", "snow_aura", "clockwork_aura", "petal_aura", "koi_aura"};
+    public static final String[] AURA_NAMES = {"None", "Electric Aura", "Snow Aura", "Clockwork Orbit", "Petal Storm", "Koi Spirits"};
 
+    public static final String[] PET_IDS = {"none", "pet_eternal", "pet_shadow", "pet_frost", "pet_infernal", "pet_celestial", "spirit_bunny"};
+    public static final String[] PET_NAMES = {"None", "Eternal Dragon", "Shadow Dragon", "Frost Dragon", "Infernal Dragon", "Celestial Dragon", "Spirit Bunny"};
+
+    public static boolean validPet(String id) { return java.util.Arrays.asList(PET_IDS).contains(id); }
     public static boolean validAura(String id) { return java.util.Arrays.asList(AURA_IDS).contains(id); }
     public static boolean validShield(String id) { return java.util.Arrays.asList(SHIELD_IDS).contains(id); }
     public static boolean validHat(String id) { return java.util.Arrays.asList(HAT_IDS).contains(id); }

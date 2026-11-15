@@ -26,7 +26,7 @@ import java.util.List;
 /** Cosmetics locker: tabs for capes / hats / arms / shields / codes, picture cards, live player preview. */
 public class CosmeticsScreen extends Screen {
     private enum Tab {
-        CAPES("Capes"), HATS("Hats"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), CODES("Online & Codes");
+        CAPES("Capes"), HATS("Hats"), ARMS("Arms"), SHIELDS("Shields"), AURAS("Auras"), PETS("Pets"), CODES("Online & Codes");
         final String label;
         Tab(String l) { label = l; }
     }
@@ -174,6 +174,7 @@ public class CosmeticsScreen extends Screen {
             case ARMS -> { for (int i = 0; i < Wearables.ARM_IDS.length; i++) out.add(new Item(Wearables.ARM_IDS[i], Wearables.ARM_NAMES[i], w.arms, i, false, "arms")); }
             case SHIELDS -> { for (int i = 0; i < Wearables.SHIELD_IDS.length; i++) out.add(new Item(Wearables.SHIELD_IDS[i], Wearables.SHIELD_NAMES[i], w.shield, i, false, "shield")); }
             case AURAS -> { for (int i = 0; i < Wearables.AURA_IDS.length; i++) out.add(new Item(Wearables.AURA_IDS[i], Wearables.AURA_NAMES[i], w.aura, i, false, "aura")); }
+            case PETS -> { for (int i = 0; i < Wearables.PET_IDS.length; i++) out.add(new Item(Wearables.PET_IDS[i], Wearables.PET_NAMES[i], w.pet, i, false, "pet")); }
             case CODES -> {}
         }
         String q = search == null ? "" : search.getValue().trim().toLowerCase(java.util.Locale.ROOT);
@@ -235,7 +236,7 @@ public class CosmeticsScreen extends Screen {
             if (Account.isLocked(id)) { lockedCount++; continue; }
             String[] ids = switch (slot) {
                 case "cape" -> Capes.IDS; case "hat" -> Wearables.HAT_IDS; case "arms" -> Wearables.ARM_IDS;
-                case "shield" -> Wearables.SHIELD_IDS; default -> Wearables.AURA_IDS;
+                case "shield" -> Wearables.SHIELD_IDS; case "pet" -> Wearables.PET_IDS; default -> Wearables.AURA_IDS;
             };
             int idx = java.util.Arrays.asList(ids).indexOf(id);
             if (idx < 0) continue;
@@ -244,6 +245,7 @@ public class CosmeticsScreen extends Screen {
                 case "hat" -> w.hat.set(idx);
                 case "arms" -> w.arms.set(idx);
                 case "shield" -> w.shield.set(idx);
+                case "pet" -> w.pet.set(idx);
                 default -> w.aura.set(idx);
             }
             if (!slot.equals("cape")) w.setEnabled(true);
@@ -269,6 +271,7 @@ public class CosmeticsScreen extends Screen {
         if (!w.armsId().equals("none")) parts.add(Wearables.ARM_NAMES[w.arms.get()]);
         if (!w.shieldId().equals("none")) parts.add(Wearables.SHIELD_NAMES[w.shield.get()]);
         if (!w.auraId().equals("none")) parts.add(Wearables.AURA_NAMES[w.aura.get()]);
+        if (!w.petId().equals("none")) parts.add(Wearables.PET_NAMES[w.pet.get()]);
         return parts.isEmpty() ? "Nothing equipped" : String.join(" · ", parts);
     }
 
