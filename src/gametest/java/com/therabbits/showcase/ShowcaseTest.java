@@ -115,10 +115,16 @@ public class ShowcaseTest implements FabricClientGameTest {
             frames(ctx, "g08presets", 2);
             ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.CosmeticsScreen(null)));
             frames(ctx, "g09cosmetics", 3);
-            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.AccountsScreen(null)));
-            frames(ctx, "g10accounts", 2);
+            ctx.runOnClient(mc -> {
+                com.therabbits.client.account.AccountSwitcher.add("Steve");
+                com.therabbits.client.account.AccountSwitcher.add("Alex");
+                mc.setScreen(new com.therabbits.client.gui.AccountsScreen(null));
+            });
+            frames(ctx, "g10accounts", 4);
             ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.AccountsScreen a) a.demoSignIn(); });
             frames(ctx, "g11signin", 2);
+            ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.AccountsScreen a) a.demoSuccess(); });
+            frames(ctx, "g12welcome", 2);
             ctx.runOnClient(mc -> mc.setScreen(null));
         } catch (Throwable t) {
             System.out.println("[showcase] menu capture failed: " + t);

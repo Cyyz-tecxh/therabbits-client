@@ -164,7 +164,10 @@ public final class AccountSwitcher {
         if (!BUSY.compareAndSet(false, true)) return java.util.concurrent.CompletableFuture.completedFuture("Already signing in...");
         return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
             try {
-                MicrosoftAuth.Result r = MicrosoftAuth.refresh(p.refresh());
+                MicrosoftAuth.Result r;
+                try { r = MicrosoftAuth.refresh(p.refresh()); }
+                catch (MicrosoftAuth.AuthException e) { throw e; }
+                catch (Exception first) { Thread.sleep(1200); r = MicrosoftAuth.refresh(p.refresh()); }   // one retry on a network hiccup
                 addPremium(r);   // keep the newest refresh token
                 Minecraft.getInstance().execute(() -> playAs(r));
                 return "Now playing as " + r.name();

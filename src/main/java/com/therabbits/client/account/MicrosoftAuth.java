@@ -95,7 +95,7 @@ public final class MicrosoftAuth {
         HttpResponse<String> r = postForm("https://login.live.com/oauth20_token.srf",
                 form("grant_type", "refresh_token", "client_id", CLIENT_ID, "refresh_token", refreshToken, "scope", SCOPE));
         JsonObject o = json(r);
-        if (r.statusCode() != 200) throw new AuthException("Sign-in expired - remove the account and add it again");
+        if (r.statusCode() != 200) throw new AuthException("Sign-in expired - sign in again to keep using this account");
         return finish(str(o, "access_token"), str(o, "refresh_token") != null ? str(o, "refresh_token") : refreshToken);
     }
 
