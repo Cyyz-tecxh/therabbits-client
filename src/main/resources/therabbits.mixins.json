@@ -29,7 +29,8 @@
     "LevelMixin",
     "MinecraftAccessor",
     "PlayerModelMixin",
-    "AvatarRendererEmoteMixin"
+    "AvatarRendererEmoteMixin",
+    "GuiSkinRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

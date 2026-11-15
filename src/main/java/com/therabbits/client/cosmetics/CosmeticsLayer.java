@@ -23,6 +23,18 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         super(parent);
     }
 
+    /** Where cosmetic geometry goes: the world's node collector, or a GUI buffer for the preview player. */
+    @FunctionalInterface
+    public interface Sink { void part(ModelPart part, PoseStack pose, net.minecraft.client.renderer.rendertype.RenderType type, int light); }
+
+    public static Sink of(SubmitNodeCollector out) {
+        return (pt, ps, rt, l) -> out.submitModelPart(pt, ps, rt, l, OverlayTexture.NO_OVERLAY, null);
+    }
+
+    public static Sink of(net.minecraft.client.renderer.MultiBufferSource buffers) {
+        return (pt, ps, rt, l) -> pt.render(ps, buffers.getBuffer(rt), l, OverlayTexture.NO_OVERLAY);
+    }
+
     @Override
     public void submit(PoseStack pose, SubmitNodeCollector out, int light, AvatarRenderState s, float yRot, float xRot) {
         if (s.isInvisible || s.isSpectator) return;
@@ -30,9 +42,19 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         if (mc.level == null) return;
         Entity e = mc.level.getEntity(s.id);
         if (!(e instanceof Player p)) return;
-        CosmeticModel hat = CosmeticModel.get(WearablesModule.hatFor(p));
-        CosmeticModel arms = CosmeticModel.get(WearablesModule.armsFor(p));
-        CosmeticModel aura = CosmeticModel.get(WearablesModule.auraFor(p));
+        drawAll(pose, of(out), light, getParentModel(), p, s.attackTime,
+                WearablesModule.hatFor(p), WearablesModule.armsFor(p), WearablesModule.auraFor(p), WearablesModule.petFor(p));
+    }
+
+    /**
+     * Draws every cosmetic slot in the player model's space. {@code p} may be null (the title-screen preview,
+     * where there is no player entity); then the looks that follow the player just use their defaults.
+     */
+    public static void drawAll(PoseStack pose, Sink out, int light, PlayerModel model, Player p, float attackTime,
+                               String hatId, String armsId, String auraId, String petId) {
+        CosmeticModel hat = CosmeticModel.get(hatId);
+        CosmeticModel arms = CosmeticModel.get(armsId);
+        CosmeticModel aura = CosmeticModel.get(auraId);
         float now = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         if (aura != null && "aura".equals(aura.attach)) {
             float k = WearablesModule.auraSize();
@@ -54,7 +76,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             }
             pose.popPose();
         }
-        CosmeticModel pet = CosmeticModel.get(WearablesModule.petFor(p));
+        CosmeticModel pet = CosmeticModel.get(petId);
         if (pet != null && "pet".equals(pet.attach)) {
             animatePet(pet.root, now);
             if (pet.root.hasChild("d_head")) {
@@ -67,7 +89,6 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
                 pose.popPose();
             } else draw(pose, out, light, pet, pet.root);
         }
-        PlayerModel model = getParentModel();
         if (hat != null && !hat.arms) {
             pose.pushPose();
             model.head.translateAndRotate(pose);
@@ -77,8 +98,8 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         if (arms != null && arms.arms) {
             pose.pushPose();
             model.rightArm.translateAndRotate(pose);
-            animateClaws(arms.root, s.attackTime);
-            animateClaws(arms.mirrored, s.attackTime);
+            animateClaws(arms.root, attackTime);
+            animateClaws(arms.mirrored, attackTime);
             draw(pose, out, light, arms, arms.root);
             pose.popPose();
             pose.pushPose();
@@ -130,11 +151,11 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         }
     }
 
-    private static void drawAuraSpread(PoseStack pose, SubmitNodeCollector out, CosmeticModel m, float k) {
+    private static void drawAuraSpread(PoseStack pose, Sink out, CosmeticModel m, float k) {
         float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         animateSnow(m.root, t);
         for (int i = 0; m.root.hasChild("f" + i); i++) { ModelPart f = m.root.getChild("f" + i); f.x *= k; f.z *= k; }
-        out.submitModelPart(m.root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
+        out.part(m.root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT);
     }
 
     // ------------------------------------------------------------------ helpers
@@ -173,10 +194,10 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 
     /** Gears and the clock orbit you; everything ticks faster while you sprint. */
     private static void animateClockwork(ModelPart root, float t, Player p) {
-        float[] st = CLOCK_PHASE.computeIfAbsent(p.getId(), k -> new float[]{t, 0});
+        float[] st = CLOCK_PHASE.computeIfAbsent(p == null ? -1 : p.getId(), k -> new float[]{t, 0});
         float dt = Math.max(0f, Math.min(0.25f, t - st[0]));
         st[0] = t;
-        st[1] += dt * (p.isSprinting() ? 2.4f : 1f);
+        st[1] += dt * (p != null && p.isSprinting() ? 2.4f : 1f);
         float ph = st[1];
         float a = ph * 0.45f, c = cos(a), sn = sin(a);
         for (int i = 0; ; i++) {
@@ -361,6 +382,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 
     /** Yaw (degrees, model space) that turns a card's face toward whoever is looking at this player. */
     private static float cardFacing(Player p) {
+        if (p == null) return 0f;   // preview: cards face the viewer
         Minecraft mc = Minecraft.getInstance();
         float theta;
         if (mc.player == null || p == mc.player) {
@@ -473,12 +495,12 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     }
 
     /** Swirling rings (each spins its own way), crackling segments and rising sparks. */
-    private static void drawAura(PoseStack pose, SubmitNodeCollector out, CosmeticModel m) {
+    private static void drawAura(PoseStack pose, Sink out, CosmeticModel m) {
         float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         ModelPart root = m.root;
         if (root.hasChild("f0")) {
             animateSnow(root, t);
-            out.submitModelPart(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
+            out.part(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT);
             return;
         }
         float[] speed = {2.4f, -1.8f, 3.0f};
@@ -504,13 +526,17 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             p.x = ip.x() + net.minecraft.util.Mth.sin(t * 1.3f + i) * 0.8f;
             p.xScale = p.yScale = p.zScale = 1f - u * 0.7f;
         }
-        out.submitModelPart(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
+        out.part(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT);
     }
 
     public static void draw(PoseStack pose, SubmitNodeCollector out, int light, CosmeticModel m, ModelPart part) {
-        out.submitModelPart(part, pose, RenderTypes.entityCutoutNoCull(m.currentTexture()), light, OverlayTexture.NO_OVERLAY, null);
+        draw(pose, of(out), light, m, part);
+    }
+
+    public static void draw(PoseStack pose, Sink out, int light, CosmeticModel m, ModelPart part) {
+        out.part(part, pose, RenderTypes.entityCutoutNoCull(m.currentTexture()), light);
         Identifier g = m.currentGlow();
         if (g != null)
-            out.submitModelPart(part, pose, RenderTypes.eyes(g), FULL_BRIGHT, OverlayTexture.NO_OVERLAY, null);
+            out.part(part, pose, RenderTypes.eyes(g), FULL_BRIGHT);
     }
 }

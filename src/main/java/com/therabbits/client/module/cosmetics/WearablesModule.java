@@ -81,4 +81,18 @@ public class WearablesModule extends Module {
         if (isMe(p)) { String t = com.therabbits.client.cosmetics.CosmeticPreview.get("arms"); return t != null ? t : instance.armsId(); }
         return instance.enabled() && AccountModule.showOthersOn() ? CosmeticsSync.armsOf(p.getUUID()) : null;
     }
+
+    /** Your own look for a slot (hat, arms, aura, pet), including anything being tried on in the Cosmetics screen. */
+    public static String ownFor(String slot) {
+        String t = com.therabbits.client.cosmetics.CosmeticPreview.get(slot);
+        if (t != null) return t;
+        if (instance == null) return null;
+        return switch (slot) {
+            case "hat" -> instance.hatId();
+            case "arms" -> instance.armsId();
+            case "aura" -> instance.auraId();
+            case "pet" -> instance.petId();
+            default -> null;
+        };
+    }
 }

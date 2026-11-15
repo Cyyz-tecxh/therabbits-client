@@ -114,6 +114,8 @@ public class ShowcaseTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> { if (mc.screen instanceof com.therabbits.client.gui.ModMenuScreen m) m.showPresets(); });
             frames(ctx, "g08presets", 2);
             ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.CosmeticsScreen(null)));
+            ctx.waitTicks(5);
+            ctx.runOnClient(mc -> { com.therabbits.client.cosmetics.CosmeticPreview.set("hat", "kitsune_mask"); com.therabbits.client.cosmetics.CosmeticPreview.set("aura", "petal_aura"); com.therabbits.client.cosmetics.CosmeticPreview.set("pet", "spirit_bunny"); });
             frames(ctx, "g09cosmetics", 3);
             ctx.runOnClient(mc -> {
                 com.therabbits.client.account.AccountSwitcher.add("Steve");
