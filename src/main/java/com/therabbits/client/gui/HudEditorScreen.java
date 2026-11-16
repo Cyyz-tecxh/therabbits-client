@@ -22,7 +22,8 @@ import java.util.List;
 public class HudEditorScreen extends Screen {
     private static final int SNAP = 4, PANEL_W = 112;
     private static boolean grid;            // remembered for the session
-    private static boolean panelOpen = true;
+    private static boolean panelOpen = false;
+    private int panelX = 6;
     private final Screen parent;
     private HudModule dragging, selected;
     private double grabX, grabY;
@@ -99,7 +100,7 @@ public class HudEditorScreen extends Screen {
 
     // ---------- top bar ----------
     private void renderTopBar(GuiGraphics g, int mx, int my) {
-        String[] labels = {"Grid", "Reset all", "Profiles", "Done"};
+        String[] labels = {"Elements", "Grid", "Reset all", "Profiles", "Done"};
         int[] ws = new int[labels.length];
         int total = Draw.width("HUD Editor") + 16;
         for (int i = 0; i < labels.length; i++) { ws[i] = Draw.width(labels[i]) + 14; total += ws[i] + 3; }
@@ -107,7 +108,9 @@ public class HudEditorScreen extends Screen {
         UI.card(g, x - 4, y - 3, total + 8, 20, UI.BG, UI.BORDER);
         Draw.text(g, "HUD Editor", x + 2, y + 4, UI.TEXT);
         int bx = x + Draw.width("HUD Editor") + 14;
+        panelX = bx;
         Runnable[] acts = {
+                () -> panelOpen = !panelOpen,
                 () -> { grid = !grid; toast(grid ? "Snap to grid on" : "Snap to grid off"); },
                 () -> { for (HudModule h : ModuleManager.hud()) { h.x = h.defaultX; h.y = h.defaultY; h.scale.reset(); } toast("All elements reset"); },
                 () -> { ModMenuScreen m = new ModMenuScreen(this); minecraft.setScreen(m); m.showPresets(); },
@@ -115,9 +118,9 @@ public class HudEditorScreen extends Screen {
         for (int i = 0; i < labels.length; i++) {
             boolean hover = Draw.inside(mx, my, bx, y, ws[i], 14);
             boolean primary = i == labels.length - 1;
-            if (i == 0 && grid) UI.card(g, bx, y, ws[i], 14, UI.PANEL, UI.accent());
+            boolean active = (i == 0 && panelOpen) || (i == 1 && grid);
+            if (active) { UI.card(g, bx, y, ws[i], 14, UI.PANEL, UI.accent()); Draw.centered(g, labels[i], bx + ws[i] / 2, y + 4, UI.accent()); }
             else UI.button(g, bx, y, ws[i], 14, labels[i], hover, primary);
-            if (i == 0 && grid) Draw.centered(g, labels[i], bx + ws[i] / 2, y + 4, UI.accent());
             hits.add(new Hit(bx, y, ws[i], 14, acts[i]));
             bx += ws[i] + 3;
         }
@@ -125,15 +128,10 @@ public class HudEditorScreen extends Screen {
 
     // ---------- left panel: visibility ----------
     private void renderPanel(GuiGraphics g, int mx, int my) {
-        int x = 6, y = 30;
+        if (!panelOpen) return;
+        int x = panelX, y = 26;
         List<HudModule> list = ModuleManager.hud();
         int rowH = 13, h = Math.min(height - y - 26, 20 + list.size() * rowH);
-        if (!panelOpen) {
-            boolean hv = Draw.inside(mx, my, x, y, 58, 14);
-            UI.button(g, x, y, 58, 14, "Elements", hv, false);
-            hits.add(new Hit(x, y, 58, 14, () -> panelOpen = true));
-            return;
-        }
         UI.card(g, x, y, PANEL_W, h, UI.BG, UI.BORDER);
         UI.label(g, "Elements", x + 6, y + 6);
         boolean ch = Draw.inside(mx, my, x + PANEL_W - 12, y + 4, 9, 9);
@@ -253,7 +251,7 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (panelOpen && Draw.inside(mouseX, mouseY, 6, 30, PANEL_W, height - 56)) { panelScroll -= scrollY * 13; return true; }
+        if (panelOpen && Draw.inside(mouseX, mouseY, panelX, 26, PANEL_W, height - 52)) { panelScroll -= scrollY * 13; return true; }
         HudModule h = elementAt(mouseX, mouseY);
         if (h == null) h = selected;
         if (h != null) {   // resize around the element's centre
