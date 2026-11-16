@@ -106,11 +106,12 @@ public class ModMenuScreen extends Screen {
     // ---------- test / external hooks ----------
     private void closePopups() { openMode = null; openColor = null; editingNum = null; bindingKey = null; }
     public void showPresets() { closePopups(); page = Page.PROFILES; expanded = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
-    public void selectCategory(Category c) { closePopups(); page = Page.MODS; filter = c; favoritesOnly = false; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    public void selectCategory(Category c) { closePopups(); settingsFor = null; expanded = null; chip = c == null ? 0 : switch (c) { case HUD -> 3; case COMBAT -> 4; case VISUAL -> 5; case UTILITY -> 6; default -> 0; }; page = Page.MODS; filter = c; favoritesOnly = false; scroll = 0; pageChanged = System.currentTimeMillis(); }
     /** Opens a module's settings inline (switching to its category so it is on screen). */
     public void openSettings(Module m) {
         if (m == null) return;
         if (page != Page.SETTINGS || !settingsModules().contains(m)) { page = Page.MODS; filter = m.category() == Category.COSMETICS ? null : m.category(); }
+        if (page == Page.SETTINGS) { stateFilter = 0; expanded = m; expandAnim.put(m, 1f); touch(m); scroll = 0; pageChanged = System.currentTimeMillis(); return; }
         stateFilter = 0; expanded = m; expandAnim.put(m, 1f); settingsFor = m; touch(m);
         scroll = 0; scrollTo = m; pageChanged = System.currentTimeMillis();
     }
@@ -121,9 +122,9 @@ public class ModMenuScreen extends Screen {
 
     @Override
     protected void init() {
-        W = Math.min(560, Math.max(360, (int) (width * 0.86f)));
+        W = Math.min(600, Math.max(380, (int) (width * 0.88f)));
         W = Math.min(W, width - 16);
-        H = Math.min(330, Math.max(220, (int) (height * 0.86f)));
+        H = Math.min(340, Math.max(230, (int) (height * 0.86f)));
         H = Math.min(H, height - 16);
         searchBox = new EditBox(font, left() + 22, top() + 33, SIDE - 34, 10, Component.literal("Search"));
         searchBox.setBordered(false);
@@ -191,24 +192,8 @@ public class ModMenuScreen extends Screen {
         int x = left(), y = top();
         UI.shadow(g, x, y, W, H);
         UI.card(g, x, y, W, H, UI.BG, UI.BORDER);
-        renderSidebar(g, x, y, mouseX, mouseY);
-        int mx0 = x + SIDE;
-        if (page == Page.PROFILES) {
-            renderMainHeader(g, mx0, y, W - SIDE, "Profiles", "Saved setups: every toggle, setting and HUD position", mouseX, mouseY, false);
-            renderPresets(g, mx0 + 10, y + HEAD + 8, W - SIDE - 20, H - HEAD - 16, mouseX, mouseY, now);
-        } else {
-            String title = switch (page) {
-                case FAVORITES -> "Favorites";
-                case RECENT -> "Recently used";
-                case SETTINGS -> "Client settings";
-                default -> search.isBlank() ? (filter == null ? "All mods" : filter.label()) : "Search";
-            };
-            List<Module> mods = visibleModules();
-            long on = mods.stream().filter(Module::enabled).count();
-            String sub = mods.size() + (mods.size() == 1 ? " mod" : " mods") + "  \u00B7  " + on + " enabled";
-            renderMainHeader(g, mx0, y, W - SIDE, title, sub, mouseX, mouseY, page != Page.SETTINGS);
-            renderList(g, mods, mx0 + 6, y + HEAD + 5, W - SIDE - 12, H - HEAD - 10, mouseX, mouseY, dt);
-        }
+        searchBox.visible = false;
+        renderCards(g, x, y, mouseX, mouseY, dt);
         renderPopups(g, mouseX, mouseY);
         hexEdit.visible = openColor != null;
         numEdit.visible = editingNum != null;
@@ -216,11 +201,239 @@ public class ModMenuScreen extends Screen {
 
         if (expanded == null) { editing = null; textEdit.visible = false; }
         if (toast != null && now - toastTime < 1800) {
-            int tw = Draw.width(toast) + 16, tx = x + SIDE + (W - SIDE) / 2 - tw / 2, ty = y + H - 22;
+            int tw = Draw.width(toast) + 16, tx = x + PROF + (W - PROF) / 2 - tw / 2, ty = y + H - 22;
             UI.card(g, tx, ty, tw, 14, UI.SURFACE, UI.accent(0x90));
             Draw.centered(g, toast, tx + tw / 2, ty + 3, UI.TEXT);
         }
         super.render(g, mouseX, mouseY, delta);   // edit boxes on top
+    }
+
+    // =====================================================================================
+    // Card layout: tabs on top, profiles on the left, filter chips + search, a grid of mod cards.
+    // Each card: big pixel icon and name, an OPTIONS bar, and a full-width ENABLED / DISABLED bar.
+    // =====================================================================================
+    private static final int TOP = 24, PROF = 104, CARD_H = 68, CARD_GAP = 5;
+    private int chip;   // 0 all, 1 favorites, 2 recent, 3.. categories
+
+    /** Spaced capitals, Minecraft font. */
+    private static void caps(GuiGraphics g, String s, int x, int y, int color) {
+        for (char c : s.toCharArray()) { Draw.text(g, String.valueOf(c), x, y, color); x += Draw.width(String.valueOf(c)) + 1; }
+    }
+    private static int capsWidth(String s) { int w = 0; for (char c : s.toCharArray()) w += Draw.width(String.valueOf(c)) + 1; return Math.max(0, w - 1); }
+
+    private void renderCards(GuiGraphics g, int x, int y, int mx, int my, float dt) {
+        // ---- top tabs ----
+        String[] tabs = {"MODS", "SETTINGS", "COSMETICS"};
+        int tw = 0; for (String t : tabs) tw += capsWidth(t) + 18 + 4;
+        int tx = x + W / 2 - tw / 2;
+        for (int i = 0; i < tabs.length; i++) {
+            int w = capsWidth(tabs[i]) + 18;
+            boolean sel = (i == 0 && page != Page.SETTINGS) || (i == 1 && page == Page.SETTINGS);
+            boolean hover = Draw.inside(mx, my, tx, y + 5, w, 15);
+            UI.card(g, tx, y + 5, w, 15, sel ? UI.PANEL_HI : hover ? UI.PANEL : UI.SURFACE, sel ? UI.accent(0x90) : UI.BORDER);
+            caps(g, tabs[i], tx + 9, y + 9, sel ? UI.TEXT : hover ? 0xFFC8D0D8 : UI.MUTED);
+            final int fi = i;
+            hits.add(new Hit(tx, y + 5, w, 15, () -> {
+                closePopups(); settingsFor = null; expanded = null; scroll = 0; pageChanged = System.currentTimeMillis();
+                if (fi == 0) page = Page.MODS; else if (fi == 1) page = Page.SETTINGS; else minecraft.setScreen(new CosmeticsScreen(parent));
+            }));
+            tx += w + 4;
+        }
+        int cx = x + W - 18, cy = y + 6;   // close
+        boolean ch = Draw.inside(mx, my, cx, cy, 13, 13);
+        UI.card(g, cx, cy, 13, 13, ch ? UI.PANEL_HI : UI.SURFACE, UI.BORDER);
+        UI.glyph(g, UI.CLOSE, cx + 4, cy + 4, ch ? UI.TEXT : UI.MUTED);
+        hits.add(new Hit(cx, cy, 13, 13, this::onClose));
+        g.fill(x + 1, y + TOP, x + W - 1, y + TOP + 1, UI.LINE);
+
+        renderProfiles(g, x + 6, y + TOP + 6, PROF, H - TOP - 12, mx, my);
+        int ax = x + PROF + 12, aw = W - PROF - 18, ay = y + TOP + 6, ah = H - TOP - 12;
+        if (page == Page.PROFILES) renderPresets(g, ax, ay + 2, aw, ah - 2, mx, my, System.currentTimeMillis());
+        else if (settingsFor != null) renderOptionsPage(g, settingsFor, ax, ay, aw, ah, mx, my);
+        else if (page == Page.SETTINGS) {
+            List<Module> mods = settingsModules();
+            renderList(g, mods, ax, ay, aw, ah, mx, my, dt);
+        } else {
+            renderChips(g, ax, ay, aw, mx, my);
+            renderGridCards(g, cardMods(), ax, ay + 20, aw, ah - 20, mx, my, dt);
+        }
+    }
+
+    private void renderProfiles(GuiGraphics g, int x, int y, int w, int h, int mx, int my) {
+        UI.box(g, x, y, w, h, 0x40000000);
+        int ry = y + 3;
+        for (int i = 0; i < Presets.BUILT_IN.size(); i++) {
+            Presets.BuiltIn p = Presets.BUILT_IN.get(i);
+            boolean act = Presets.active(p), hv = Draw.inside(mx, my, x + 2, ry, w - 4, 14);
+            UI.box(g, x + 2, ry, w - 4, 14, act ? UI.PANEL_HI : hv ? UI.PANEL : UI.SURFACE);
+            if (act) g.fill(x + 2, ry + 2, x + 4, ry + 12, UI.accent());
+            Draw.text(g, Draw.trim(p.name(), w - 16), x + 8, ry + 3, act ? UI.TEXT : UI.MUTED);
+            hits.add(new Hit(x + 2, ry, w - 4, 14, () -> { Presets.apply(p); toast("Loaded " + p.name()); }));
+            ry += 15;
+        }
+        for (int i = 0; i < Presets.SLOTS; i++) {
+            if (!Presets.hasSlot(i)) continue;
+            final int slot = i;
+            boolean hv = Draw.inside(mx, my, x + 2, ry, w - 4, 14);
+            UI.box(g, x + 2, ry, w - 4, 14, hv ? UI.PANEL : UI.SURFACE);
+            Draw.text(g, "Profile " + (i + 1), x + 8, ry + 3, UI.MUTED);
+            UI.glyph(g, UI.CHEV_RIGHT, x + w - 12, ry + 4, hv ? UI.TEXT : UI.FAINT);
+            hits.add(new Hit(x + 2, ry, w - 4, 14, () -> { Presets.loadSlot(slot); toast("Loaded Profile " + (slot + 1)); }));
+            ry += 15;
+        }
+        // bottom: save as new profile, edit HUD layout
+        int by = y + h - 36;
+        boolean h1 = Draw.inside(mx, my, x + 3, by, w - 6, 14);
+        UI.card(g, x + 3, by, w - 6, 14, h1 ? UI.PANEL : UI.SURFACE, UI.BORDER);
+        String sl = "SAVE AS NEW PROFILE";
+        if (capsWidth(sl) > w - 12) sl = "SAVE PROFILE";
+        caps(g, sl, x + w / 2 - capsWidth(sl) / 2, by + 3, h1 ? UI.TEXT : UI.MUTED);
+        hits.add(new Hit(x + 3, by, w - 6, 14, () -> {
+            for (int i = 0; i < Presets.SLOTS; i++) if (!Presets.hasSlot(i)) { Presets.saveSlot(i); toast("Saved as Profile " + (i + 1)); return; }
+            toast("All " + Presets.SLOTS + " profile slots are used");
+        }));
+        boolean h2 = Draw.inside(mx, my, x + 3, by + 18, w - 6, 15);
+        UI.box(g, x + 3, by + 18, w - 6, 15, h2 ? Draw.shade(UI.accent(), 1.08f) : UI.accent());
+        String el = capsWidth("EDIT HUD LAYOUT") > w - 12 ? "EDIT HUD" : "EDIT HUD LAYOUT";
+        caps(g, el, x + w / 2 - capsWidth(el) / 2, by + 22, UI.ICE_INK);
+        hits.add(new Hit(x + 3, by + 18, w - 6, 15, () -> minecraft.setScreen(new HudEditorScreen(this))));
+    }
+
+    private static final String[] CHIPS = {"ALL", "FAVORITES", "RECENT", "HUD", "PVP", "VISUAL", "UTILITY"};
+
+    private void renderChips(GuiGraphics g, int x, int y, int w, int mx, int my) {
+        int cx = x;
+        for (int i = 0; i < CHIPS.length; i++) {
+            int cw = capsWidth(CHIPS[i]) + 10;
+            boolean sel = chip == i, hv = Draw.inside(mx, my, cx, y, cw, 14);
+            UI.box(g, cx, y, cw, 14, sel ? UI.accent() : hv ? UI.PANEL_HI : UI.PANEL);
+            caps(g, CHIPS[i], cx + 5, y + 3, sel ? UI.ICE_INK : hv ? UI.TEXT : UI.MUTED);
+            final int fi = i;
+            hits.add(new Hit(cx, y, cw, 14, () -> { chip = fi; scroll = 0; pageChanged = System.currentTimeMillis(); }));
+            cx += cw + 3;
+        }
+        // search on the right
+        int sw = Math.max(60, x + w - cx - 4), sx = x + w - sw;
+        boolean focus = searchBox.isFocused();
+        UI.field(g, sx, y, sw, 14, Draw.inside(mx, my, sx, y, sw, 14), focus);
+        UI.glyph(g, UI.SEARCH, sx + 4, y + 4, focus ? UI.accent() : UI.FAINT);
+        searchBox.setX(sx + 13); searchBox.setY(y + 3); searchBox.setWidth(sw - 16);
+        searchBox.visible = true;
+        hits.add(new Hit(sx, y, sw, 14, () -> { setFocused(searchBox); searchBox.setFocused(true); }));
+    }
+
+    private List<Module> cardMods() {
+        String q = search.trim().toLowerCase(Locale.ROOT);
+        List<Module> out = new ArrayList<>();
+        List<Module> base = ModuleManager.all();
+        if (chip == 2) {
+            base = new ArrayList<>();
+            for (String n : RECENT) for (Module m : ModuleManager.all()) if (m.name().equals(n)) base.add(m);
+        }
+        for (Module m : base) {
+            if (m.category() == Category.COSMETICS) continue;
+            if (!q.isEmpty()) { if (matches(m, q)) out.add(m); continue; }
+            if (chip == 1 && !Favorites.is(m.name())) continue;
+            if (chip >= 3 && m.category() != new Category[]{Category.HUD, Category.COMBAT, Category.VISUAL, Category.UTILITY}[chip - 3]) continue;
+            out.add(m);
+        }
+        return out;
+    }
+
+    private void renderGridCards(GuiGraphics g, List<Module> mods, int ax, int ay, int aw, int ah, int mx, int my, float dt) {
+        int cols = Math.max(2, Math.min(5, (aw + CARD_GAP) / (96 + CARD_GAP)));
+        int cw = (aw - (cols - 1) * CARD_GAP - 4) / cols;
+        int rows = (mods.size() + cols - 1) / cols;
+        int content = rows * (CARD_H + CARD_GAP) - CARD_GAP;
+        scroll = Mth.clamp(scroll, 0, Math.max(0, content - ah));
+        float slide = ease((System.currentTimeMillis() - pageChanged) / 180f);
+        g.enableScissor(ax, ay, ax + aw, ay + ah);
+        if (mods.isEmpty()) Draw.centered(g, chip == 1 ? "No favorites yet. Star a mod in its options." : chip == 2 ? "Mods you change will show up here." : "Nothing matches \"" + search + "\"", ax + aw / 2, ay + 30, UI.FAINT);
+        boolean inArea = my >= ay && my < ay + ah;
+        for (int i = 0; i < mods.size(); i++) {
+            Module m = mods.get(i);
+            int cx = ax + (i % cols) * (cw + CARD_GAP);
+            int cy = ay + (i / cols) * (CARD_H + CARD_GAP) - (int) scroll + Math.round((1 - slide) * 6);
+            if (cy + CARD_H < ay || cy > ay + ah) continue;
+            drawCard(g, m, cx, cy, cw, mx, my, inArea, dt);
+        }
+        g.disableScissor();
+        if (content > ah) {
+            int bh = Math.max(16, ah * ah / content), by = ay + (int) ((ah - bh) * (scroll / (content - ah)));
+            g.fill(ax + aw - 2, by, ax + aw, by + bh, 0x40FFFFFF);
+        }
+    }
+
+    private void drawCard(GuiGraphics g, Module m, int x, int y, int w, int mx, int my, boolean inArea, float dt) {
+        boolean hover = inArea && Draw.inside(mx, my, x, y, w, CARD_H);
+        float hv = approach(hoverAnim, m, hover ? 1 : 0, dt * 12);
+        float on = approach(toggleAnim, m, m.enabled() ? 1 : 0, dt * 12);
+        int top = CARD_H - 30;
+        UI.card(g, x, y, w, CARD_H, Draw.lerp(UI.PANEL, UI.PANEL_HI, hv), hover ? 0xFF3C4955 : UI.BORDER);
+        // icon (3x pixel glyph) and name
+        int icol = Draw.lerp(0xFF8A96A3, 0xFFFFFFFF, Math.max(on, hv * 0.5f));
+        if (ModuleIcons.hasCustom(m.name())) ModuleIcons.draw(g, m.name(), x + w / 2 - 10, y + 5, 20);
+        else PixelIcons.draw(g, m.name(), x + w / 2 - 13, y + 5, 3, icol);
+        if (Favorites.is(m.name())) UI.glyph(g, UI.STAR, x + w - 9, y + 4, UI.WARN);
+        String name = Draw.trim(m.name(), w - 8);
+        Draw.centered(g, name, x + w / 2, y + top - 9, Draw.lerp(UI.MUTED, UI.TEXT, Math.max(on, hv)));
+        // OPTIONS bar
+        int oy = y + top;
+        boolean oh = inArea && Draw.inside(mx, my, x + 1, oy, w - 2, 14);
+        g.fill(x + 1, oy, x + w - 1, oy + 14, oh ? 0xFF2E3946 : 0xFF1A2129);
+        g.fill(x + 1, oy, x + w - 1, oy + 1, UI.LINE);
+        boolean has = !m.settings().isEmpty();
+        caps(g, "OPTIONS", x + (w - 14) / 2 - capsWidth("OPTIONS") / 2, oy + 4, has ? (oh ? UI.TEXT : 0xFFC8D0D8) : UI.FAINT);
+        g.fill(x + w - 15, oy, x + w - 14, oy + 14, UI.LINE);
+        PixelIcons.draw(g, "_gear", x + w - 12, oy + 3, 1, oh ? UI.accent() : UI.MUTED);
+        if (inArea) hits.add(new Hit(x + 1, oy, w - 2, 14, () -> openOptions(m)));
+        // ENABLED / DISABLED bar
+        int sy = oy + 14;
+        boolean sh = inArea && Draw.inside(mx, my, x + 1, sy, w - 2, 15);
+        int onC = 0xFF3E9E5E, offC = 0xFFA83A44;
+        int bar = Draw.lerp(offC, onC, on);
+        if (sh) bar = Draw.shade(bar, 1.12f);
+        g.fill(x + 1, sy, x + w - 1, sy + 15, bar);
+        g.fill(x + 1, sy + 14, x + w - 1, sy + 15, Draw.shade(bar, 0.7f));   // pixel bevel
+        g.fill(x + 1, sy, x + w - 1, sy + 1, Draw.shade(bar, 1.25f));
+        String st = m.enabled() ? "ENABLED" : "DISABLED";
+        caps(g, st, x + w / 2 - capsWidth(st) / 2, sy + 4, 0xFFFFFFFF);
+        if (inArea) {
+            hits.add(new Hit(x + 1, sy, w - 2, 15, () -> { m.toggle(); touch(m); }));
+            hits.add(new Hit(x, y, w, top, () -> { m.toggle(); touch(m); }, has ? () -> openOptions(m) : null));
+        }
+    }
+
+    private void openOptions(Module m) {
+        if (m.settings().isEmpty()) { toast(m.name() + " has no options"); return; }
+        closePopups(); settingsFor = m; expanded = m; touch(m); scroll = 0; pageChanged = System.currentTimeMillis();
+    }
+
+    /** Full-width options page for one mod: back, icon, name, favourite, switch, then its settings. */
+    private void renderOptionsPage(GuiGraphics g, Module m, int ax, int ay, int aw, int ah, int mx, int my) {
+        float slide = ease((System.currentTimeMillis() - pageChanged) / 180f);
+        ax += Math.round((1 - slide) * 10);
+        boolean bh = Draw.inside(mx, my, ax, ay, 40, 14);
+        UI.card(g, ax, ay, 40, 14, bh ? UI.PANEL_HI : UI.PANEL, UI.BORDER);
+        caps(g, "BACK", ax + 20 - capsWidth("BACK") / 2, ay + 3, bh ? UI.TEXT : UI.MUTED);
+        hits.add(new Hit(ax, ay, 40, 14, () -> { closePopups(); settingsFor = null; expanded = null; pageChanged = System.currentTimeMillis(); }));
+        PixelIcons.draw(g, m.name(), ax + 48, ay + 2, 1, m.enabled() ? UI.accent() : UI.MUTED);
+        Draw.text(g, m.name(), ax + 62, ay + 3, UI.TEXT);
+        Draw.text(g, m.description(), ax + 68 + Draw.width(m.name()), ay + 3, UI.FAINT);
+        int sx = ax + aw - 20;
+        UI.toggle(g, sx, ay + 3, m.enabled() ? 1 : 0);
+        hits.add(new Hit(sx - 3, ay, 22, 14, () -> { m.toggle(); touch(m); }));
+        boolean fav = Favorites.is(m.name());
+        boolean fh = Draw.inside(mx, my, sx - 14, ay + 2, 9, 10);
+        UI.glyph(g, fav ? UI.STAR : UI.STAR_EMPTY, sx - 12, ay + 4, fav ? UI.WARN : fh ? UI.TEXT : UI.FAINT);
+        hits.add(new Hit(sx - 14, ay, 10, 14, () -> Favorites.toggle(m.name())));
+        int listY = ay + 20, listH = ah - 20;
+        UI.box(g, ax, listY, aw, listH, 0x30000000);
+        int content = m.settings().size() * SETTING_ROW + 8;
+        scroll = Mth.clamp(scroll, 0, Math.max(0, content - listH));
+        g.enableScissor(ax, listY, ax + aw, listY + listH);
+        renderSettings(g, m, ax + 8, listY + 4 - (int) scroll, aw - 16, mx, my, listY, listH);
+        g.disableScissor();
     }
 
     // ---------- sidebar ----------
