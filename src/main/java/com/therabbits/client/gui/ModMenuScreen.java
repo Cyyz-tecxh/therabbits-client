@@ -33,7 +33,15 @@ import java.util.Map;
  * Click a tile to toggle it, click its gear to open the settings page.
  */
 public class ModMenuScreen extends Screen {
-    private static final int TILE_H = 58, GAP = 6, HEADER = 40, TABS_H = 18, FOOTER = 26, SETTING_ROW = 20;
+    private static final int SIDE = 122, HEAD = 34, ROW = 26, GAP = 4, SETTING_ROW = 18, TABS_H = 14, FOOTER = 0;
+    private enum Page { MODS, FAVORITES, RECENT, SETTINGS, PROFILES }
+    private Page page = Page.MODS;
+    private int stateFilter;                       // 0 all, 1 enabled, 2 disabled
+    private Module expanded;                       // module whose settings are open inline
+    private final Map<Module, Float> expandAnim = new HashMap<>();
+    /** Recently toggled or configured modules (this session), newest first. */
+    private static final java.util.LinkedList<String> RECENT = new java.util.LinkedList<>();
+    private static void touch(Module m) { RECENT.remove(m.name()); RECENT.addFirst(m.name()); while (RECENT.size() > 10) RECENT.removeLast(); }
 
     private static final String[] ICON_HUD = {
             "#########", "#.......#", "#.##....#", "#.......#", "#.....#.#", "#....##.#", "#...###.#", "#.......#", "#########"};
@@ -96,23 +104,29 @@ public class ModMenuScreen extends Screen {
     }
 
     // ---------- test / external hooks ----------
-    public void showPresets() { presetsPage = true; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
-    public void selectCategory(Category c) { presetsPage = false; filter = c; settingsFor = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
-    public void openSettings(Module m) { settingsFor = m; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    public void showPresets() { page = Page.PROFILES; expanded = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    public void selectCategory(Category c) { page = Page.MODS; filter = c; favoritesOnly = false; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    /** Opens a module's settings inline (switching to its category so it is on screen). */
+    public void openSettings(Module m) {
+        if (m == null) return;
+        if (page != Page.SETTINGS || !settingsModules().contains(m)) { page = Page.MODS; filter = m.category() == Category.COSMETICS ? null : m.category(); }
+        stateFilter = 0; expanded = m; expandAnim.put(m, 1f); settingsFor = m; touch(m);
+        scroll = 0; scrollTo = m; pageChanged = System.currentTimeMillis();
+    }
+    private Module scrollTo;
     private String pendingOpen;
-    /** Test hook: open the dropdown / colour picker of a setting on the current settings page. */
+    /** Test hook: open the dropdown / colour picker of a setting in the open module. */
     public void openSetting(String name) { pendingOpen = name; }
 
     @Override
     protected void init() {
-        W = Math.min(560, width - 16);
-        H = Math.min(320, height - 16);
-        int sw = Math.min(150, W / 3);
-        searchBox = new EditBox(font, left() + W - sw - 2, top() + 15, sw - 18, 12, Component.literal("Search"));
+        W = Math.min(600, width - 20);
+        H = Math.min(340, height - 20);
+        searchBox = new EditBox(font, left() + 22, top() + 33, SIDE - 34, 10, Component.literal("Search"));
         searchBox.setBordered(false);
         searchBox.setMaxLength(32);
-        searchBox.setTextColor(0xFFFFFFFF);
-        searchBox.setHint(Component.literal("Search features..."));
+        searchBox.setTextColor(UI.TEXT);
+        searchBox.setHint(Component.literal("Search"));
         searchBox.setValue(search);
         searchBox.setResponder(s -> { search = s; scroll = 0; });
         ModuleIcons.reload();
@@ -151,10 +165,10 @@ public class ModMenuScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        if (minecraft.level != null) super.renderBackground(g, mouseX, mouseY, delta);   // vanilla blur over the game
-        else g.fillGradient(0, 0, width, height, 0xFF000000, 0xFF101010);
+        if (minecraft.level != null) super.renderBackground(g, mouseX, mouseY, delta);   // vanilla blur: the world stays visible
+        else g.fill(0, 0, width, height, 0xFF0B0E12);
         float a = ease((System.currentTimeMillis() - opened) / 220f);
-        g.fill(0, 0, width, height, ((int) (120 * a) << 24));
+        g.fill(0, 0, width, height, ((int) (90 * a) << 24) | 0x05080B);
     }
 
     @Override
@@ -166,125 +180,129 @@ public class ModMenuScreen extends Screen {
         popupHits.clear();
         sliderAreas.clear();
 
-        // pop-in: scale up from 94% while fading in
+        // open: fade in while rising 6px
         float open = ease((now - opened) / 240f);
-        float sc = 0.94f + 0.06f * open;
         g.pose().pushMatrix();
-        g.pose().translate(width / 2f, height / 2f);
-        g.pose().scale(sc, sc);
-        g.pose().translate(-width / 2f, -height / 2f);
+        g.pose().translate(0, (1 - open) * 6);
 
         int x = left(), y = top();
-        // panel with a soft drop shadow
-        for (int i = 1; i <= 10; i++) Draw.rrect(g, x - i, y - i + 4, W + 2 * i, H + 2 * i, 10 + i, 0x07000000);
-        Draw.glow(g, x, y, W, H, 10, Theme.accent(0x90), 4);
-        Draw.rgrad(g, x, y, W, H, 10, 0xF8141418, 0xF808080A);
-        Draw.routline(g, x, y, W, H, 10, 0x2EFFFFFF);
-        // accent light along the top edge, fading out to the sides
-        for (int i = 0; i < W - 40; i++) {
-            float f = 1f - Math.abs(i - (W - 40) / 2f) / ((W - 40) / 2f);
-            g.fill(x + 20 + i, y, x + 21 + i, y + 1, Theme.accent((int) (0xE0 * f)));
-            g.fill(x + 20 + i, y + 1, x + 21 + i, y + 2, Theme.accent((int) (0x40 * f)));
-        }
-
-        renderHeader(g, x, y, mouseX, mouseY);
-        if (settingsFor == null) {
-            renderTabs(g, x + 12, y + HEADER + 2, mouseX, mouseY);
-            if (presetsPage) renderPresets(g, x + 12, y + HEADER + TABS_H + 10, W - 24, H - HEADER - TABS_H - 10 - FOOTER - 6, mouseX, mouseY, now);
-            else renderGrid(g, x + 12, y + HEADER + TABS_H + 10, W - 24, H - HEADER - TABS_H - 10 - FOOTER - 6, mouseX, mouseY, dt);
+        UI.shadow(g, x, y, W, H);
+        UI.card(g, x, y, W, H, UI.BG, UI.BORDER);
+        renderSidebar(g, x, y, mouseX, mouseY);
+        int mx0 = x + SIDE;
+        if (page == Page.PROFILES) {
+            renderMainHeader(g, mx0, y, W - SIDE, "Profiles", "Saved setups: every toggle, setting and HUD position", mouseX, mouseY, false);
+            renderPresets(g, mx0 + 10, y + HEAD + 8, W - SIDE - 20, H - HEAD - 16, mouseX, mouseY, now);
         } else {
-            renderSettingsPage(g, x + 12, y + HEADER + 2, W - 24, H - HEADER - FOOTER - 6, mouseX, mouseY, now);
+            String title = switch (page) {
+                case FAVORITES -> "Favorites";
+                case RECENT -> "Recently used";
+                case SETTINGS -> "Client settings";
+                default -> search.isBlank() ? (filter == null ? "All mods" : filter.label()) : "Search";
+            };
+            List<Module> mods = visibleModules();
+            long on = mods.stream().filter(Module::enabled).count();
+            String sub = mods.size() + (mods.size() == 1 ? " mod" : " mods") + "  \u00B7  " + on + " enabled";
+            renderMainHeader(g, mx0, y, W - SIDE, title, sub, mouseX, mouseY, page != Page.SETTINGS);
+            renderList(g, mods, mx0 + 8, y + HEAD + 6, W - SIDE - 16, H - HEAD - 12, mouseX, mouseY, dt);
         }
-        renderFooter(g, x, y + H - FOOTER, mouseX, mouseY);
-        if (settingsFor == null) { openMode = null; openColor = null; editingNum = null; }
         renderPopups(g, mouseX, mouseY);
         hexEdit.visible = openColor != null;
         numEdit.visible = editingNum != null;
-
         g.pose().popMatrix();
-        searchBox.visible = settingsFor == null && !presetsPage;
-        if (settingsFor == null) { editing = null; textEdit.visible = false; }
-        if (toast != null && now - toastTime < 2000) {
-            int tw = Draw.width(toast) + 20;
-            Draw.glow(g, width / 2 - tw / 2, top() - 22, tw, 16, 8, Theme.accent(), 3);
-            Draw.rgrad(g, width / 2 - tw / 2, top() - 22, tw, 16, 8, Theme.accent(), Draw.shade(Theme.accent(), 0.8f));
-            Draw.centered(g, toast, width / 2, top() - 18, Theme.onAccent());
+
+        if (expanded == null) { editing = null; textEdit.visible = false; }
+        if (toast != null && now - toastTime < 1800) {
+            int tw = Draw.width(toast) + 16, tx = x + SIDE + (W - SIDE) / 2 - tw / 2, ty = y + H - 22;
+            UI.card(g, tx, ty, tw, 14, UI.SURFACE, UI.accent(0x90));
+            Draw.centered(g, toast, tx + tw / 2, ty + 3, UI.TEXT);
         }
-        super.render(g, mouseX, mouseY, delta);   // search box on top (not scaled; it sits in the header)
+        super.render(g, mouseX, mouseY, delta);   // edit boxes on top
     }
 
-    // ---------- header ----------
-    private void renderHeader(GuiGraphics g, int x, int y, int mx, int my) {
-        Draw.glow(g, x + 8, y + 5, 30, 30, 8, Theme.accent(0x80), 3);
-        Draw.logo(g, x + 8, y + 5, 30);
+    // ---------- sidebar ----------
+    private int navY;
+    private void nav(GuiGraphics g, int x, int w, String label, String[] icon, String count, boolean sel, int mx, int my, Runnable action) {
+        int y = navY, h = 15;
+        boolean hover = Draw.inside(mx, my, x, y, w, h);
+        if (sel) { UI.box(g, x, y, w, h, UI.PANEL); g.fill(x - 6, y + 3, x - 4, y + h - 3, UI.accent()); }
+        else if (hover) UI.box(g, x, y, w, h, 0x0CFFFFFF);
+        int ic = sel ? UI.accent() : hover ? 0xFFC8D0D8 : UI.MUTED;
+        if (icon != null) pixelIcon(g, icon, x + 5, y + 3, 1, ic);
+        Draw.text(g, label, x + 19, y + 4, sel ? UI.TEXT : hover ? 0xFFDDE3E9 : UI.MUTED);
+        if (count != null) Draw.text(g, count, x + w - 5 - Draw.width(count), y + 4, UI.FAINT);
+        hits.add(new Hit(x, y, w, h, action));
+        navY += h + 1;
+    }
+
+    private void renderSidebar(GuiGraphics g, int x, int y, int mx, int my) {
+        g.fill(x + 1, y + 1, x + SIDE, y + H - 1, UI.SURFACE);
+        g.fill(x + SIDE - 1, y + 1, x + SIDE, y + H - 1, UI.LINE);
+        int ix = x + 8, iw = SIDE - 16;
+        Draw.logo(g, ix, y + 8, 16);
+        Draw.text(g, "TheRabbits", ix + 21, y + 9, UI.TEXT);
+        Draw.text(g, "1.21.11", ix + 21, y + 18, UI.FAINT);
+
+        // search
+        boolean focus = searchBox.isFocused();
+        UI.field(g, ix, y + 30, iw, 15, Draw.inside(mx, my, ix, y + 30, iw, 15), focus);
+        UI.glyph(g, UI.SEARCH, ix + 5, y + 34, focus ? UI.accent() : UI.FAINT);
+        searchBox.setX(ix + 14); searchBox.setY(y + 34); searchBox.setWidth(iw - 18);
+        searchBox.visible = page != Page.PROFILES;
+        hits.add(new Hit(ix, y + 30, iw, 15, () -> { setFocused(searchBox); searchBox.setFocused(true); }));
+
+        navY = y + 52;
+        UI.label(g, "Library", ix, navY); navY += 11;
+        int all = (int) ModuleManager.all().stream().filter(m -> m.category() != Category.COSMETICS).count();
+        nav(g, ix, iw, "All mods", ICON_ALL, String.valueOf(all), page == Page.MODS && filter == null, mx, my, () -> { selectCategory(null); });
+        nav(g, ix, iw, "Favorites", ICON_STAR_SMALL, null, page == Page.FAVORITES, mx, my, () -> { page = Page.FAVORITES; scroll = 0; pageChanged = System.currentTimeMillis(); });
+        nav(g, ix, iw, "Recently used", ICON_CLOCK, null, page == Page.RECENT, mx, my, () -> { page = Page.RECENT; scroll = 0; pageChanged = System.currentTimeMillis(); });
+        navY += 6;
+        UI.label(g, "Categories", ix, navY); navY += 11;
+        for (Category c : Category.values()) {
+            if (c == Category.COSMETICS) continue;
+            int n = ModuleManager.in(c).size();
+            nav(g, ix, iw, c.label(), icon(c), String.valueOf(n), page == Page.MODS && filter == c, mx, my, () -> selectCategory(c));
+        }
+        nav(g, ix, iw, "Cosmetics", ICON_SHIRT, null, false, mx, my, () -> minecraft.setScreen(new CosmeticsScreen(parent)));
+
+        // bottom block: profiles, settings, edit HUD / packs
+        navY = y + H - 72;
+        g.fill(ix, navY - 5, ix + iw, navY - 4, UI.LINE);
+        nav(g, ix, iw, "Profiles", ICON_LAYERS, null, page == Page.PROFILES, mx, my, this::showPresets);
+        nav(g, ix, iw, "Settings", ICON_GEAR, null, page == Page.SETTINGS, mx, my, () -> { page = Page.SETTINGS; scroll = 0; pageChanged = System.currentTimeMillis(); });
+        int by = y + H - 26, bw = (iw - 4) / 2;
+        boolean h1 = Draw.inside(mx, my, ix, by, bw, 17), h2 = Draw.inside(mx, my, ix + bw + 4, by, bw, 17);
+        UI.button(g, ix, by, bw, 17, "Edit HUD", h1, false);
+        UI.button(g, ix + bw + 4, by, bw, 17, "Packs", h2, false);
+        hits.add(new Hit(ix, by, bw, 17, () -> minecraft.setScreen(new HudEditorScreen(this))));
+        hits.add(new Hit(ix + bw + 4, by, bw, 17, () -> minecraft.setScreen(new PackCustomizerScreen(this))));
+    }
+
+    // ---------- main header ----------
+    private void renderMainHeader(GuiGraphics g, int x, int y, int w, String title, String sub, int mx, int my, boolean chips) {
         g.pose().pushMatrix();
-        g.pose().translate(x + 42, y + 10);
-        g.pose().scale(1.5f, 1.5f);
-        Draw.text(g, "THE RABBITS", 0, 0, 0xFFFFFFFF);
+        g.pose().translate(x + 12, y + 8);
+        g.pose().scale(1.25f, 1.25f);
+        Draw.text(g, title, 0, 0, UI.TEXT);
         g.pose().popMatrix();
-        Draw.text(g, "C L I E N T", x + 43, y + 25, Theme.accent(0xB0));
-
-        if (settingsFor == null && !presetsPage) {
-            int sw = Math.min(150, W / 3), sx = x + W - sw - 16, sy = y + 10;
-            boolean focus = searchBox.isFocused();
-            if (focus) Draw.glow(g, sx, sy, sw, 18, 9, Theme.accent(), 3);
-            Draw.rgrad(g, sx, sy, sw, 18, 9, 0xFF1C1C21, 0xFF141418);
-            Draw.routline(g, sx, sy, sw, 18, 9, focus ? Theme.accent(0xD0) : 0x38FFFFFF);
-            // magnifier
-            Draw.routline(g, sx + 6, sy + 5, 6, 6, 3, 0xFF8C8C94);
-            g.fill(sx + 11, sy + 10, sx + 13, sy + 12, 0xFF8C8C94);
-            hits.add(new Hit(sx, sy, sw, 18, () -> { setFocused(searchBox); searchBox.setFocused(true); }));
+        Draw.text(g, sub, x + 12, y + 21, UI.FAINT);
+        // close
+        int cx = x + w - 16, cy = y + 10;
+        boolean ch = Draw.inside(mx, my, cx - 3, cy - 3, 11, 11);
+        UI.glyph(g, UI.CLOSE, cx, cy, ch ? UI.TEXT : UI.FAINT);
+        hits.add(new Hit(cx - 3, cy - 3, 11, 11, this::onClose));
+        if (chips) {
+            String[] names = {"All", "Enabled", "Disabled"};
+            int tx = cx - 10;
+            for (int i = names.length - 1; i >= 0; i--) {
+                int cw = Draw.width(names[i]) + 12; tx -= cw + 2;
+                final int fi = i;
+                UI.chip(g, tx, y + 9, cw, TABS_H, names[i], stateFilter == i, Draw.inside(mx, my, tx, y + 9, cw, TABS_H));
+                hits.add(new Hit(tx, y + 9, cw, TABS_H, () -> { stateFilter = fi; scroll = 0; }));
+            }
         }
-        g.fillGradient(x + 10, y + HEADER - 2, x + W - 10, y + HEADER - 1, 0x22FFFFFF, 0x08FFFFFF);
-    }
-
-    // ---------- category pills ----------
-    private void renderTabs(GuiGraphics g, int x, int y, int mx, int my) {
-        Category[] cats = java.util.Arrays.stream(Category.values()).filter(c -> c != Category.COSMETICS).toArray(Category[]::new);
-        int tx = x;
-        for (int i = -1; i < cats.length; i++) {
-            Category c = i < 0 ? null : cats[i];
-            String label = c == null ? "All" : c.label();
-            String[] icon = c == null ? ICON_ALL : icon(c);
-            int w = Draw.width(label) + 28;
-            boolean sel = !presetsPage && !favoritesOnly && filter == c;
-            boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
-            pill(g, tx, y, w, sel, hover);
-            pixelIcon(g, icon, tx + 7, y + 5, 1, sel ? Theme.onAccent() : 0xFFBBBBBB);
-            Draw.text(g, label, tx + 20, y + 5, sel ? Theme.onAccent() : 0xFFD0D0D0);
-            final Category fc = c;
-            hits.add(new Hit(tx, y, w, TABS_H, () -> { favoritesOnly = false; selectCategory(fc); }));
-            tx += w + 5;
-        }
-        {   // favourites
-            String label = "Favorites";
-            int w = Draw.width(label) + 24;
-            boolean sel = !presetsPage && favoritesOnly;
-            boolean hover = Draw.inside(mx, my, tx, y, w, TABS_H);
-            pill(g, tx, y, w, sel, hover);
-            pixelIcon(g, ICON_STAR_SMALL, tx + 7, y + 6, 1, sel ? Theme.onAccent() : 0xFFE8C34A);
-            Draw.text(g, label, tx + 16, y + 5, sel ? Theme.onAccent() : 0xFFD0D0D0);
-            hits.add(new Hit(tx, y, w, TABS_H, () -> { selectCategory(null); favoritesOnly = true; }));
-        }
-        // Presets pill (right side)
-        String label = "Presets";
-        int w = Draw.width(label) + 28, px = x + W - 24 - w;
-        boolean hover = Draw.inside(mx, my, px, y, w, TABS_H);
-        pill(g, px, y, w, presetsPage, hover);
-        pixelIcon(g, ICON_STAR, px + 7, y + 5, 1, presetsPage ? Theme.onAccent() : 0xFFBBBBBB);
-        Draw.text(g, label, px + 20, y + 5, presetsPage ? Theme.onAccent() : 0xFFD0D0D0);
-        hits.add(new Hit(px, y, w, TABS_H, this::showPresets));
-    }
-
-    /** Rounded category pill: accent gradient + glow when selected. */
-    private static void pill(GuiGraphics g, int x, int y, int w, boolean sel, boolean hover) {
-        if (sel) {
-            Draw.glow(g, x, y, w, TABS_H, TABS_H / 2, Theme.accent(), 3);
-            Draw.rgrad(g, x, y, w, TABS_H, TABS_H / 2, Theme.accent(), Draw.shade(Theme.accent(), 0.78f));
-        } else {
-            Draw.rgrad(g, x, y, w, TABS_H, TABS_H / 2, hover ? 0xFF2A2A30 : 0xFF1A1A1E, hover ? 0xFF202025 : 0xFF131316);
-            Draw.routline(g, x, y, w, TABS_H, TABS_H / 2, hover ? Theme.accent(0x80) : 0x2AFFFFFF);
-        }
+        g.fill(x, y + HEAD - 1, x + w - 1, y + HEAD, UI.LINE);
     }
 
     // ---------- popups: dropdown list and colour picker ----------
@@ -313,10 +331,8 @@ public class ModMenuScreen extends Screen {
 
     private void popupPanel(GuiGraphics g, int x, int y, int w, int h) {
         popX = x; popY = y; popW = w; popH = h;
-        for (int i = 1; i <= 6; i++) Draw.rrect(g, x - i, y - i + 3, w + 2 * i, h + 2 * i, 8 + i, 0x0C000000);
-        Draw.glow(g, x, y, w, h, 8, Theme.accent(0xA0), 3);
-        Draw.rgrad(g, x, y, w, h, 8, 0xFC1C1C22, 0xFC111114);
-        Draw.routline(g, x, y, w, h, 8, Theme.accent(0x70));
+        UI.shadow(g, x, y, w, h);
+        UI.card(g, x, y, w, h, UI.SURFACE, UI.BORDER);
     }
 
     private void renderPopups(GuiGraphics g, int mx, int my) {
@@ -332,21 +348,21 @@ public class ModMenuScreen extends Screen {
             for (int k = 0; k < vis; k++) {
                 int i = first + k, iy = y + 3 + k * ih;
                 boolean sel = ms.get() == i, hov = Draw.inside(mx, my, x + 3, iy, modeW - 6, ih);
-                if (sel) Draw.rgrad(g, x + 3, iy, modeW - 6, ih, 5, Theme.accent(), Draw.shade(Theme.accent(), 0.8f));
-                else if (hov) Draw.rrect(g, x + 3, iy, modeW - 6, ih, 5, 0x30FFFFFF);
+                if (sel) { UI.box(g, x + 3, iy, modeW - 6, ih, UI.PANEL); g.fill(x + 3, iy + 3, x + 4, iy + ih - 3, UI.accent()); }
+                else if (hov) UI.box(g, x + 3, iy, modeW - 6, ih, 0x10FFFFFF);
                 String lbl = ms.label(i);
                 int tx = x + 9;
                 if (ms.isColor() && !lbl.equals("Global")) {
                     int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(lbl);
-                    if (idx >= 0) { Draw.rrect(g, tx, iy + 4, 7, 7, 3, 0xFF000000 | HudColors.rgb(idx, 0)); tx += 11; }
+                    if (idx >= 0) { UI.box(g, tx, iy + 3, 7, 7, 0xFF000000 | HudColors.rgb(idx, 0)); tx += 11; }
                 }
-                Draw.text(g, Draw.trim(lbl, modeW - (tx - x) - 6), tx, iy + 3, sel ? Theme.onAccent() : 0xFFE0E0E6);
+                Draw.text(g, Draw.trim(lbl, modeW - (tx - x) - 6), tx, iy + 3, sel ? UI.TEXT : UI.MUTED);
                 final int fi = i;
                 popupHits.add(new Hit(x + 3, iy, modeW - 6, ih, () -> { ms.set(fi); openMode = null; }));
             }
             if (n > vis) {   // scroll hint
                 int bh = Math.max(10, h * vis / n), by = y + (int) ((h - bh) * (modeScroll / (n - vis)));
-                g.fill(x + modeW - 3, by, x + modeW - 2, by + bh, Theme.accent(0xA0));
+                g.fill(x + modeW - 3, by, x + modeW - 2, by + bh, UI.FAINT);
             }
         }
         if (openColor != null) {
@@ -359,9 +375,9 @@ public class ModMenuScreen extends Screen {
             for (int i = 0; i < ss; i += 2)
                 for (int j = 0; j < ss; j += 2)
                     g.fill(sx + i, sy + j, sx + i + 2, sy + j + 2, 0xFF000000 | java.awt.Color.HSBtoRGB(hsv[0], i / (float) ss, 1f - j / (float) ss));
-            Draw.routline(g, sx - 1, sy - 1, ss + 2, ss + 2, 2, 0x40FFFFFF);
+            UI.border(g, sx - 1, sy - 1, ss + 2, ss + 2, UI.BORDER);
             int kx = sx + (int) (hsv[1] * ss), ky = sy + (int) ((1 - hsv[2]) * ss);
-            Draw.routline(g, kx - 3, ky - 3, 7, 7, 3, 0xFFFFFFFF);
+            UI.border(g, kx - 3, ky - 3, 7, 7, 0xFFFFFFFF);
             // hue bar
             int hx = sx + ss + 6, hw = 10;
             for (int j = 0; j < ss; j++) g.fill(hx, sy + j, hx + hw, sy + j + 1, 0xFF000000 | java.awt.Color.HSBtoRGB(j / (float) ss, 1f, 1f));
@@ -370,8 +386,7 @@ public class ModMenuScreen extends Screen {
             // right column: preview + hex + options
             int rx = hx + hw + 8, rw = x + w - 8 - rx;
             int cur = 0xFF000000 | cs.color(0);
-            Draw.glow(g, rx, sy, rw, 14, 5, cur, 2);
-            Draw.rrect(g, rx, sy, rw, 14, 5, cur);
+            UI.card(g, rx, sy, rw, 14, cur, UI.BORDER);
             field(g, rx, sy + 18, rw, 14, false, hexEdit.isFocused());
             hexEdit.setX(rx + 5); hexEdit.setY(sy + 21); hexEdit.setWidth(rw - 8);
             int by = sy + 36;
@@ -393,18 +408,16 @@ public class ModMenuScreen extends Screen {
             for (int k = 0; k < PRESETS.length; k++) {
                 int px = x + 8 + k * (pw + 2), c = PRESETS[k];
                 boolean sel = !cs.global() && !cs.chroma() && cs.rgb() == c;
-                if (sel) Draw.glow(g, px, py, pw, pw, 3, 0xFF000000 | c, 2);
-                Draw.rrect(g, px, py, pw, pw, 3, 0xFF000000 | c);
-                if (sel || Draw.inside(mx, my, px, py, pw, pw)) Draw.routline(g, px - 1, py - 1, pw + 2, pw + 2, 3, 0xFFFFFFFF);
+                UI.box(g, px, py, pw, pw, 0xFF000000 | c);
+                if (sel || Draw.inside(mx, my, px, py, pw, pw)) UI.border(g, px - 1, py - 1, pw + 2, pw + 2, sel ? UI.accent() : 0xFFFFFFFF);
                 popupHits.add(new Hit(px, py, pw, pw, () -> { cs.setRgb(c); syncHsv(); }));
             }
         }
     }
 
     private static void chip(GuiGraphics g, int x, int y, int w, String label, boolean on, boolean hover) {
-        if (on) { Draw.rgrad(g, x, y, w, 14, 7, Theme.accent(), Draw.shade(Theme.accent(), 0.78f)); }
-        else { Draw.rgrad(g, x, y, w, 14, 7, hover ? 0xFF2A2A30 : 0xFF1C1C21, 0xFF151518); Draw.routline(g, x, y, w, 14, 7, hover ? Theme.accent(0x90) : 0x30FFFFFF); }
-        Draw.centered(g, label, x + w / 2, y + 3, on ? Theme.onAccent() : 0xFFD8D8DE);
+        if (on) { UI.card(g, x, y, w, 14, UI.PANEL, UI.accent(0xC0)); Draw.centered(g, label, x + w / 2, y + 3, UI.TEXT); }
+        else { UI.card(g, x, y, w, 14, hover ? UI.PANEL_HI : UI.PANEL, UI.BORDER); Draw.centered(g, label, x + w / 2, y + 3, hover ? UI.TEXT : UI.MUTED); }
     }
 
     private boolean pickColor(double mx, double my, boolean start) {
@@ -422,22 +435,11 @@ public class ModMenuScreen extends Screen {
         return true;
     }
 
-    /** Rounded input / dropdown field. */
-    private static void field(GuiGraphics g, int x, int y, int w, int h, boolean hover, boolean active) {
-        if (active) Draw.glow(g, x, y, w, h, h / 2, Theme.accent(), 2);
-        Draw.rgrad(g, x, y, w, h, h / 2, hover ? 0xFF24242A : 0xFF0F0F12, hover ? 0xFF1B1B20 : 0xFF0B0B0D);
-        Draw.routline(g, x, y, w, h, h / 2, active ? Theme.accent(0xD0) : hover ? Theme.accent(0x80) : 0x30FFFFFF);
-    }
+    private static void field(GuiGraphics g, int x, int y, int w, int h, boolean hover, boolean active) { UI.field(g, x, y, w, h, hover, active); }
 
-    /** Rounded accent button (filled + glow when hovered). */
+    /** Flat button; the label is drawn by the caller. */
     private static void button(GuiGraphics g, int x, int y, int w, int h, boolean hover) {
-        if (hover) {
-            Draw.glow(g, x, y, w, h, h / 2, Theme.accent(), 3);
-            Draw.rgrad(g, x, y, w, h, h / 2, Theme.accent(), Draw.shade(Theme.accent(), 0.78f));
-        } else {
-            Draw.rgrad(g, x, y, w, h, h / 2, 0xFF24242A, 0xFF1A1A1F);
-            Draw.routline(g, x, y, w, h, h / 2, Theme.accent(0x60));
-        }
+        UI.card(g, x, y, w, h, hover ? UI.PANEL_HI : UI.PANEL, hover ? UI.accent(0xB0) : UI.BORDER);
     }
 
     private static final String[] ICON_STAR = {
@@ -447,50 +449,48 @@ public class ModMenuScreen extends Screen {
     private void renderPresets(GuiGraphics g, int ax, int ay, int aw, int ah, int mx, int my, long now) {
         float slide = ease((now - pageChanged) / 200f);
         ay += (int) ((1 - slide) * 12);
-        Draw.text(g, "BUILT-IN", ax, ay, 0xFF6A6A6A);
+        UI.label(g, "Built-in", ax, ay);
         int cols = 4, cw = (aw - (cols - 1) * GAP) / cols, ch = 62, cy = ay + 12;
         for (int i = 0; i < Presets.BUILT_IN.size(); i++) {
             Presets.BuiltIn p = Presets.BUILT_IN.get(i);
             int cx = ax + i * (cw + GAP);
             boolean active = Presets.active(p);
             boolean hover = Draw.inside(mx, my, cx, cy, cw, ch);
-            if (active || hover) Draw.glow(g, cx, cy, cw, ch, 8, Theme.accent(active ? 0xFF : 0x90), 3);
-            if (active) Draw.rgrad(g, cx, cy, cw, ch, 8, Theme.accent(), Draw.shade(Theme.accent(), 0.7f));
-            else { Draw.rgrad(g, cx, cy, cw, ch, 8, hover ? 0xFF202026 : 0xFF17171B, 0xFF101013); Draw.routline(g, cx, cy, cw, ch, 8, hover ? Theme.accent(0x90) : 0x24FFFFFF); }
-            int fg = active ? Theme.onAccent() : 0xFFFFFFFF, sub = active ? 0xFF404040 : 0xFF7A7A7A;
+            UI.card(g, cx, cy, cw, ch, hover ? UI.PANEL_HI : UI.PANEL, active ? UI.accent() : UI.BORDER);
+            if (active) g.fill(cx + 1, cy + 1, cx + 3, cy + ch - 1, UI.accent());
+            int fg = UI.TEXT, sub = UI.MUTED;
             Draw.text(g, p.name(), cx + 8, cy + 8, fg);
             String d = p.description();
             if (Draw.width(d) > cw - 14) d = Draw.trim(d, cw - 20 + 6);
             Draw.text(g, d, cx + 8, cy + 20, sub);
             Draw.text(g, Presets.count(p) + " features", cx + 8, cy + ch - 14, sub);
-            Draw.text(g, active ? "ACTIVE" : "LOAD \u203A", cx + cw - 8 - Draw.width(active ? "ACTIVE" : "LOAD \u203A"), cy + ch - 14, fg);
+            Draw.text(g, active ? "Active" : "Load", cx + cw - 8 - Draw.width(active ? "Active" : "Load"), cy + ch - 14, active ? UI.accent() : UI.MUTED);
             hits.add(new Hit(cx, cy, cw, ch, () -> { Presets.apply(p); toast("Loaded " + p.name()); }));
         }
 
         int sy = cy + ch + 16;
-        Draw.text(g, "YOUR PRESETS  -  saves every toggle, setting and HUD position", ax, sy, 0xFF6A6A6A);
+        UI.label(g, "Your profiles", ax, sy);
         int scw = (aw - (Presets.SLOTS - 1) * GAP) / Presets.SLOTS, sch = 58;
         sy += 12;
         for (int i = 0; i < Presets.SLOTS; i++) {
             final int slot = i;
             int cx = ax + i * (scw + GAP);
             boolean has = Presets.hasSlot(i);
-            Draw.rgrad(g, cx, sy, scw, sch, 8, 0xFF17171B, 0xFF101013);
-            Draw.routline(g, cx, sy, scw, sch, 8, has ? Theme.accent(0x50) : 0x24FFFFFF);
-            Draw.text(g, "Custom " + (i + 1), cx + 8, sy + 8, 0xFFFFFFFF);
-            Draw.text(g, Presets.slotInfo(i), cx + 8, sy + 20, 0xFF7A7A7A);
+            UI.card(g, cx, sy, scw, sch, UI.PANEL, UI.BORDER);
+            Draw.text(g, "Profile " + (i + 1), cx + 8, sy + 8, UI.TEXT);
+            Draw.text(g, Draw.trim(Presets.slotInfo(i), scw - 16), cx + 8, sy + 20, UI.MUTED);
             int bw = (scw - 24) / 2, by = sy + sch - 22;
             // Save
             boolean hs = Draw.inside(mx, my, cx + 8, by, bw, 16);
             button(g, cx + 8, by, bw, 16, hs);
-            Draw.centered(g, "Save", cx + 8 + bw / 2, by + 4, hs ? Theme.onAccent() : 0xFFD0D0D0);
-            hits.add(new Hit(cx + 8, by, bw, 16, () -> { Presets.saveSlot(slot); toast("Saved to Custom " + (slot + 1)); }));
+            Draw.centered(g, "Save", cx + 8 + bw / 2, by + 5, hs ? UI.TEXT : 0xFFD0D6DC);
+            hits.add(new Hit(cx + 8, by, bw, 16, () -> { Presets.saveSlot(slot); toast("Saved to Profile " + (slot + 1)); }));
             // Load
             int lx = cx + 16 + bw;
             boolean hl = has && Draw.inside(mx, my, lx, by, bw, 16);
-            if (has) button(g, lx, by, bw, 16, hl); else { Draw.rrect(g, lx, by, bw, 16, 8, 0xFF101013); Draw.routline(g, lx, by, bw, 16, 8, 0x14FFFFFF); }
-            Draw.centered(g, "Load", lx + bw / 2, by + 4, !has ? 0xFF4A4A4A : hl ? Theme.onAccent() : 0xFFD0D0D0);
-            if (has) hits.add(new Hit(lx, by, bw, 16, () -> { Presets.loadSlot(slot); toast("Loaded Custom " + (slot + 1)); }));
+            if (has) button(g, lx, by, bw, 16, hl); else UI.card(g, lx, by, bw, 16, UI.SURFACE, UI.LINE);
+            Draw.centered(g, "Load", lx + bw / 2, by + 5, !has ? UI.FAINT : hl ? UI.TEXT : 0xFFD0D6DC);
+            if (has) hits.add(new Hit(lx, by, bw, 16, () -> { Presets.loadSlot(slot); toast("Loaded Profile " + (slot + 1)); }));
         }
     }
 
@@ -506,99 +506,140 @@ public class ModMenuScreen extends Screen {
         };
     }
 
-    // ---------- tile grid ----------
+    private static final String[] ICON_CLOCK = {"..###..", ".#...#.", "#..#..#", "#..##.#", "#.....#", ".#...#.", "..###.."};
+    private static final String[] ICON_SHIRT = {".##.##.", "#######", "#.###.#", "..###..", "..###..", "..###..", "..###.."};
+    private static final String[] ICON_LAYERS = {"...#...", ".##.##.", "#.....#", ".##.##.", "#.###.#", ".#...#.", "...#..."};
+
+    // ---------- module list ----------
+    private List<Module> settingsModules() {
+        List<Module> out = new ArrayList<>();
+        for (Class<? extends Module> c : List.of(com.therabbits.client.module.utility.ClientSettingsModule.class,
+                com.therabbits.client.module.hud.HudStyleModule.class, com.therabbits.client.module.visual.ClientFontModule.class)) {
+            Module m = ModuleManager.get(c);
+            if (m != null) out.add(m);
+        }
+        return out;
+    }
+
     private List<Module> visibleModules() {
         String q = search.trim().toLowerCase(Locale.ROOT);
+        List<Module> base;
+        if (!q.isEmpty()) base = ModuleManager.all();
+        else if (page == Page.SETTINGS) base = settingsModules();
+        else if (page == Page.RECENT) {
+            base = new ArrayList<>();
+            for (String n : RECENT) for (Module m : ModuleManager.all()) if (m.name().equals(n)) base.add(m);
+        } else base = ModuleManager.all();
         List<Module> out = new ArrayList<>();
-        for (Module m : ModuleManager.all()) {
+        for (Module m : base) {
             if (m.category() == Category.COSMETICS) continue;   // cosmetics live in their own screen
-            if (filter != null && m.category() != filter) continue;
-            if (favoritesOnly && !Favorites.is(m.name())) continue;
-            if (!q.isEmpty() && !m.name().toLowerCase(Locale.ROOT).contains(q)
-                    && !m.description().toLowerCase(Locale.ROOT).contains(q)) continue;
+            if (q.isEmpty() && page == Page.MODS && filter != null && m.category() != filter) continue;
+            if (q.isEmpty() && page == Page.FAVORITES && !Favorites.is(m.name())) continue;
+            if (stateFilter == 1 && !m.enabled() || stateFilter == 2 && m.enabled()) continue;
+            if (!q.isEmpty() && !matches(m, q)) continue;
             out.add(m);
         }
         return out;
     }
 
-    private void renderGrid(GuiGraphics g, int ax, int ay, int aw, int ah, int mx, int my, float dt) {
-        List<Module> mods = visibleModules();
-        int cols = Math.max(2, Math.min(4, (aw + GAP) / (120 + GAP)));
-        int tw = (aw - (cols - 1) * GAP) / cols;
-        int rows = (mods.size() + cols - 1) / cols;
-        int content = rows * (TILE_H + GAP) - GAP;
-        scroll = Mth.clamp(scroll, 0, Math.max(0, content - ah));
+    /** Search looks at the name, the description and every setting name. */
+    private static boolean matches(Module m, String q) {
+        if (m.name().toLowerCase(Locale.ROOT).contains(q) || m.description().toLowerCase(Locale.ROOT).contains(q)) return true;
+        for (Setting<?> s : m.settings()) if (s.name().toLowerCase(Locale.ROOT).contains(q)) return true;
+        return false;
+    }
 
-        g.enableScissor(ax, ay, ax + aw, ay + ah);
-        if (mods.isEmpty()) Draw.centered(g, favoritesOnly ? "No favorites yet - click the star on any tile" : "No features match \"" + search + "\"", ax + aw / 2, ay + 30, 0xFF808080);
+    private int settingsHeight(Module m) { return m.settings().size() * SETTING_ROW + 8; }
+
+    private void renderList(GuiGraphics g, List<Module> mods, int ax, int ay, int aw, int ah, int mx, int my, float dt) {
+        float slide = ease((System.currentTimeMillis() - pageChanged) / 180f);
+        int content = 0;
+        int[] extra = new int[mods.size()];
         for (int i = 0; i < mods.size(); i++) {
             Module m = mods.get(i);
-            int tx = ax + (i % cols) * (tw + GAP);
-            int ty = ay + (i / cols) * (TILE_H + GAP) - (int) scroll;
-            if (ty + TILE_H < ay || ty > ay + ah) continue;
-            boolean inArea = my >= ay && my < ay + ah;
-            boolean hover = inArea && Draw.inside(mx, my, tx, ty, tw, TILE_H);
-            float hv = approach(hoverAnim, m, hover ? 1 : 0, dt * 8);
-            float on = approach(toggleAnim, m, m.enabled() ? 1 : 0, dt * 9);
-            int lift = (int) (hv * 2);
-            ty -= lift;
+            float e = approach(expandAnim, m, m == expanded ? 1 : 0, dt * 7);
+            extra[i] = Math.round(e * settingsHeight(m));
+            if (m == scrollTo) { scroll = content; scrollTo = null; }
+            content += ROW + extra[i] + GAP;
+        }
+        content = Math.max(0, content - GAP);
+        scroll = Mth.clamp(scroll, 0, Math.max(0, content - ah));
+        if (expanded != null && !mods.contains(expanded)) { expanded = null; settingsFor = null; }
 
-            // card: rounded, gradient, accent-tinted and glowing when enabled
-            if (on > 0.02f || hv > 0.02f) Draw.glow(g, tx, ty, tw, TILE_H, 8, Theme.accent((int) (0xFF * Math.max(on * 0.8f, hv))), 3);
-            int topC = Draw.lerp(Draw.lerp(0xFF17171B, 0xFF202026, hv), Draw.lerp(0xFF17171B, Theme.accent(0xFF), 0.16f), on);
-            int botC = Draw.lerp(0xFF101013, 0xFF0F1014, on);
-            Draw.rgrad(g, tx, ty, tw, TILE_H, 8, topC, botC);
-            Draw.routline(g, tx, ty, tw, TILE_H, 8, on > 0.5f ? Theme.accent((int) (0x60 + 0x60 * hv)) : hv > 0.05f ? Theme.accent((int) (0x30 + 0x80 * hv)) : 0x22FFFFFF);
-            g.fill(tx + 8, ty + 1, tx + tw - 8, ty + 2, 0x14FFFFFF);   // top sheen
-
-            // icon badge: rounded square, glows when on
-            int bx = tx + 8, by = ty + 8;
-            if (on > 0.02f) Draw.glow(g, bx, by, 22, 22, 6, Theme.accent((int) (0xFF * on)), 2);
-            Draw.rgrad(g, bx, by, 22, 22, 6, Draw.lerp(0xFF202026, Draw.shade(Theme.accent(), 0.45f), on), Draw.lerp(0xFF16161A, Draw.shade(Theme.accent(), 0.25f), on));
-            Draw.routline(g, bx, by, 22, 22, 6, Theme.accent((int) (0x30 + 0xA0 * on)));
-            ModuleIcons.draw(g, m.name(), bx + 3, by + 3, 16);
-            if (on < 0.99f) Draw.rrect(g, bx + 1, by + 1, 20, 20, 5, ((int) (150 * (1 - on)) << 24) | 0x0B0B0B);
-
-            int textX = bx + 28;
-            Draw.text(g, m.name(), textX, by + 2, blend(0xFF9A9A9A, 0xFFFFFFFF, on));
-            String d = m.description();
-            int maxW = tw - (textX - tx) - 8;
-            if (Draw.width(d) > maxW) d = Draw.trim(d, maxW - 6 + 6);
-            Draw.text(g, d, textX, by + 13, 0xFF74747C);
-
-            // status bar along the bottom
-            int sy = ty + TILE_H - 16;
-            // animated switch + state label
-            int swx = tx + 8, swy = sy + 3;
-            if (on > 0.02f) Draw.glow(g, swx, swy, 20, 10, 5, Theme.accent((int) (0xFF * on)), 2);
-            Draw.rgrad(g, swx, swy, 20, 10, 5, Draw.lerp(0xFF2E2E34, Theme.accent(), on), Draw.lerp(0xFF222227, Draw.shade(Theme.accent(), 0.75f), on));
-            Draw.rrect(g, swx + 1 + (int) (10 * on), swy + 1, 8, 8, 4, Draw.lerp(0xFF8C8C94, 0xFFFFFFFF, on));
-            Draw.text(g, m.enabled() ? "ON" : "OFF", swx + 25, swy + 1, Draw.lerp(0xFF5A5A62, Theme.accent(), on));
-
-            final int ftx = tx, fty = ty;
-            if (!m.settings().isEmpty()) {
-                int gx = tx + tw - 18, gy = sy + 2;
-                boolean gh = inArea && Draw.inside(mx, my, gx - 2, gy - 2, 14, 14);
-                pixelIcon(g, ICON_GEAR, gx, gy, 1, gh ? Theme.accent() : 0xFF8A8A8A);
-                if (inArea) hits.add(new Hit(gx - 3, gy - 3, 15, 15, () -> openSettings(m)));
-            }
-            {   // favourite star (top-right)
-                int fx = tx + tw - 12, fy = ty + 5;
-                boolean fav = Favorites.is(m.name());
-                boolean fh = inArea && Draw.inside(mx, my, fx - 2, fy - 2, 9, 9);
-                if (fav || hover) pixelIcon(g, ICON_STAR_SMALL, fx, fy, 1, fav ? 0xFFE8C34A : fh ? Theme.accent() : 0xFF5A5A5A);
-                if (inArea) hits.add(new Hit(fx - 2, fy - 2, 9, 9, () -> { Favorites.toggle(m.name()); toast(Favorites.is(m.name()) ? "Added to favorites" : "Removed from favorites"); }));
-            }
-            if (inArea) hits.add(new Hit(ftx, fty, tw, TILE_H, m::toggle, m.settings().isEmpty() ? null : () -> openSettings(m)));
+        g.enableScissor(ax, ay, ax + aw + 4, ay + ah);
+        if (mods.isEmpty()) {
+            String msg = page == Page.FAVORITES ? "No favorites yet. Click the star on any mod."
+                    : page == Page.RECENT ? "Mods you change will show up here."
+                    : "Nothing matches \"" + search + "\"";
+            Draw.centered(g, msg, ax + aw / 2, ay + 30, UI.FAINT);
+        }
+        int yy = ay - (int) scroll + Math.round((1 - slide) * 8);
+        boolean inArea = my >= ay && my < ay + ah;
+        for (int i = 0; i < mods.size(); i++) {
+            Module m = mods.get(i);
+            int h = ROW + extra[i];
+            if (yy + h >= ay && yy <= ay + ah) drawRow(g, m, ax, yy, aw, extra[i], mx, my, inArea, ay, ah, dt);
+            yy += h + GAP;
         }
         g.disableScissor();
-
-        if (content > ah) {   // scrollbar
-            int bh = Math.max(20, ah * ah / content);
-            int by = ay + (int) ((ah - bh) * (scroll / (content - ah)));
-            g.fill(ax + aw + 3, ay, ax + aw + 4, ay + ah, 0x20FFFFFF);
-            g.fill(ax + aw + 2, by, ax + aw + 5, by + bh, 0x90FFFFFF);
+        if (content > ah) {
+            int bh = Math.max(16, ah * ah / content), by = ay + (int) ((ah - bh) * (scroll / (content - ah)));
+            g.fill(ax + aw + 2, by, ax + aw + 4, by + bh, 0x40FFFFFF);
         }
+    }
+
+    private void drawRow(GuiGraphics g, Module m, int x, int y, int w, int extra, int mx, int my, boolean inArea, int areaY, int areaH, float dt) {
+        boolean hover = inArea && Draw.inside(mx, my, x, y, w, ROW);
+        float hv = approach(hoverAnim, m, hover ? 1 : 0, dt * 10);
+        float on = approach(toggleAnim, m, m.enabled() ? 1 : 0, dt * 10);
+        boolean open = m == expanded;
+        UI.card(g, x, y, w, ROW + extra, Draw.lerp(UI.PANEL, UI.PANEL_HI, open ? 0 : hv), open ? UI.accent(0x70) : UI.BORDER);
+
+        // icon tile (real item / pixel icon), dimmed while the mod is off
+        int ix = x + 5, iy = y + 4;
+        UI.card(g, ix, iy, 18, 18, UI.SURFACE, UI.LINE);
+        ModuleIcons.draw(g, m.name(), ix + 1, iy + 1, 16);
+        if (on < 0.99f) UI.box(g, ix + 1, iy + 1, 16, 16, ((int) (130 * (1 - on)) << 24) | 0x101419);
+
+        int tx = ix + 25;
+        Draw.text(g, m.name(), tx, y + 5, Draw.lerp(0xFFB8C2CC, UI.TEXT, on));
+        int right = x + w - 8;
+        int sx = right - 16, sy = y + 9;
+        UI.toggle(g, sx, sy, on);
+        if (inArea) hits.add(new Hit(sx - 4, y, 24, ROW, () -> { m.toggle(); touch(m); }));
+        int ax = sx - 14;
+        if (!m.settings().isEmpty()) {   // expand chevron
+            boolean ch = inArea && Draw.inside(mx, my, ax - 3, y + 6, 12, 14);
+            UI.glyph(g, open ? UI.CHEV_DOWN : UI.CHEV_RIGHT, open ? ax : ax + 1, open ? y + 12 : y + 11, ch || open ? UI.accent() : UI.FAINT);
+            if (inArea) hits.add(new Hit(ax - 4, y, 14, ROW, () -> toggleExpand(m)));
+            ax -= 14;
+        }
+        {   // favourite star
+            boolean fav = Favorites.is(m.name());
+            boolean fh = inArea && Draw.inside(mx, my, ax - 3, y + 6, 11, 14);
+            if (fav || hover) UI.glyph(g, fav ? UI.STAR : UI.STAR_EMPTY, ax, y + 10, fav ? UI.WARN : fh ? UI.TEXT : UI.FAINT);
+            if (inArea) hits.add(new Hit(ax - 3, y, 11, ROW, () -> { Favorites.toggle(m.name()); toast(Favorites.is(m.name()) ? "Added to favorites" : "Removed from favorites"); }));
+        }
+        Draw.text(g, Draw.trim(m.description(), ax - 8 - tx), tx, y + 15, UI.MUTED);
+        // clicking the row opens its settings (or toggles a mod that has none); right-click also opens settings
+        if (inArea) hits.add(new Hit(x, y, w, ROW, m.settings().isEmpty() ? () -> { m.toggle(); touch(m); } : () -> toggleExpand(m),
+                m.settings().isEmpty() ? null : () -> toggleExpand(m)));
+
+        if (extra > 2) {
+            int top = Math.max(areaY, y + ROW), bottom = Math.min(areaY + areaH, y + ROW + extra);
+            if (bottom > top) {
+                g.fill(x + 6, y + ROW, x + w - 6, y + ROW + 1, UI.LINE);
+                g.enableScissor(x, top, x + w, bottom);
+                renderSettings(g, m, x + 30, y + ROW + 4, w - 38, mx, my, top, bottom - top);
+                g.disableScissor();
+            }
+        }
+    }
+
+    private void toggleExpand(Module m) {
+        openMode = null; openColor = null; editingNum = null;
+        if (expanded == m) { expanded = null; settingsFor = null; return; }
+        expanded = m; settingsFor = m; touch(m);
     }
 
     private static float approach(Map<Module, Float> map, Module m, float target, float speed) {
@@ -624,69 +665,39 @@ public class ModMenuScreen extends Screen {
                 if (rows[r].charAt(c) == '#') g.fill(x + c * px, y + r * px, x + c * px + px, y + r * px + px, color);
     }
 
-    // ---------- settings page ----------
-    private void renderSettingsPage(GuiGraphics g, int ax, int ay, int aw, int ah, int mx, int my, long now) {
-        Module m = settingsFor;
-        float slide = ease((now - pageChanged) / 200f);
-        int off = (int) ((1 - slide) * 30);
-        ax += off;
-
-        boolean backHover = Draw.inside(mx, my, ax, ay, 54, 18);
-        pill(g, ax, ay, 54, backHover, false);
-        Draw.text(g, "‹ Back", ax + 9, ay + 5, backHover ? Theme.onAccent() : 0xFFD0D0D0);
-        hits.add(new Hit(ax, ay, 54, 18, () -> { settingsFor = null; pageChanged = System.currentTimeMillis(); }));
-
-        Draw.glow(g, ax + 64, ay - 2, 22, 22, 6, Theme.accent(m.enabled() ? 0xC0 : 0x40), 2);
-        Draw.rgrad(g, ax + 64, ay - 2, 22, 22, 6, Draw.shade(Theme.accent(), m.enabled() ? 0.45f : 0.15f), 0xFF15151A);
-        ModuleIcons.draw(g, m.name(), ax + 66, ay, 18);
-        Draw.text(g, m.name(), ax + 90, ay + 1, 0xFFFFFFFF);
-        Draw.text(g, m.description(), ax + 90, ay + 11, 0xFF7A7A7A);
-        int tgx = ax + aw - 30 - off;
-        Draw.toggle(g, tgx, ay + 4, m.enabled());
-        hits.add(new Hit(tgx - 4, ay, 30, 18, m::toggle));
-
-        int listY = ay + 28, listH = ah - 28;
-        g.fillGradient(ax, listY - 4, ax + aw - off, listY - 3, Theme.accent(0x50), 0x10FFFFFF);
-        int content = m.settings().size() * SETTING_ROW;
-        scroll = Mth.clamp(scroll, 0, Math.max(0, content - listH));
-        g.enableScissor(ax, listY, ax + aw, listY + listH);
-        renderSettings(g, m, ax, listY - (int) scroll, aw - off, mx, my, listY, listH);
-        g.disableScissor();
-    }
-
+    // ---------- inline settings ----------
     private void renderSettings(GuiGraphics g, Module m, int x, int y, int w, int mx, int my, int areaY, int areaH) {
         for (Setting<?> s : m.settings()) {
             boolean rowHover = Draw.inside(mx, my, x, y, w, SETTING_ROW - 2) && my >= areaY && my < areaY + areaH;
-            Draw.rgrad(g, x, y, w, SETTING_ROW - 2, 6, rowHover ? 0xFF1E1E24 : 0xFF17171B, rowHover ? 0xFF17171C : 0xFF111114);
-            if (rowHover) { Draw.routline(g, x, y, w, SETTING_ROW - 2, 6, Theme.accent(0x50)); g.fill(x + 1, y + 4, x + 3, y + SETTING_ROW - 6, Theme.accent()); }
-            Draw.text(g, s.name(), x + 8, y + 6, rowHover ? 0xFFFFFFFF : 0xFFD0D0D6);
+            if (rowHover) UI.box(g, x - 4, y, w + 4, SETTING_ROW - 2, 0x0AFFFFFF);
+            Draw.text(g, s.name(), x, y + 5, rowHover ? UI.TEXT : UI.MUTED);
             if (!(s instanceof ActionSetting) && !(s instanceof InfoSetting) && !s.isDefault()) {   // reset to default
-                int rx = x + 14 + Draw.width(s.name());
+                int rx = x + 6 + Draw.width(s.name());
                 boolean rh = Draw.inside(mx, my, rx - 2, y + 3, 12, 12);
-                Draw.text(g, "\u21BA", rx, y + 6, rh ? Theme.accent() : 0xFF6A6A72);
+                Draw.text(g, "\u21BA", rx, y + 5, rh ? UI.accent() : UI.FAINT);
                 final Setting<?> fs = s;
                 addClipped(rx - 2, y, 12, SETTING_ROW, areaY, areaH, () -> { fs.reset(); if (fs == openColor) syncHsv(); toast("Reset " + fs.name()); });
             }
             int cy = y + (SETTING_ROW - 2) / 2;
             if (s instanceof BoolSetting b) {
-                int tx = x + w - 28;
-                Draw.toggle(g, tx, cy - 5, b.on());
+                int tx = x + w - 20;
+                UI.toggle(g, tx, cy - 4, b.on() ? 1 : 0);
                 addClipped(tx - 4, y, 30, SETTING_ROW, areaY, areaH, b::toggle);
             } else if (s instanceof ModeSetting ms) {
                 int bw = 120, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
                 field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, openMode == ms);
-                Draw.text(g, openMode == ms ? "\u25B4" : "\u25BE", bx + bw - 10, y + 6, hover || openMode == ms ? Theme.accent() : 0xFF8A8A92);
+                UI.glyph(g, UI.CHEV_DOWN, bx + bw - 10, y + 7, hover || openMode == ms ? UI.accent() : UI.FAINT);
                 String label = ms.display();
                 int lx = bx + bw / 2 - Draw.width(label) / 2;
                 if (ms.isColor() && !label.equals("Global")) {
                     int idx = java.util.Arrays.asList(HudColors.NAMES).indexOf(label);
                     int sw = 0xFF000000 | HudColors.rgb(idx, 0);
                     lx += 5;
-                    Draw.rrect(g, lx - 11, y + 6, 7, 7, 3, sw);
-                    Draw.text(g, label, lx, y + 6, sw);
+                    UI.box(g, lx - 11, y + 5, 7, 7, sw);
+                    Draw.text(g, label, lx, y + 5, UI.TEXT);
                 } else {
-                    Draw.text(g, label, lx, y + 6, 0xFFFFFFFF);
+                    Draw.text(g, label, lx, y + 5, UI.TEXT);
                 }
                 final int fbx = bx, fby = y + 2;
                 if (ms.name().equals(pendingOpen)) { pendingOpen = null; openColor = null; openMode = ms; modeX = fbx; modeY = fby; modeW = 120; }
@@ -704,7 +715,7 @@ public class ModMenuScreen extends Screen {
                 } else {
                     String v = ts.get();
                     if (Draw.width(v) > bw - 10) v = Draw.trim(v, bw - 16 + 6);
-                    Draw.text(g, v.isEmpty() ? "click to type" : v, bx + 4, y + 6, v.isEmpty() ? 0xFF5A5A5A : 0xFFFFFFFF);
+                    Draw.text(g, v.isEmpty() ? "Click to type" : v, bx + 5, y + 5, v.isEmpty() ? UI.FAINT : UI.TEXT);
                 }
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> {
                     editing = ts;
@@ -718,30 +729,28 @@ public class ModMenuScreen extends Screen {
                 int bw = 90, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
                 button(g, bx, y + 2, bw, SETTING_ROW - 6, hover);
-                Draw.centered(g, as.get(), bx + bw / 2, y + 6, hover ? Theme.onAccent() : 0xFFD0D0D0);
+                Draw.centered(g, as.get(), bx + bw / 2, y + 5, hover ? UI.TEXT : 0xFFD0D6DC);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, as::run);
             } else if (s instanceof KeySetting ks) {
                 int bw = 90, bx = x + w - bw - 8;
                 boolean waiting = bindingKey == ks;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
-                if (waiting) button(g, bx, y + 2, bw, SETTING_ROW - 6, true);
-                else field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, false);
-                Draw.centered(g, waiting ? "Press a key..." : ks.display(), bx + bw / 2, y + 6, waiting ? Theme.onAccent() : 0xFFFFFFFF);
+                field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, waiting);
+                Draw.centered(g, waiting ? "Press a key..." : ks.display(), bx + bw / 2, y + 5, waiting ? UI.accent() : UI.TEXT);
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> bindingKey = ks);
             } else if (s instanceof InfoSetting in) {
                 String v = in.text();
                 int maxW = w - Draw.width(s.name()) - 28;
                 if (Draw.width(v) > maxW) v = Draw.trim(v, maxW);
-                Draw.text(g, v, x + w - 8 - Draw.width(v), y + 6, 0xFFB8B8B8);
+                Draw.text(g, v, x + w - 8 - Draw.width(v), y + 5, UI.MUTED);
             } else if (s instanceof ColorSetting cs) {
                 int bw = 120, bx = x + w - bw - 8;
                 boolean hover = Draw.inside(mx, my, bx, y + 2, bw, SETTING_ROW - 6);
                 field(g, bx, y + 2, bw, SETTING_ROW - 6, hover, openColor == cs);
                 int sw = 0xFF000000 | (cs.global() ? 0x808080 : cs.color(0));
-                Draw.glow(g, bx + 5, y + 5, 10, 8, 3, sw, 2);
-                Draw.rrect(g, bx + 5, y + 5, 10, 8, 3, sw);
-                Draw.text(g, cs.display(), bx + 20, y + 6, cs.global() ? 0xFF9A9AA2 : 0xFFFFFFFF);
-                Draw.text(g, "\u25BE", bx + bw - 10, y + 6, hover || openColor == cs ? Theme.accent() : 0xFF8A8A92);
+                UI.card(g, bx + 4, y + 4, 10, 8, sw, 0x40000000);
+                Draw.text(g, cs.display(), bx + 19, y + 5, cs.global() ? UI.MUTED : UI.TEXT);
+                UI.glyph(g, UI.CHEV_DOWN, bx + bw - 10, y + 7, hover || openColor == cs ? UI.accent() : UI.FAINT);
                 final int fbx = bx, fby = y + 2;
                 if (cs.name().equals(pendingOpen)) { pendingOpen = null; openMode = null; openColor = cs; colX = fbx; colY = fby; syncHsv(); hexEdit.setValue(cs.hex()); }
                 addClipped(bx, y, bw, SETTING_ROW, areaY, areaH, () -> {
@@ -750,13 +759,8 @@ public class ModMenuScreen extends Screen {
                     hexEdit.setValue(cs.hex());
                 });
             } else if (s instanceof NumberSetting n) {
-                int sw = 140, sx = x + w - sw - 44;
-                Draw.rrect(g, sx, cy - 2, sw, 4, 2, 0xFF2A2A30);
-                int kx = sx + (int) (n.fraction() * sw);
-                if (kx > sx + 1) Draw.rgrad(g, sx, cy - 2, kx - sx, 4, 2, Theme.accent(), Draw.shade(Theme.accent(), 0.75f));
-                Draw.glow(g, kx - 4, cy - 4, 9, 9, 4, Theme.accent(), 2);
-                Draw.rrect(g, kx - 4, cy - 4, 9, 9, 4, 0xFFFFFFFF);
-                Draw.rrect(g, kx - 2, cy - 2, 5, 5, 2, Theme.accent());
+                int sw = 120, sx = x + w - sw - 46;
+                UI.slider(g, sx, cy, sw, (float) n.fraction(), rowHover);
                 String v = n.display();
                 int vw = Math.max(30, Draw.width(v) + 10), vx = x + w - 8 - vw;
                 boolean vh = Draw.inside(mx, my, vx, y + 3, vw, 12);
@@ -764,8 +768,8 @@ public class ModMenuScreen extends Screen {
                     field(g, vx, y + 2, vw, 14, false, true);
                     numEdit.setX(vx + 5); numEdit.setY(y + 5); numEdit.setWidth(vw - 8);
                 } else {
-                    Draw.rrect(g, vx, y + 3, vw, 12, 6, Theme.accent(vh ? 0x60 : 0x30));
-                    Draw.centered(g, v, vx + vw / 2, y + 5, 0xFFFFFFFF);
+                    UI.card(g, vx, y + 2, vw, 13, vh ? UI.PANEL_HI : UI.SURFACE, vh ? UI.accent(0x90) : UI.LINE);
+                    Draw.centered(g, v, vx + vw / 2, y + 5, UI.TEXT);
                 }
                 addClipped(vx, y, vw, SETTING_ROW, areaY, areaH, () -> {   // click the number to type an exact value
                     applyNum();
@@ -784,31 +788,6 @@ public class ModMenuScreen extends Screen {
     private void addClipped(int x, int y, int w, int h, int areaY, int areaH, Runnable r) {
         int top = Math.max(y, areaY), bottom = Math.min(y + h, areaY + areaH);
         if (bottom > top) hits.add(new Hit(x, top, w, bottom - top, r));
-    }
-
-    // ---------- footer ----------
-    private void renderFooter(GuiGraphics g, int x, int y, int mx, int my) {
-        g.fill(x + 10, y, x + W - 10, y + 1, 0x22FFFFFF);
-        int bw = 70, bx = x + 12, by = y + 5;
-        boolean hover = Draw.inside(mx, my, bx, by, bw, 16);
-        button(g, bx, by, bw, 16, hover);
-        Draw.centered(g, "Edit HUD", bx + bw / 2, by + 4, hover ? Theme.onAccent() : 0xFFD0D0D0);
-        hits.add(new Hit(bx, by, bw, 16, () -> minecraft.setScreen(new HudEditorScreen(this))));
-        int cbx = bx + bw + 6, cbw = 76;
-        boolean ch = Draw.inside(mx, my, cbx, by, cbw, 16);
-        button(g, cbx, by, cbw, 16, ch);
-        Draw.centered(g, "Cosmetics", cbx + cbw / 2, by + 4, ch ? Theme.onAccent() : 0xFFD0D0D0);
-        hits.add(new Hit(cbx, by, cbw, 16, () -> minecraft.setScreen(new CosmeticsScreen(parent))));
-        int pbx = cbx + cbw + 6, pbw = 52;
-        boolean ph = Draw.inside(mx, my, pbx, by, pbw, 16);
-        button(g, pbx, by, pbw, 16, ph);
-        Draw.centered(g, "Packs", pbx + pbw / 2, by + 4, ph ? Theme.onAccent() : 0xFFD0D0D0);
-        hits.add(new Hit(pbx, by, pbw, 16, () -> minecraft.setScreen(new PackCustomizerScreen(this))));
-
-        long on = ModuleManager.all().stream().filter(Module::enabled).count();
-        String info = on + " / " + ModuleManager.all().size() + " enabled";
-        Draw.text(g, info, x + W - 12 - Draw.width(info), by + 4, 0xFF7A7A7A);
-        Draw.centered(g, settingsFor == null ? "Right-click: settings" : "Right Shift", x + W / 2, by + 4, 0xFF5A5A5A);
     }
 
     // ---------- input ----------
@@ -830,7 +809,7 @@ public class ModMenuScreen extends Screen {
         if (event.button() == 0) {
             if (editingNum != null && numEdit.mouseClicked(event, doubleClick)) return true;
             applyNum();
-            if (settingsFor == null && searchBox.mouseClicked(event, doubleClick)) return true;
+            if (searchBox.visible && searchBox.mouseClicked(event, doubleClick)) { setFocused(searchBox); return true; }
             if (editing != null && textEdit.visible && textEdit.mouseClicked(event, doubleClick)) return true;
             if (editing != null) { editing = null; textEdit.visible = false; textEdit.setFocused(false); }
             double mx = event.x(), my = event.y();
