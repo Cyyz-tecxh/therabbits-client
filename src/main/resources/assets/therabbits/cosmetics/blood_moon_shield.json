@@ -259,5 +259,12 @@
     28
    ]
   }
- ]
+ ],
+ "framePart": {
+  "name": "plate",
+  "texture": [
+   46,
+   11
+  ]
+ }
 }

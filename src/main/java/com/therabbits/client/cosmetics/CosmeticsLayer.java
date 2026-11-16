@@ -81,6 +81,8 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             } else {
                 animateAura(aura, now, p);
                 if (!chain) spread(root, k);
+                for (String pre : new String[]{"pt", "c", "g", "ch", "kbub", "s"}) keepOutAll(root, pre, 1.5f);
+                if (root.hasChild("clock")) keepOut(root.getChild("clock"), 3f, 0f);
                 draw(pose, out, light, aura, root);
             }
             pose.popPose();
@@ -164,7 +166,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         float t = (System.currentTimeMillis() % 3_600_000L) / 1000f;
         animateSnow(m.root, t, facing);
         float spread = 1f + (k - 1f) * 0.5f;   // snow hugs the body; Aura Size only nudges it outward
-        for (int i = 0; m.root.hasChild("f" + i); i++) { ModelPart f = m.root.getChild("f" + i); f.x *= spread; f.z *= spread; }
+        for (int i = 0; m.root.hasChild("f" + i); i++) { ModelPart f = m.root.getChild("f" + i); f.x *= spread; f.z *= spread; keepOut(f, 1.6f * f.xScale, 0f); }
         draw(pose, out, FULL_BRIGHT, m, m.root);   // solid crystals (readable on white skins), faint glow on the core
     }
 
@@ -503,7 +505,32 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             c.y = (float) (-8 + hash01(slot, i + 23) * 26);
             c.z = (float) (Math.cos(a) * rad);
             c.yRot = (float) Math.toRadians(hash01(i + 29, slot) * 360);
+            keepOut(c, 1.6f, 7f);   // canes reach ~7 px above their base
         }
+    }
+
+    /**
+     * Pushes an aura piece out of the player's body so nothing passes through you. The body is three boxes in model
+     * space (head, torso with arms, legs); a piece inside one (plus its own half size) slides straight outward.
+     * {@code up} is how far the piece reaches above its pivot (candy canes), 0 for small pieces.
+     */
+    private static void keepOut(ModelPart p, float half, float up) {
+        float y0 = p.y - up - half, y1 = p.y + half;
+        if (y1 < -8f || y0 > 24f) return;
+        float hx = 0, hz = 0;
+        if (y0 < 0f) { hx = 4f; hz = 4f; }                                // head
+        if (y1 > 0f && y0 < 12f) { hx = Math.max(hx, 8f); hz = Math.max(hz, 2.6f); }   // torso and arms
+        if (y1 > 12f) { hx = Math.max(hx, 4f); hz = Math.max(hz, 2.6f); }  // legs
+        hx += half + 0.4f; hz += half + 0.4f;
+        float k = Math.max(Math.abs(p.x) / hx, Math.abs(p.z) / hz);
+        if (k >= 1f) return;
+        if (k < 1e-3f) { p.z = -hz; return; }
+        p.x /= k; p.z /= k;
+    }
+
+    /** keepOut for every root-level part named prefix0, prefix1, ... */
+    private static void keepOutAll(ModelPart root, String prefix, float half) {
+        for (int i = 0; root.hasChild(prefix + i); i++) { ModelPart q = root.getChild(prefix + i); if (q.visible) keepOut(q, half, 0f); }
     }
 
     private static float smoothf(double x) { x = Math.max(0, Math.min(1, x)); return (float) (x * x * (3 - 2 * x)); }
@@ -525,6 +552,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             c.yRot = (float) (hash01(i, 10) * 6.2832 + t * (0.15 + hash01(i, 9) * 0.3) * dir);
             c.zRot = (float) (Math.sin(t * 0.25 + i) * 0.35 * hash01(i, 11));
             c.xScale = c.yScale = c.zScale = (float) (0.7 + hash01(i, 12) * 0.6);
+            keepOut(c, c.xScale * 1.45f, 0f);   // half the cube's diagonal
         }
     }
 
@@ -570,6 +598,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             g.visible = st[0] > 0;
             if (!g.visible) continue;
             g.x = st[1]; g.y = st[2]; g.z = st[3]; g.yRot = face;
+            keepOut(g, 1.4f, 0f);
         }
         for (int j = 0; root.hasChild("q" + j); j++) {   // fragments of the glyph that just vanished
             ModelPart q = root.getChild("q" + j);
@@ -585,6 +614,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             q.x = (float) (st[1] + Math.cos(ang) * e * 1.6);
             q.y = (float) (st[2] + e * 0.6 + Math.sin(ang) * e * 0.6);
             q.z = (float) (st[3] + Math.sin(ang) * e * 1.6);
+            keepOut(q, 0.6f, 0f);
             q.yRot = face;
         }
         double slot = Math.floor(t * 30);
@@ -594,6 +624,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             if (!sp.visible) continue;
             double a = hash01(slot, i + 50) * 6.2832, rad = (4.5 + hash01(slot + 3, i) * 3) * spread;
             sp.x = (float) (Math.sin(a) * rad); sp.y = (float) (-6 + hash01(slot + 7, i) * 28); sp.z = (float) (Math.cos(a) * rad);
+            keepOut(sp, 0.6f, 0f);
             sp.yRot = face;
         }
     }
@@ -654,6 +685,7 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             p.y = ip.y() - u * 30f;
             p.x = ip.x() + net.minecraft.util.Mth.sin(t * 1.3f + i) * 0.8f;
             p.xScale = p.yScale = p.zScale = 1f - u * 0.7f;
+            keepOut(p, 0.8f, 0f);
         }
         out.part(root, pose, RenderTypes.eyes(m.currentTexture()), FULL_BRIGHT);
     }
@@ -667,5 +699,10 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         Identifier g = m.currentGlow();
         if (g != null)
             out.part(part, pose, RenderTypes.eyes(g), FULL_BRIGHT);
+        if (m.framed != null && part == m.root) {   // animated face (shields): small per-frame texture
+            out.part(m.framed, pose, RenderTypes.entityCutoutNoCull(m.framedTexture()), light);
+            Identifier fg = m.framedGlow();
+            if (fg != null) out.part(m.framed, pose, RenderTypes.eyes(fg), FULL_BRIGHT);
+        }
     }
 }

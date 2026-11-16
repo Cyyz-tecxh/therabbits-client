@@ -36,6 +36,9 @@ public final class CosmeticModel {
     /** Animated cosmetics have this many texture frames (textures/cosmetics/&lt;id&gt;/&lt;n&gt;.png), 0 = static. */
     public final int frames;
     private final Identifier[] frameTex, frameGlow;
+    /** Animated shields: only this part (the face) changes per frame, drawn from small face-only textures. Null otherwise. */
+    public final ModelPart framed;
+    private final boolean framedGlow;
     private static final int FRAME_MS = 110;
     /** Per-cosmetic frame time (json "frameMs"), default 110 ms. */
     private final int frameMs;
@@ -46,7 +49,21 @@ public final class CosmeticModel {
         this.arms = "arms".equals(attach);
         JsonArray ts = js.getAsJsonArray("texture");
         int tw = ts.get(0).getAsInt(), th = ts.get(1).getAsInt();
-        this.root = build(js.getAsJsonArray("parts"), tw, th, false);
+        JsonObject fp = js.has("framePart") ? js.getAsJsonObject("framePart") : null;
+        String fname = fp != null ? fp.get("name").getAsString() : null;
+        JsonArray staticParts = new JsonArray(), framedParts = new JsonArray();
+        for (JsonElement el : js.getAsJsonArray("parts")) {
+            if (fname != null && fname.equals(el.getAsJsonObject().get("name").getAsString())) {
+                JsonObject c = el.getAsJsonObject().deepCopy();
+                JsonArray uv0 = new JsonArray(); uv0.add(0); uv0.add(0);
+                c.add("uv", uv0);
+                framedParts.add(c);
+            } else staticParts.add(el);
+        }
+        this.root = build(fname != null ? staticParts : js.getAsJsonArray("parts"), tw, th, false);
+        this.framed = fname != null
+                ? build(framedParts, fp.getAsJsonArray("texture").get(0).getAsInt(), fp.getAsJsonArray("texture").get(1).getAsInt(), false) : null;
+        this.framedGlow = js.get("glow").getAsBoolean();
         this.mirrored = arms ? build(js.getAsJsonArray("parts"), tw, th, true) : null;
         this.texture = Identifier.fromNamespaceAndPath(RabbitsClient.MOD_ID, "textures/cosmetics/" + id + ".png");
         this.glow = js.get("glow").getAsBoolean()
@@ -64,9 +81,14 @@ public final class CosmeticModel {
     private int frame() { return (int) ((System.currentTimeMillis() / frameMs) % frames); }
 
     /** Texture to draw right now (current animation frame for animated cosmetics). */
-    public Identifier currentTexture() { return frames > 0 ? frameTex[frame()] : texture; }
+    public Identifier currentTexture() { return frames > 0 && framed == null ? frameTex[frame()] : texture; }
 
-    public Identifier currentGlow() { return frames > 0 ? (glow != null ? frameGlow[frame()] : null) : glow; }
+    public Identifier currentGlow() { return frames > 0 && framed == null ? (glow != null ? frameGlow[frame()] : null) : glow; }
+
+    /** Face texture for the animated part ({@link #framed}). */
+    public Identifier framedTexture() { return frameTex[frame()]; }
+
+    public Identifier framedGlow() { return framedGlow ? frameGlow[frame()] : null; }
 
     private static float f(JsonArray a, int i) { return a.get(i).getAsFloat(); }
 
