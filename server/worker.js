@@ -28,7 +28,7 @@ const CAPES = ["none", "black_nebula", "lightning_cape"];
 const HATS = ["none", "oni_mask", "kitsune_mask", "oni_menpo"];
 const ARMS = ["none", "claws"];
 const SHIELDS = ["none", "neon_shield", "blood_moon_shield", "decoding_shield"];
-const AURAS = ["none", "aura", "snow_aura", "glyph_aura", "clockwork_aura", "petal_aura", "koi_aura",
+const AURAS = ["none", "aura", "snow_aura", "glyph_aura", "candy_aura", "clockwork_aura", "petal_aura", "koi_aura",
   "cards_blood", "cards_royal", "cards_frost", "cards_heartbreaker", "cards_void", "cards_emerald",
   "dragon_eternal", "dragon_shadow", "dragon_frost", "dragon_infernal", "dragon_celestial"];
 const PETS = ["none", "pet_eternal", "pet_shadow", "pet_frost", "pet_infernal", "pet_celestial", "spirit_bunny"];

@@ -66,7 +66,10 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
                 if (chain) pose.scale(k, k, k); else pose.scale(k, 1f, k);
                 pose.translate(0, -12f / 16f, 0);
             }
-            if (root.hasChild("g0")) {   // Glyph Aura: flickering glyphs, flat white/grey (no glow)
+            if (root.hasChild("cc0")) {   // Candy Cane aura: canes pop up at random spots
+                animateCandy(root, now, k);
+                draw(pose, out, light, aura, root);
+            } else if (root.hasChild("g0")) {   // Glyph Aura: flickering glyphs, flat white/grey (no glow)
                 animateGlyphs(root, now, cardFacing(p), k);
                 draw(pose, out, FULL_BRIGHT, aura, root);
             } else if (root.hasChild("f0") || root.hasChild("ring0") || root.hasChild("p0")) {
@@ -485,6 +488,25 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
      * Glyph Aura: each glyph lives a fraction of a second at a random spot around the body, then jumps elsewhere,
      * always facing the viewer. Two white sparks flash for single frames near the lower right.
      */
+    /** Candy Cane aura: each cane appears for a moment at a random spot and angle around the body, then pops elsewhere. */
+    private static void animateCandy(ModelPart root, float t, float k) {
+        float spread = 1f + (k - 1f) * 0.5f;
+        for (int i = 0; root.hasChild("cc" + i); i++) {
+            ModelPart c = root.getChild("cc" + i);
+            double rate = 1.4 + hash01(i, 11) * 1.6;
+            double life = t * rate + hash01(i, 12) * 10;
+            double slot = Math.floor(life), frac = life - slot;
+            c.visible = frac < 0.8 && hash01(i, slot + 13) > 0.3;
+            if (!c.visible) continue;
+            double a = hash01(i, slot + 17) * 6.2832;
+            double rad = (4.8 + hash01(slot + 19, i) * 3.4) * spread;
+            c.x = (float) (Math.sin(a) * rad);
+            c.y = (float) (-8 + hash01(slot, i + 23) * 26);
+            c.z = (float) (Math.cos(a) * rad);
+            c.yRot = (float) Math.toRadians(hash01(i + 29, slot) * 360);
+        }
+    }
+
     private static void animateGlyphs(ModelPart root, float t, float facing, float k) {
         float spread = 1f + (k - 1f) * 0.5f;
         float face = (float) Math.toRadians(facing);
