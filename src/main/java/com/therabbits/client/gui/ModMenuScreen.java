@@ -224,21 +224,29 @@ public class ModMenuScreen extends Screen {
 
     private void renderCards(GuiGraphics g, int x, int y, int mx, int my, float dt) {
         // ---- top tabs ----
-        String[] tabs = {"MODS", "SETTINGS", "COSMETICS"};
-        int tw = 0; for (String t : tabs) tw += capsWidth(t) + 18 + 4;
-        int tx = x + W / 2 - tw / 2;
+        String[] tabs = {"MODS", "COSMETICS", "EMOTES", "ACCOUNTS", "PACKS", "SETTINGS"};
+        int tw = 0; for (String t : tabs) tw += capsWidth(t) + 12 + 3;
+        int brandW = 34 + Draw.width("TheRabbits") + Draw.width("1.21.11");
+        int tx = Math.max(x + brandW + 8, x + W / 2 - tw / 2);
         for (int i = 0; i < tabs.length; i++) {
-            int w = capsWidth(tabs[i]) + 18;
-            boolean sel = (i == 0 && page != Page.SETTINGS) || (i == 1 && page == Page.SETTINGS);
+            int w = capsWidth(tabs[i]) + 12;
+            boolean sel = (i == 0 && page != Page.SETTINGS) || (i == 5 && page == Page.SETTINGS);
             boolean hover = Draw.inside(mx, my, tx, y + 5, w, 15);
             UI.card(g, tx, y + 5, w, 15, sel ? UI.PANEL_HI : hover ? UI.PANEL : UI.SURFACE, sel ? UI.accent(0x90) : UI.BORDER);
-            caps(g, tabs[i], tx + 9, y + 9, sel ? UI.TEXT : hover ? 0xFFC8D0D8 : UI.MUTED);
+            caps(g, tabs[i], tx + 6, y + 9, sel ? UI.TEXT : hover ? 0xFFC8D0D8 : UI.MUTED);
             final int fi = i;
             hits.add(new Hit(tx, y + 5, w, 15, () -> {
                 closePopups(); settingsFor = null; expanded = null; scroll = 0; pageChanged = System.currentTimeMillis();
-                if (fi == 0) page = Page.MODS; else if (fi == 1) page = Page.SETTINGS; else minecraft.setScreen(new CosmeticsScreen(parent));
+                switch (fi) {
+                    case 0 -> page = Page.MODS;
+                    case 1 -> minecraft.setScreen(new CosmeticsScreen(this));
+                    case 2 -> { if (minecraft.player != null) minecraft.setScreen(new EmoteWheelScreen()); else toast("Join a world to use emotes"); }
+                    case 3 -> minecraft.setScreen(new AccountsScreen(this));
+                    case 4 -> minecraft.setScreen(new PackCustomizerScreen(this));
+                    default -> page = Page.SETTINGS;
+                }
             }));
-            tx += w + 4;
+            tx += w + 3;
         }
         Draw.logo(g, x + 8, y + 5, 14);   // branding
         Draw.text(g, "TheRabbits", x + 26, y + 8, UI.TEXT);
@@ -413,6 +421,12 @@ public class ModMenuScreen extends Screen {
         int icol = Draw.lerp(0xFF8A96A3, 0xFFFFFFFF, Math.max(on, hv * 0.5f));
         if (ModuleIcons.hasCustom(m.name())) ModuleIcons.draw(g, m.name(), x + w / 2 - 9, y + 7, 18);
         else PixelIcons.draw(g, m.name(), x + w / 2 - 9, y + 7, 2, icol);
+        String key = keyOf(m);
+        if (key != null) {   // keybind badge, top-left
+            int kw = Draw.width(key) + 6;
+            UI.card(g, x + 3, y + 3, kw, 11, UI.SURFACE, UI.BORDER);
+            Draw.text(g, key, x + 6, y + 5, UI.MUTED);
+        }
         boolean fav = Favorites.is(m.name());
         boolean fh = inArea && Draw.inside(mx, my, x + w - 12, y + 2, 10, 10);
         if (fav || hover) UI.glyph(g, fav ? UI.STAR : UI.STAR_EMPTY, x + w - 9, y + 4, fav ? UI.WARN : fh ? UI.TEXT : UI.FAINT);
@@ -444,6 +458,16 @@ public class ModMenuScreen extends Screen {
             hits.add(new Hit(x + 1, sy, w - 2, 15, () -> { m.toggle(); touch(m); }));
             hits.add(new Hit(x, y, w, top, () -> { m.toggle(); touch(m); }, has ? () -> openOptions(m) : null));
         }
+    }
+
+    /** The mod's first bound key, shown as a badge (null when it has none). */
+    private static String keyOf(Module m) {
+        for (Setting<?> st : m.settings())
+            if (st instanceof com.therabbits.client.setting.KeySetting k && !k.mapping().isUnbound()) {
+                String d = k.display();
+                return d.length() > 6 ? d.substring(0, 6) : d;
+            }
+        return null;
     }
 
     private void openOptions(Module m) {
@@ -771,7 +795,9 @@ public class ModMenuScreen extends Screen {
     private List<Module> settingsModules() {
         List<Module> out = new ArrayList<>();
         for (Class<? extends Module> c : List.of(com.therabbits.client.module.utility.ClientSettingsModule.class,
-                com.therabbits.client.module.hud.HudStyleModule.class, com.therabbits.client.module.visual.ClientFontModule.class)) {
+                com.therabbits.client.module.hud.HudStyleModule.class, com.therabbits.client.module.visual.ClientFontModule.class,
+                com.therabbits.client.module.visual.MenuBackgroundModule.class, com.therabbits.client.module.cosmetics.AccountModule.class,
+                com.therabbits.client.module.cosmetics.CapesModule.class, com.therabbits.client.module.cosmetics.WearablesModule.class)) {
             Module m = ModuleManager.get(c);
             if (m != null) out.add(m);
         }
@@ -789,7 +815,7 @@ public class ModMenuScreen extends Screen {
         } else base = ModuleManager.all();
         List<Module> out = new ArrayList<>();
         for (Module m : base) {
-            if (m.category() == Category.COSMETICS) continue;   // cosmetics live in their own screen
+            if (m.category() == Category.COSMETICS && page != Page.SETTINGS) continue;   // cosmetics live in their own screen
             if (q.isEmpty() && page == Page.MODS && filter != null && m.category() != filter) continue;
             if (q.isEmpty() && page == Page.FAVORITES && !Favorites.is(m.name())) continue;
             if (stateFilter == 1 && !m.enabled() || stateFilter == 2 && m.enabled()) continue;
