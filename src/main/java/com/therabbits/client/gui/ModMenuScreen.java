@@ -212,7 +212,7 @@ public class ModMenuScreen extends Screen {
     // Card layout: tabs on top, profiles on the left, filter chips + search, a grid of mod cards.
     // Each card: big pixel icon and name, an OPTIONS bar, and a full-width ENABLED / DISABLED bar.
     // =====================================================================================
-    private static final int TOP = 24, PROF = 104, CARD_H = 68, CARD_GAP = 5;
+    private static final int TOP = 24, PROF = 104, CARD_H = 70, CARD_GAP = 5;
     private int chip;   // 0 all, 1 favorites, 2 recent, 3.. categories
 
     /** Spaced capitals, Minecraft font. */
@@ -368,15 +368,15 @@ public class ModMenuScreen extends Screen {
         boolean hover = inArea && Draw.inside(mx, my, x, y, w, CARD_H);
         float hv = approach(hoverAnim, m, hover ? 1 : 0, dt * 12);
         float on = approach(toggleAnim, m, m.enabled() ? 1 : 0, dt * 12);
-        int top = CARD_H - 30;
+        int top = CARD_H - 29;
         UI.card(g, x, y, w, CARD_H, Draw.lerp(UI.PANEL, UI.PANEL_HI, hv), hover ? 0xFF3C4955 : UI.BORDER);
         // icon (3x pixel glyph) and name
         int icol = Draw.lerp(0xFF8A96A3, 0xFFFFFFFF, Math.max(on, hv * 0.5f));
-        if (ModuleIcons.hasCustom(m.name())) ModuleIcons.draw(g, m.name(), x + w / 2 - 10, y + 5, 20);
-        else PixelIcons.draw(g, m.name(), x + w / 2 - 13, y + 5, 3, icol);
+        if (ModuleIcons.hasCustom(m.name())) ModuleIcons.draw(g, m.name(), x + w / 2 - 9, y + 7, 18);
+        else PixelIcons.draw(g, m.name(), x + w / 2 - 9, y + 7, 2, icol);
         if (Favorites.is(m.name())) UI.glyph(g, UI.STAR, x + w - 9, y + 4, UI.WARN);
         String name = Draw.trim(m.name(), w - 8);
-        Draw.centered(g, name, x + w / 2, y + top - 9, Draw.lerp(UI.MUTED, UI.TEXT, Math.max(on, hv)));
+        Draw.centered(g, name, x + w / 2, y + top - 11, Draw.lerp(UI.MUTED, UI.TEXT, Math.max(on, hv)));
         // OPTIONS bar
         int oy = y + top;
         boolean oh = inArea && Draw.inside(mx, my, x + 1, oy, w - 2, 14);
