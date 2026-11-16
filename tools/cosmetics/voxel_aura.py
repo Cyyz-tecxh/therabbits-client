@@ -4,7 +4,7 @@ import os, sys, math, json, numpy as np
 from PIL import Image
 import gen, render as R
 
-N = 34
+N = 40
 S = 8
 OUT = '/home/claude/repo/src/main/resources/assets/therabbits'
 
@@ -14,21 +14,19 @@ def h(a, b):
 
 # ---------- texture: two cube variants, box UV 2x2x2 at u=0 and u=8 (texture 16x4 texels) ----------
 VARIANTS = [
-    dict(fill=(120, 222, 228), edge=(205, 250, 252)),   # pale cyan
-    dict(fill=(78, 186, 198), edge=(160, 236, 242)),    # deeper turquoise
+    dict(fill=(96, 178, 184), edge=(150, 214, 220)),   # pale cyan
+    dict(fill=(72, 150, 158), edge=(126, 196, 204)),    # deeper turquoise
 ]
 def paint_face(w, hgt, fill, edge, face):
     a = np.zeros((hgt, w, 4), np.uint8)
-    lift = 22 if face == 'top' else -18 if face == 'bottom' else 0
+    lift = 38 if face == 'top' else -22 if face == 'bottom' else 0
     for y in range(hgt):
         for x in range(w):
             g = 1 - (x + y) / (w + hgt) * 0.35          # soft highlight towards the top-left
             c = [min(255, max(0, int(ch * g) + lift)) for ch in fill]
-            al = 165
+            al = 200
             if x < 2 or y < 2 or x >= w - 2 or y >= hgt - 2:   # bright translucent edges
-                c = [min(255, ch + lift) for ch in edge]; al = 230
-            elif 2 <= x <= 4 and 2 <= y <= 4:            # tiny corner glint
-                c = [235, 255, 255]; al = 200
+                c = [min(255, ch + lift) for ch in edge]; al = 225
             a[y, x] = (*c, al)
     return a
 
@@ -46,12 +44,12 @@ def cube(i, t, density=0.8, spread=1.3):
     if h(i, 99) > density: return (False,) + (0,) * 7
     dirn = 1 if i % 2 else -1
     a = h(i, 1) * 6.2832 + t * (0.10 + h(i, 2) * 0.22) * dirn            # orbit at its own speed
-    r = (4.4 + h(i, 3) * 4.6 + math.sin(t * (0.25 + h(i, 5) * 0.3) + i * 1.7) * 1.4) * spread   # drifts in and out
+    r = (3.4 + h(i, 3) * 4.2 + math.sin(t * (0.25 + h(i, 5) * 0.3) + i * 1.7) * 1.4) * spread   # drifts in and out
     y = -12 + h(i, 4) * 36 + math.sin(t * (0.5 + h(i, 6) * 0.6) + i * 2.1) * 1.6                 # bobs up and down
-    rx = h(i, 8) * 6.2832 + t * (0.2 + h(i, 7) * 0.5)
-    ry = h(i, 10) * 6.2832 + t * (0.15 + h(i, 9) * 0.4) * dirn
-    rz = math.sin(t * 0.3 + i) * 0.6 * h(i, 11)
-    s = 0.6 + h(i, 12) * 0.75
+    rx = math.sin(t * (0.3 + h(i, 7) * 0.4) + h(i, 8) * 6.2832) * 0.45          # gentle tilt, mostly upright
+    ry = h(i, 10) * 6.2832 + t * (0.15 + h(i, 9) * 0.3) * dirn
+    rz = math.sin(t * 0.25 + i) * 0.35 * h(i, 11)
+    s = 0.7 + h(i, 12) * 0.6
     return True, math.sin(a) * r, y, math.cos(a) * r, rx, ry, rz, s
 
 def parts_at(t, density=0.8, spread=1.3):
@@ -96,7 +94,7 @@ def blend(quads, img, zb, yaw, pitch, scale, cx, cy):
         if not inside.any(): continue
         tu = np.clip((u + s * tw).astype(int), 0, tex.shape[1] - 1); tv = np.clip((v + t * th).astype(int), 0, tex.shape[0] - 1)
         texel = tex[tv, tu].astype(float)
-        shade = 0.78 + 0.32 * max(0.0, -np.dot(n, R.LIGHT))
+        shade = 0.82 + 0.3 * max(0.0, -np.dot(n, R.LIGHT))
         al = (texel[..., 3:4] / 255) * inside[..., None]
         sub = img[Y0:Y1, X0:X1]
         img[Y0:Y1, X0:X1] = sub * (1 - al) + np.clip(texel[..., :3] * shade, 0, 255) * al
