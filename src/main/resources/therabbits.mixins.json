@@ -30,7 +30,8 @@
     "MinecraftAccessor",
     "PlayerModelMixin",
     "AvatarRendererEmoteMixin",
-    "GuiSkinRendererMixin"
+    "GuiSkinRendererMixin",
+    "LoadingOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1

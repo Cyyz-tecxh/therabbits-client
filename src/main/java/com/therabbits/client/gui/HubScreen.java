@@ -27,34 +27,27 @@ public class HubScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
         float t = Mth.clamp((System.currentTimeMillis() - opened) / 160f, 0, 1);
-        g.fill(0, 0, width, height, ((int) (t * 0x99)) << 24);
-        int cx = width / 2, cy = cy() + (int) ((1 - t) * 8);
-        Draw.glow(g, cx - 28, cy - 70, 56, 56, 14, Theme.accent(0x90), 5);
-        Draw.logo(g, cx - 28, cy - 70, 56);
-        // [emote] [  MODS  ] [cosmetics]
-        int bw = 100, sq = 22, gap = 5, y = cy;
+        g.fill(0, 0, width, height, ((int) (t * 0x80)) << 24 | 0x05080B);
+        int cx = width / 2, cy = cy() + (int) ((1 - t) * 6);
+        Draw.logo(g, cx - 24, cy - 62, 48);
+        // [emote] [  Mods & HUD  ] [cosmetics]
+        int bw = 104, sq = 22, gap = 4, y = cy;
         int x0 = cx - bw / 2 - gap - sq, x1 = cx - bw / 2, x2 = cx + bw / 2 + gap;
         square(g, x0, y, sq, mx, my, ICON_EMOTE);
         boolean hm = Draw.inside(mx, my, x1, y, bw, sq);
-        tile(g, x1, y, bw, sq, hm);
-        Draw.centered(g, "MODS", cx, y + 7, hm ? Theme.onAccent() : 0xFFEDEDED);
+        UI.card(g, x1, y, bw, sq, hm ? UI.PANEL_HI : UI.BG, hm ? UI.accent() : UI.BORDER);
+        Draw.centered(g, "Mods & HUD", cx, y + 8, hm ? UI.TEXT : 0xFFD8DEE4);
         square(g, x2, y, sq, mx, my, ICON_SHIRT);
-        String hint = Draw.inside(mx, my, x0, y, sq, sq) ? "Emotes (G)" : Draw.inside(mx, my, x2, y, sq, sq) ? "Cosmetics" : hm ? "Mods & settings" : "";
-        if (!hint.isEmpty()) Draw.centered(g, hint, cx, y + sq + 8, 0xFF9A9A9A);
-        if (toast != null && System.currentTimeMillis() - toastAt < 1800) Draw.centered(g, toast, cx, y + sq + 22, 0xFFFFFFFF);
+        String hint = Draw.inside(mx, my, x0, y, sq, sq) ? "Emotes (G)" : Draw.inside(mx, my, x2, y, sq, sq) ? "Cosmetics" : hm ? "Mods, HUD and settings" : "";
+        if (!hint.isEmpty()) Draw.centered(g, hint, cx, y + sq + 7, UI.MUTED);
+        if (toast != null && System.currentTimeMillis() - toastAt < 1800) Draw.centered(g, toast, cx, y + sq + 20, UI.TEXT);
         super.render(g, mx, my, delta);
-    }
-
-    private static void tile(GuiGraphics g, int x, int y, int w, int h, boolean hover) {
-        Draw.glow(g, x, y, w, h, 7, Theme.accent(hover ? 0xFF : 0x50), hover ? 4 : 2);
-        if (hover) Draw.rgrad(g, x, y, w, h, 7, Theme.accent(), Draw.shade(Theme.accent(), 0.75f));
-        else { Draw.rgrad(g, x, y, w, h, 7, 0xF01E1E23, 0xF0121215); Draw.routline(g, x, y, w, h, 7, 0x40FFFFFF); }
     }
 
     private static void square(GuiGraphics g, int x, int y, int s, int mx, int my, String[] icon) {
         boolean h = Draw.inside(mx, my, x, y, s, s);
-        tile(g, x, y, s, s, h);
-        int c = h ? Theme.onAccent() : 0xFFBDBDBD;
+        UI.card(g, x, y, s, s, h ? UI.PANEL_HI : UI.BG, h ? UI.accent() : UI.BORDER);
+        int c = h ? UI.accent() : UI.MUTED;
         for (int r = 0; r < icon.length; r++)
             for (int col = 0; col < icon[r].length(); col++)
                 if (icon[r].charAt(col) == '#') g.fill(x + 6 + col, y + 6 + r, x + 7 + col, y + 7 + r, c);
@@ -68,7 +61,7 @@ public class HubScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent e, boolean dbl) {
         if (e.button() == 0) {
-            int cx = width / 2, y = cy(), bw = 100, sq = 22, gap = 5;
+            int cx = width / 2, y = cy(), bw = 104, sq = 22, gap = 4;
             int x0 = cx - bw / 2 - gap - sq, x1 = cx - bw / 2, x2 = cx + bw / 2 + gap;
             if (Draw.inside(e.x(), e.y(), x1, y, bw, sq)) { minecraft.setScreen(new ModMenuScreen(parent)); return true; }
             if (Draw.inside(e.x(), e.y(), x2, y, sq, sq)) { minecraft.setScreen(new CosmeticsScreen(parent)); return true; }

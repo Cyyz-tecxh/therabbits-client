@@ -8,6 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 /** A module that draws a movable box on the HUD. Position is stored in scaled GUI pixels. */
 public abstract class HudModule extends Module {
     public double x, y;
+    /** Where the element starts (used by Reset in the HUD editor). */
+    public final double defaultX, defaultY;
     public final NumberSetting scale;
     public final ColorSetting textColor;
     public final ColorSetting labelColor;
@@ -16,6 +18,8 @@ public abstract class HudModule extends Module {
         super(name, description, Category.HUD, enabledByDefault);
         this.x = x;
         this.y = y;
+        this.defaultX = x;
+        this.defaultY = y;
         this.scale = add(new NumberSetting("Scale", 1.0, 0.5, 2.0, 0.05));
         this.textColor = add(new ColorSetting("Text Color", 0xFFFFFF, true, true));
         this.labelColor = add(new ColorSetting("Label Color", 0x909090, true, true));
