@@ -484,57 +484,74 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         return v - Math.floor(v);
     }
 
-    /**
-     * Glyph Aura: each glyph lives a fraction of a second at a random spot around the body, then jumps elsewhere,
-     * always facing the viewer. Two white sparks flash for single frames near the lower right.
-     */
-    /** Candy Cane aura: each cane appears for a moment at a random spot and angle around the body, then pops elsewhere. */
-    private static void animateCandy(ModelPart root, float t, float k) {
-        float spread = 1f + (k - 1f) * 0.5f;
-        for (int i = 0; root.hasChild("cc" + i); i++) {
-            ModelPart c = root.getChild("cc" + i);
-            double rate = 1.4 + hash01(i, 11) * 1.6;
-            double life = t * rate + hash01(i, 12) * 10;
-            double slot = Math.floor(life), frac = life - slot;
-            c.visible = frac < 0.8 && hash01(i, slot + 13) > 0.3;
-            if (!c.visible) continue;
-            double a = hash01(i, slot + 17) * 6.2832;
-            double rad = (4.8 + hash01(slot + 19, i) * 3.4) * spread;
-            c.x = (float) (Math.sin(a) * rad);
-            c.y = (float) (-8 + hash01(slot, i + 23) * 26);
-            c.z = (float) (Math.cos(a) * rad);
-            c.yRot = (float) Math.toRadians(hash01(i + 29, slot) * 360);
+    private static float smoothf(double x) { x = Math.max(0, Math.min(1, x)); return (float) (x * x * (3 - 2 * x)); }
+
+    /** NULL//PROTOCOL glyph state: {visible, x, y, z}. Same maths as tools/cosmetics/null_protocol.py. */
+    private static final float[] GLYPH = new float[4];
+    private static float[] glyphAt(int i, double t, double density, double spread, int n) {
+        GLYPH[0] = 0;
+        if (hash01(i, 99) > density) return GLYPH;
+        double rate = 0.6 + hash01(i, 1) * 0.8;
+        double life = t * rate + hash01(i, 2) * 10;
+        double slot = Math.floor(life), frac = life - slot;
+        boolean vis = frac < 0.85 && hash01(i, slot + 3) > 0.15 && hash01(i, Math.floor(t * 12) + 5) > 0.06;
+        double a0 = hash01(i, slot) * 6.2832; int dir = i % 2 == 1 ? 1 : -1;
+        double a = a0 + t * (0.18 + hash01(i, 4) * 0.14) * dir;
+        boolean near = hash01(i + 5, slot) < 0.22;
+        double rad = near ? 3.0 + hash01(slot + 2, i) * 1.2 : (4.6 + hash01(slot + 2, i) * 4.0) * spread;
+        double y = -10 + hash01(slot, i + 7) * 35 + Math.sin(t * 0.8 + i) * 0.8 - frac * 1.4;
+        double x = Math.sin(a) * rad, z = Math.cos(a) * rad;
+        double ph = t % 9.0;
+        float k = smoothf((ph - 5.6) / 0.6) * (1 - smoothf((ph - 7.6) / 0.6));
+        if (k > 0 && i % 3 == 0) {
+            double ra = (double) i / n * 6.2832 * 3 + t * 0.6;
+            x += (Math.sin(ra) * 6.2 * spread - x) * k; z += (Math.cos(ra) * 6.2 * spread - z) * k; y += (9 - y) * k;
+            vis = vis || k > 0.5;
         }
+        GLYPH[0] = vis ? 1 : 0; GLYPH[1] = (float) x; GLYPH[2] = (float) y; GLYPH[3] = (float) z;
+        return GLYPH;
     }
 
+    /**
+     * NULL//PROTOCOL (glyph_aura): monochrome glyphs orbit and drift, flicker, sometimes gather into a ring at the waist,
+     * and break into pixel fragments when they vanish; tiny white sparks flash around the body. Always faces the viewer.
+     */
     private static void animateGlyphs(ModelPart root, float t, float facing, float k) {
-        float spread = 1f + (k - 1f) * 0.5f;
+        double spread = 1f + (k - 1f) * 0.5f, density = WearablesModule.auraDensity();
         float face = (float) Math.toRadians(facing);
-        for (int i = 0; root.hasChild("g" + i); i++) {
+        int n = 0;
+        while (root.hasChild("g" + n)) n++;
+        for (int i = 0; i < n; i++) {
             ModelPart g = root.getChild("g" + i);
-            double rate = 2.5 + hash01(i, 1) * 3.5;
-            double life = t * rate + hash01(i, 2) * 10;
-            double slot = Math.floor(life), frac = life - slot;
-            g.visible = frac < 0.72 && hash01(i, slot + 3) > 0.12;
+            float[] st = glyphAt(i, t, density, spread, n);
+            g.visible = st[0] > 0;
             if (!g.visible) continue;
-            double a = hash01(i, slot) * 6.2832;
-            boolean near = hash01(i + 5, slot) < 0.25;
-            double rad = ((near ? 2.6 : 4.6) + hash01(slot + 2, i) * (near ? 1.0 : 3.6)) * (near ? 1 : spread);
-            g.x = (float) (Math.sin(a) * rad);
-            g.y = (float) (-11 + hash01(slot, i + 7) * 36);
-            g.z = (float) (Math.cos(a) * rad);
-            g.yRot = face;
+            g.x = st[1]; g.y = st[2]; g.z = st[3]; g.yRot = face;
+        }
+        for (int j = 0; root.hasChild("q" + j); j++) {   // fragments of the glyph that just vanished
+            ModelPart q = root.getChild("q" + j);
+            int gi = j * 3 % Math.max(1, n);
+            q.visible = false;
+            if (hash01(gi, 99) > density) continue;
+            double rate = 0.6 + hash01(gi, 1) * 0.8;
+            double life = t * rate + hash01(gi, 2) * 10;
+            double slot = Math.floor(life), frac = life - slot;
+            if (frac < 0.85 || frac >= 0.97 || hash01(gi, slot + 3) <= 0.15) continue;
+            float[] st = glyphAt(gi, (slot + 0.84 - hash01(gi, 2) * 10) / rate, 1.0, spread, n);
+            double e = (frac - 0.85) / 0.12, ang = j * 2.4;
+            q.visible = true;
+            q.x = (float) (st[1] + Math.cos(ang) * e * 1.6);
+            q.y = (float) (st[2] - e * 1.2 + Math.sin(ang) * e);
+            q.z = (float) (st[3] + Math.sin(ang) * e * 1.6);
+            q.yRot = face;
         }
         double slot = Math.floor(t * 30);
-        for (int i = 0; root.hasChild("k" + i); i++) {
+        for (int i = 0; root.hasChild("k" + i); i++) {   // single-frame sparks anywhere around the body
             ModelPart sp = root.getChild("k" + i);
-            int idx = i + 60;
-            sp.visible = hash01(idx + 40, slot) < 0.05;
+            sp.visible = hash01(i + 40, slot) < 0.05;
             if (!sp.visible) continue;
-            double lx = 5.2 + hash01(slot, idx + 50) * 2.4, ly = 13 + hash01(slot + 3, idx) * 9, lz = -2.5;
-            sp.x = (float) (lx * Math.cos(face) + lz * Math.sin(face));
-            sp.y = (float) ly;
-            sp.z = (float) (-lx * Math.sin(face) + lz * Math.cos(face));
+            double a = hash01(slot, i + 50) * 6.2832, rad = (4.5 + hash01(slot + 3, i) * 3) * spread;
+            sp.x = (float) (Math.sin(a) * rad); sp.y = (float) (-6 + hash01(slot + 7, i) * 28); sp.z = (float) (Math.cos(a) * rad);
             sp.yRot = face;
         }
     }

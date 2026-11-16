@@ -28,6 +28,9 @@ public class WearablesModule extends Module {
 
     /** How far auras spread around you (1 = hugging the body). */
     public static float auraSize() { return instance == null ? 1.6f : instance.auraSize.f(); }
+    /** How many particles particle-style auras show (NULL//PROTOCOL): 0.3 = sparse, 1 = full. */
+    public final com.therabbits.client.setting.NumberSetting auraDensity = add(new com.therabbits.client.setting.NumberSetting("Aura Density", 0.8, 0.3, 1.0, 0.05));
+    public static float auraDensity() { return instance == null ? 0.8f : instance.auraDensity.f(); }
 
     public WearablesModule() {
         super("Hats & Arms", "Masks, claws, shields, auras, pets", Category.COSMETICS, true);
