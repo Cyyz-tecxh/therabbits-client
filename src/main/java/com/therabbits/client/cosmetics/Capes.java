@@ -10,9 +10,11 @@ import java.util.Map;
 public final class Capes {
     private Capes() {}
 
-    public static final String[] IDS = {"none", "black_nebula"};
-    public static final String[] NAMES = {"None", "Black Nebula"};
-    private static final int FRAMES = 16, FRAME_MS = 125;
+    public static final String[] IDS = {"none", "black_nebula", "lightning_cape"};
+    public static final String[] NAMES = {"None", "Black Nebula", "Lightning Strike"};
+    /** Frame count and frame time per cape (Lightning Strike: five different strikes over 10 s). */
+    private static int frames(String id) { return id.equals("lightning_cape") ? 100 : 16; }
+    private static int frameMs(String id) { return id.equals("lightning_cape") ? 100 : 125; }
     private static final Map<String, ClientAsset.Texture[]> TEXTURES = new HashMap<>();
 
     public static boolean valid(String id) {
@@ -24,8 +26,8 @@ public final class Capes {
     public static ClientAsset.Texture texture(String id) {
         if (id == null || id.equals("none") || !valid(id)) return null;
         ClientAsset.Texture[] frames = TEXTURES.computeIfAbsent(id, k -> {
-            ClientAsset.Texture[] out = new ClientAsset.Texture[FRAMES];
-            for (int i = 0; i < FRAMES; i++) {
+            ClientAsset.Texture[] out = new ClientAsset.Texture[frames(k)];
+            for (int i = 0; i < out.length; i++) {
                 Identifier path = Identifier.fromNamespaceAndPath("therabbits", "textures/capes/" + k + "/" + i + ".png");
                 out[i] = new ClientAsset.Texture() {
                     @Override public Identifier id() { return path; }
@@ -34,6 +36,6 @@ public final class Capes {
             }
             return out;
         });
-        return frames[(int) ((System.currentTimeMillis() / FRAME_MS) % FRAMES)];
+        return frames[(int) ((System.currentTimeMillis() / frameMs(id)) % frames.length)];
     }
 }
