@@ -98,6 +98,9 @@ public final class ModuleIcons {
         try { Files.createDirectories(DIR); } catch (Exception ignored) {}
     }
 
+    /** True when the player dropped in their own icon for this mod. */
+    public static boolean hasCustom(String name) { return custom(name).isPresent(); }
+
     private static Optional<Custom> custom(String name) {
         return CUSTOM.computeIfAbsent(name, n -> {
             Path file = DIR.resolve(n + ".png");
