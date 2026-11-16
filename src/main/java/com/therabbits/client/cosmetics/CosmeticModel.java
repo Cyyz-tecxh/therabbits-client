@@ -37,6 +37,8 @@ public final class CosmeticModel {
     public final int frames;
     private final Identifier[] frameTex, frameGlow;
     private static final int FRAME_MS = 110;
+    /** Per-cosmetic frame time (json "frameMs"), default 110 ms. */
+    private final int frameMs;
 
     private CosmeticModel(String id, JsonObject js) {
         this.id = id;
@@ -50,6 +52,7 @@ public final class CosmeticModel {
         this.glow = js.get("glow").getAsBoolean()
                 ? Identifier.fromNamespaceAndPath(RabbitsClient.MOD_ID, "textures/cosmetics/" + id + "_glow.png") : null;
         this.frames = js.has("frames") ? js.get("frames").getAsInt() : 0;
+        this.frameMs = js.has("frameMs") ? Math.max(20, js.get("frameMs").getAsInt()) : FRAME_MS;
         this.frameTex = new Identifier[frames];
         this.frameGlow = new Identifier[frames];
         for (int i = 0; i < frames; i++) {
@@ -58,7 +61,7 @@ public final class CosmeticModel {
         }
     }
 
-    private int frame() { return (int) ((System.currentTimeMillis() / FRAME_MS) % frames); }
+    private int frame() { return (int) ((System.currentTimeMillis() / frameMs) % frames); }
 
     /** Texture to draw right now (current animation frame for animated cosmetics). */
     public Identifier currentTexture() { return frames > 0 ? frameTex[frame()] : texture; }
