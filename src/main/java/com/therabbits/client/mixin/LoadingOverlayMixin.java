@@ -47,11 +47,16 @@ public abstract class LoadingOverlayMixin {
             'I', new String[]{"#####", "..#..", "..#..", "..#..", "#####"},
             'S', new String[]{".####", "#....", ".###.", "....#", "####."});
 
+    @org.spongepowered.asm.mixin.Unique private long therabbits$inSeen = -1, therabbits$outSeen = -1;
+
     @Inject(method = "render", at = @At("TAIL"))
     private void therabbits$brand(GuiGraphics g, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        long now = System.nanoTime() / 1_000_000L;   // same clock as Util.getMillis()
-        float out = fadeOutStart > -1L ? (now - fadeOutStart) / 1000f : -1f;
-        float in = fadeInStart > -1L ? (now - fadeInStart) / 500f : -1f;
+        // our own clock: note when vanilla starts each fade, so we never depend on its time source
+        long now = System.nanoTime() / 1_000_000L;
+        if (fadeInStart > -1L && therabbits$inSeen < 0) therabbits$inSeen = now;
+        if (fadeOutStart > -1L && therabbits$outSeen < 0) therabbits$outSeen = now;
+        float out = therabbits$outSeen >= 0 ? (now - therabbits$outSeen) / 1000f : -1f;
+        float in = therabbits$inSeen >= 0 ? (now - therabbits$inSeen) / 500f : (fadeIn ? 0f : -1f);
         float a;
         if (out >= 1f) a = 1f - Mth.clamp(out - 1f, 0f, 1f);
         else if (fadeIn) a = Mth.clamp(in, 0f, 1f);
