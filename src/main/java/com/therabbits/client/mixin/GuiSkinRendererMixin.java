@@ -28,7 +28,7 @@ public abstract class GuiSkinRendererMixin extends PictureInPictureRenderer<GuiS
             var mesh = new net.minecraft.client.model.geom.builders.MeshDefinition();
             mesh.getRoot().addOrReplaceChild("cape",
                     net.minecraft.client.model.geom.builders.CubeListBuilder.create().texOffs(0, 0).addBox(-5f, 0f, -1f, 10f, 16f, 1f),
-                    net.minecraft.client.model.geom.PartPose.offsetAndRotation(0f, 0f, 2f, (float) Math.toRadians(6), (float) Math.PI, 0f));
+                    net.minecraft.client.model.geom.PartPose.offsetAndRotation(0f, 0f, 2.45f, (float) Math.toRadians(9), (float) Math.PI, 0f));
             therabbits$capeModel = net.minecraft.client.model.geom.builders.LayerDefinition.create(mesh, 64, 32).bakeRoot();
         }
         return therabbits$capeModel;
