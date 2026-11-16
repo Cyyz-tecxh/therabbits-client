@@ -505,34 +505,35 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 
     private static float smoothf(double x) { x = Math.max(0, Math.min(1, x)); return (float) (x * x * (3 - 2 * x)); }
 
-    /** NULL//PROTOCOL glyph state: {visible, x, y, z}. Same maths as tools/cosmetics/null_protocol.py. */
-    private static final float[] GLYPH = new float[4];
+    /** NULL//PROTOCOL glyph state: {visible, x, y, z, u}. Same maths as tools/cosmetics/null_protocol.py. */
+    private static final float[] GLYPH = new float[5];
+    private static final double G_SPAN = 36.0, G_TOP = -11.0;
+    private static double glyphSpeed(int i) { return 1.4 + hash01(i, 1) * 1.0; }
     private static float[] glyphAt(int i, double t, double density, double spread, int n) {
         GLYPH[0] = 0;
         if (hash01(i, 99) > density) return GLYPH;
-        double rate = 0.6 + hash01(i, 1) * 0.8;
-        double life = t * rate + hash01(i, 2) * 10;
-        double slot = Math.floor(life), frac = life - slot;
-        boolean vis = frac < 0.85 && hash01(i, slot + 3) > 0.15 && hash01(i, Math.floor(t * 12) + 5) > 0.06;
-        double a0 = hash01(i, slot) * 6.2832; int dir = i % 2 == 1 ? 1 : -1;
-        double a = a0 + t * (0.18 + hash01(i, 4) * 0.14) * dir;
-        boolean near = hash01(i + 5, slot) < 0.22;
-        double rad = near ? 3.0 + hash01(slot + 2, i) * 1.2 : (4.6 + hash01(slot + 2, i) * 4.0) * spread;
-        double y = -10 + hash01(slot, i + 7) * 35 + Math.sin(t * 0.8 + i) * 0.8 - frac * 1.4;
+        double pos = hash01(i, 2) * G_SPAN + t * glyphSpeed(i);   // slow fall from above the head to the feet
+        double ps = Math.floor(pos / G_SPAN), u = (pos - ps * G_SPAN) / G_SPAN;
+        boolean vis = u > 0.03 && u < 0.94 && hash01(i, ps + 3) > 0.1 && hash01(i, Math.floor(t * 8) + i) > 0.07;
+        double a0 = hash01(i, ps) * 6.2832; int dir = i % 2 == 1 ? 1 : -1;
+        double a = a0 + t * (0.12 + hash01(i, 4) * 0.1) * dir;
+        boolean near = hash01(i + 5, ps) < 0.22;
+        double rad = near ? 3.0 + hash01(ps + 2, i) * 1.2 : (4.6 + hash01(ps + 2, i) * 4.0) * spread;
+        double y = G_TOP + u * G_SPAN;
         double x = Math.sin(a) * rad, z = Math.cos(a) * rad;
         double ph = t % 9.0;
         float k = smoothf((ph - 5.6) / 0.6) * (1 - smoothf((ph - 7.6) / 0.6));
         if (k > 0 && i % 3 == 0) {
-            double ra = (double) i / n * 6.2832 * 3 + t * 0.6;
+            double ra = (double) i / n * 6.2832 * 3 + t * 0.4;
             x += (Math.sin(ra) * 6.2 * spread - x) * k; z += (Math.cos(ra) * 6.2 * spread - z) * k; y += (9 - y) * k;
             vis = vis || k > 0.5;
         }
-        GLYPH[0] = vis ? 1 : 0; GLYPH[1] = (float) x; GLYPH[2] = (float) y; GLYPH[3] = (float) z;
+        GLYPH[0] = vis ? 1 : 0; GLYPH[1] = (float) x; GLYPH[2] = (float) y; GLYPH[3] = (float) z; GLYPH[4] = (float) u;
         return GLYPH;
     }
 
     /**
-     * NULL//PROTOCOL (glyph_aura): monochrome glyphs orbit and drift, flicker, sometimes gather into a ring at the waist,
+     * NULL//PROTOCOL (glyph_aura): monochrome glyphs fall slowly from above the head to the feet while orbiting, flicker, sometimes gather into a ring at the waist,
      * and break into pixel fragments when they vanish; tiny white sparks flash around the body. Always faces the viewer.
      */
     private static void animateGlyphs(ModelPart root, float t, float facing, float k) {
@@ -552,15 +553,14 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             int gi = j * 3 % Math.max(1, n);
             q.visible = false;
             if (hash01(gi, 99) > density) continue;
-            double rate = 0.6 + hash01(gi, 1) * 0.8;
-            double life = t * rate + hash01(gi, 2) * 10;
-            double slot = Math.floor(life), frac = life - slot;
-            if (frac < 0.85 || frac >= 0.97 || hash01(gi, slot + 3) <= 0.15) continue;
-            float[] st = glyphAt(gi, (slot + 0.84 - hash01(gi, 2) * 10) / rate, 1.0, spread, n);
-            double e = (frac - 0.85) / 0.12, ang = j * 2.4;
+            double sp = glyphSpeed(gi), pos = hash01(gi, 2) * G_SPAN + t * sp;
+            double u = (pos - Math.floor(pos / G_SPAN) * G_SPAN) / G_SPAN;
+            if (u < 0.94 || u >= 0.99) continue;   // the glyph reached the feet and breaks apart
+            float[] st = glyphAt(gi, t - (u - 0.935) * G_SPAN / sp, 1.0, spread, n);
+            double e = (u - 0.94) / 0.05, ang = j * 2.4;
             q.visible = true;
             q.x = (float) (st[1] + Math.cos(ang) * e * 1.6);
-            q.y = (float) (st[2] - e * 1.2 + Math.sin(ang) * e);
+            q.y = (float) (st[2] + e * 0.6 + Math.sin(ang) * e * 0.6);
             q.z = (float) (st[3] + Math.sin(ang) * e * 1.6);
             q.yRot = face;
         }

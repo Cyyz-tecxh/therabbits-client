@@ -58,39 +58,42 @@ def h(a, b):
     return v - math.floor(v)
 def smooth(x): x = max(0.0, min(1.0, x)); return x * x * (3 - 2 * x)
 
+SPAN, TOP = 36.0, -11.0
+def fall(i, t):
+    """-> (u 0..1 down the body, pass number); each glyph falls slowly from above the head to the feet"""
+    speed = 1.4 + h(i, 1) * 1.0                    # units per second (slow)
+    pos = h(i, 2) * SPAN + t * speed
+    return (pos % SPAN) / SPAN, math.floor(pos / SPAN)
+
 def glyph(i, t, density=0.8, spread=1.3):
-    """-> (visible, x, y, z, frac)"""
+    """-> (visible, x, y, z, u)"""
     if h(i, 99) > density: return False, 0, 0, 0, 0
-    rate = 0.6 + h(i, 1) * 0.8
-    life = t * rate + h(i, 2) * 10
-    slot = math.floor(life); frac = life - slot
-    vis = frac < 0.85 and h(i, slot + 3) > 0.15 and h(i, math.floor(t * 12) + 5) > 0.06   # flicker
-    a0 = h(i, slot) * 6.2832; dirn = 1 if i % 2 else -1
-    a = a0 + t * (0.18 + h(i, 4) * 0.14) * dirn                       # gentle orbit
-    near = h(i + 5, slot) < 0.22
-    rad = (3.0 + h(slot + 2, i) * 1.2) if near else (4.6 + h(slot + 2, i) * 4.0) * spread
-    y = -10 + h(slot, i + 7) * 35 + math.sin(t * 0.8 + i) * 0.8 - frac * 1.4   # drift
+    u, ps = fall(i, t)
+    vis = 0.03 < u < 0.94 and h(i, ps + 3) > 0.1 and h(i, math.floor(t * 8) + i) > 0.07   # gentle flicker
+    a0 = h(i, ps) * 6.2832; dirn = 1 if i % 2 else -1
+    a = a0 + t * (0.12 + h(i, 4) * 0.1) * dirn                        # slow orbit
+    near = h(i + 5, ps) < 0.22
+    rad = (3.0 + h(ps + 2, i) * 1.2) if near else (4.6 + h(ps + 2, i) * 4.0) * spread
+    y = TOP + u * SPAN
     x, z = math.sin(a) * rad, math.cos(a) * rad
     ph = t % 9.0                                                       # every 9 s some glyphs form a ring
     k = smooth((ph - 5.6) / 0.6) * (1 - smooth((ph - 7.6) / 0.6))
     if k > 0 and i % 3 == 0:
-        ra = i / NGLYPH * 6.2832 * 3 + t * 0.6
+        ra = i / NGLYPH * 6.2832 * 3 + t * 0.4
         x += (math.sin(ra) * 6.2 * spread - x) * k; z += (math.cos(ra) * 6.2 * spread - z) * k; y += (9 - y) * k
         vis = vis or k > 0.5
-    return vis, x, y, z, frac
+    return vis, x, y, z, u
 
 def frag(j, t, density=0.8, spread=1.3):
-    """fragments of glyph j: show just after it vanishes, drifting apart"""
+    """when a glyph reaches the feet it breaks into a few pixel fragments"""
     gi = j * 3 % NGLYPH
     if h(gi, 99) > density: return False, 0, 0, 0
-    rate = 0.6 + h(gi, 1) * 0.8
-    life = t * rate + h(gi, 2) * 10
-    slot = math.floor(life); frac = life - slot
-    if not (0.85 <= frac < 0.97) or h(gi, slot + 3) <= 0.15: return False, 0, 0, 0
-    _, x, y, z, _ = glyph(gi, (slot + 0.84 - h(gi, 2) * 10) / rate, 1.0, spread)
-    e = (frac - 0.85) / 0.12
-    ang = j * 2.4
-    return True, x + math.cos(ang) * e * 1.6, y - e * 1.2 + math.sin(ang) * e, z + math.sin(ang) * e * 1.6
+    u, ps = fall(gi, t)
+    if not (0.94 <= u < 0.99): return False, 0, 0, 0
+    speed = 1.4 + h(gi, 1) * 1.0
+    _, x, y, z, _ = glyph(gi, t - (u - 0.935) * SPAN / speed, 1.0, spread)
+    e = (u - 0.94) / 0.05; ang = j * 2.4
+    return True, x + math.cos(ang) * e * 1.6, y + e * 0.6 + math.sin(ang) * e * 0.6, z + math.sin(ang) * e * 1.6
 
 def spark(k, t, spread=1.3):
     slot = math.floor(t * 30)
