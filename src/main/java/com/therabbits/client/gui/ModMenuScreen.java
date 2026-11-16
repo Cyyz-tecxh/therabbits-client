@@ -195,6 +195,7 @@ public class ModMenuScreen extends Screen {
         searchBox.visible = false;
         renderCards(g, x, y, mouseX, mouseY, dt);
         renderPopups(g, mouseX, mouseY);
+        if (settingsFor == null && page == Page.MODS) cardTooltip(g, mouseX, mouseY); else hoverCard = null;
         hexEdit.visible = openColor != null;
         numEdit.visible = editingNum != null;
         g.pose().popMatrix();
@@ -239,6 +240,9 @@ public class ModMenuScreen extends Screen {
             }));
             tx += w + 4;
         }
+        Draw.logo(g, x + 8, y + 5, 14);   // branding
+        Draw.text(g, "TheRabbits", x + 26, y + 8, UI.TEXT);
+        Draw.text(g, "1.21.11", x + 30 + Draw.width("TheRabbits"), y + 8, UI.FAINT);
         int cx = x + W - 18, cy = y + 6;   // close
         boolean ch = Draw.inside(mx, my, cx, cy, 13, 13);
         UI.card(g, cx, cy, 13, 13, ch ? UI.PANEL_HI : UI.SURFACE, UI.BORDER);
@@ -261,7 +265,8 @@ public class ModMenuScreen extends Screen {
 
     private void renderProfiles(GuiGraphics g, int x, int y, int w, int h, int mx, int my) {
         UI.box(g, x, y, w, h, 0x40000000);
-        int ry = y + 3;
+        UI.label(g, "Profiles", x + 5, y + 5);
+        int ry = y + 16;
         for (int i = 0; i < Presets.BUILT_IN.size(); i++) {
             Presets.BuiltIn p = Presets.BUILT_IN.get(i);
             boolean act = Presets.active(p), hv = Draw.inside(mx, my, x + 2, ry, w - 4, 14);
@@ -276,11 +281,21 @@ public class ModMenuScreen extends Screen {
             final int slot = i;
             boolean hv = Draw.inside(mx, my, x + 2, ry, w - 4, 14);
             UI.box(g, x + 2, ry, w - 4, 14, hv ? UI.PANEL : UI.SURFACE);
-            Draw.text(g, "Profile " + (i + 1), x + 8, ry + 3, UI.MUTED);
+            PixelIcons.draw(g, "_profiles", x + 6, ry + 3, 1, hv ? UI.accent() : UI.FAINT);
+            Draw.text(g, "Profile " + (i + 1), x + 18, ry + 3, hv ? UI.TEXT : UI.MUTED);
             UI.glyph(g, UI.CHEV_RIGHT, x + w - 12, ry + 4, hv ? UI.TEXT : UI.FAINT);
             hits.add(new Hit(x + 2, ry, w - 4, 14, () -> { Presets.loadSlot(slot); toast("Loaded Profile " + (slot + 1)); }));
             ry += 15;
         }
+        // stats
+        long on = ModuleManager.all().stream().filter(mm -> mm.category() != Category.COSMETICS && mm.enabled()).count();
+        long all = ModuleManager.all().stream().filter(mm -> mm.category() != Category.COSMETICS).count();
+        int stY = y + h - 58;
+        g.fill(x + 4, stY - 4, x + w - 4, stY - 3, UI.LINE);
+        Draw.text(g, on + " / " + all + " mods on", x + 6, stY + 2, UI.FAINT);
+        int bw2 = w - 12;
+        g.fill(x + 6, stY + 13, x + 6 + bw2, stY + 15, 0xFF2C3540);
+        g.fill(x + 6, stY + 13, x + 6 + (int) (bw2 * on / (double) Math.max(1, all)), stY + 15, UI.accent());
         // bottom: save as new profile, edit HUD layout
         int by = y + h - 36;
         boolean h1 = Draw.inside(mx, my, x + 3, by, w - 6, 14);
@@ -357,6 +372,9 @@ public class ModMenuScreen extends Screen {
             if (cy + CARD_H < ay || cy > ay + ah) continue;
             drawCard(g, m, cx, cy, cw, mx, my, inArea, dt);
         }
+        // soft fades where the list is cut off
+        if (scroll > 0.5) g.fillGradient(ax, ay, ax + aw, ay + 10, 0xC0101419, 0x00101419);
+        if (scroll < content - ah - 0.5) g.fillGradient(ax, ay + ah - 12, ax + aw, ay + ah, 0x00101419, 0xD0101419);
         g.disableScissor();
         if (content > ah) {
             int bh = Math.max(16, ah * ah / content), by = ay + (int) ((ah - bh) * (scroll / (content - ah)));
@@ -364,17 +382,41 @@ public class ModMenuScreen extends Screen {
         }
     }
 
+    private Module hoverCard, lastHoverCard;
+    private long hoverCardSince;
+
+    /** Description tooltip after hovering a card for a moment. */
+    private void cardTooltip(GuiGraphics g, int mx, int my) {
+        Module m = hoverCard;
+        lastHoverCard = m;
+        hoverCard = null;
+        if (m == null || openMode != null || openColor != null || System.currentTimeMillis() - hoverCardSince < 450) return;
+        String line2 = m.settings().isEmpty() ? "Click to turn on or off" : "Click to toggle  \u00B7  Right-click for options";
+        int w = Math.max(Draw.width(m.description()), Draw.width(line2)) + 12, h = 26;
+        int tx = Math.min(width - w - 4, mx + 10), ty = Math.min(height - h - 4, my + 12);
+        UI.shadow(g, tx, ty, w, h);
+        UI.card(g, tx, ty, w, h, UI.SURFACE, UI.BORDER);
+        Draw.text(g, m.description(), tx + 6, ty + 4, UI.TEXT);
+        Draw.text(g, line2, tx + 6, ty + 15, UI.FAINT);
+    }
+
     private void drawCard(GuiGraphics g, Module m, int x, int y, int w, int mx, int my, boolean inArea, float dt) {
         boolean hover = inArea && Draw.inside(mx, my, x, y, w, CARD_H);
         float hv = approach(hoverAnim, m, hover ? 1 : 0, dt * 12);
         float on = approach(toggleAnim, m, m.enabled() ? 1 : 0, dt * 12);
         int top = CARD_H - 29;
-        UI.card(g, x, y, w, CARD_H, Draw.lerp(UI.PANEL, UI.PANEL_HI, hv), hover ? 0xFF3C4955 : UI.BORDER);
+        y -= Math.round(hv);   // lifts 1px on hover
+        UI.card(g, x, y, w, CARD_H, Draw.lerp(UI.PANEL, UI.PANEL_HI, hv), hover ? 0xFF46525F : UI.BORDER);
+        g.fill(x + 1, y + 1, x + w - 1, y + 2, 0x12FFFFFF);   // top bevel, like a Minecraft button
+        if (hover) { hoverCard = m; hoverCardSince = hoverCard == lastHoverCard ? hoverCardSince : System.currentTimeMillis(); }
         // icon (3x pixel glyph) and name
         int icol = Draw.lerp(0xFF8A96A3, 0xFFFFFFFF, Math.max(on, hv * 0.5f));
         if (ModuleIcons.hasCustom(m.name())) ModuleIcons.draw(g, m.name(), x + w / 2 - 9, y + 7, 18);
         else PixelIcons.draw(g, m.name(), x + w / 2 - 9, y + 7, 2, icol);
-        if (Favorites.is(m.name())) UI.glyph(g, UI.STAR, x + w - 9, y + 4, UI.WARN);
+        boolean fav = Favorites.is(m.name());
+        boolean fh = inArea && Draw.inside(mx, my, x + w - 12, y + 2, 10, 10);
+        if (fav || hover) UI.glyph(g, fav ? UI.STAR : UI.STAR_EMPTY, x + w - 9, y + 4, fav ? UI.WARN : fh ? UI.TEXT : UI.FAINT);
+        if (inArea) hits.add(new Hit(x + w - 12, y + 2, 10, 10, () -> { Favorites.toggle(m.name()); toast(Favorites.is(m.name()) ? "Added to favorites" : "Removed from favorites"); }));
         String name = Draw.trim(m.name(), w - 8);
         Draw.centered(g, name, x + w / 2, y + top - 11, Draw.lerp(UI.MUTED, UI.TEXT, Math.max(on, hv)));
         // OPTIONS bar
@@ -390,7 +432,7 @@ public class ModMenuScreen extends Screen {
         // ENABLED / DISABLED bar
         int sy = oy + 14;
         boolean sh = inArea && Draw.inside(mx, my, x + 1, sy, w - 2, 15);
-        int onC = 0xFF3E9E5E, offC = 0xFFA83A44;
+        int onC = 0xFF3F9A5C, offC = 0xFF9E3A43;
         int bar = Draw.lerp(offC, onC, on);
         if (sh) bar = Draw.shade(bar, 1.12f);
         g.fill(x + 1, sy, x + w - 1, sy + 15, bar);
