@@ -179,19 +179,26 @@ public class AccountsScreen extends Screen {
             Acc s = sel;
             button(g, mxx, myy, rx + rw / 2 - 70, by, 140, 20, "Play as " + Draw.trim(s.name(), 80), true, () -> use(s));
         }
-        if (sel.remove() != null) {
+        if (sel.remove() != null) {   // delete this premium or cracked account
             Acc s = sel;
-            int rwid = Draw.width("Remove account") + 4;
-            boolean h = Draw.inside(mxx, myy, rx + rw / 2 - rwid / 2, by + 26, rwid, 12);
-            Draw.centered(g, "Remove account", rx + rw / 2, by + 28, h ? 0xFFFF7A7A : 0xFF6A6A72);
-            hits.add(new Hit(rx + rw / 2 - rwid / 2, by + 26, rwid, 12, () -> { s.remove().run(); selectedKey = null; status = "Removed " + s.name(); }));
+            boolean arm = armed(s);
+            String lbl = arm ? "Click again to delete" : (s.kind() == 1 ? "Delete premium account" : "Delete cracked account");
+            int dw = Draw.width(lbl) + 20, dx = rx + rw / 2 - dw / 2, dy = by + 26;
+            boolean h = Draw.inside(mxx, myy, dx, dy, dw, 16);
+            Draw.rrect(g, dx, dy, dw, 16, 8, arm ? 0xFFB83A44 : h ? 0x50FF5A5A : 0x26FF5A5A);
+            Draw.routline(g, dx, dy, dw, 16, 8, arm || h ? 0xFFFF6A6A : 0x80B84A52);
+            Draw.centered(g, lbl, rx + rw / 2, dy + 4, arm || h ? 0xFFFFFFFF : 0xFFFF8A8A);
+            hits.add(new Hit(dx, dy, dw, 16, () -> askDelete(s)));
+        } else {
+            Draw.centered(g, "Launcher account (change it in your launcher)", rx + rw / 2, by + 30, 0xFF5A5A62);
         }
         button(g, mxx, myy, rx + rw - 62, top + 10, 52, 18, "Done", false, this::onClose);
 
         if (!status.isEmpty()) {
-            boolean good = status.startsWith("Added") || status.startsWith("Now") || status.startsWith("Removed") || status.startsWith("Code") || status.startsWith("Welcome");
+            boolean warn = status.startsWith("Click again");
+            boolean good = !warn && (status.startsWith("Deleted") || status.startsWith("Added") || status.startsWith("Now") || status.startsWith("Removed") || status.startsWith("Code") || status.startsWith("Welcome"));
             boolean info = status.startsWith("Sign") || status.startsWith("Getting");
-            int sc = good ? 0xFF6AD48A : info ? 0xFFB8D8F0 : 0xFFFF7A7A;
+            int sc = warn ? 0xFFFFB86A : good ? 0xFF6AD48A : info ? 0xFFB8D8F0 : 0xFFFF7A7A;
             String st = Draw.trim(status, rw - 30);
             int sw = Draw.width(st) + 18;
             Draw.rrect(g, rx + rw / 2 - sw / 2, bot - 26, sw, 16, 8, (sc & 0x00FFFFFF) | 0x26000000);
@@ -233,10 +240,24 @@ public class AccountsScreen extends Screen {
         int kc = kindColor(a.kind()), kw = Draw.width(kl) + 10;
         Draw.rrect(g, tx, y + 18, kw, 11, 5, (kc & 0x00FFFFFF) | 0x30000000);
         Draw.text(g, kl, tx + 5, y + 20, kc);
+        int dx = x + w;   // right edge of the free space
+        if (a.remove() != null && vis) {   // delete button: works for premium and cracked accounts
+            boolean arm = armed(a);
+            int bw = arm ? Draw.width("Delete?") + 12 : 16, bx = x + w - bw - 6, by = y + h / 2 - 7;
+            boolean dh = my >= clipY && my < clipY + clipH && Draw.inside(mx, my, bx, by, bw, 14);
+            if (arm || dh || hov) {
+                Draw.rrect(g, bx, by, bw, 14, 7, arm ? 0xFFB83A44 : dh ? 0x60FF5A5A : 0x24FFFFFF);
+                if (arm) Draw.centered(g, "Delete?", bx + bw / 2, by + 3, 0xFFFFFFFF);
+                else Draw.centered(g, "\u2715", bx + bw / 2, by + 3, dh ? 0xFFFF9A9A : 0xFF9A9AA2);
+            }
+            int top = Math.max(by, clipY), bottom = Math.min(by + 14, clipY + clipH);
+            if (bottom > top) hits.add(new Hit(bx, top, bw, bottom - top, () -> askDelete(a)));
+            dx = bx - 2;
+        }
         if (a.current()) {
-            Draw.rrect(g, x + w - 58, y + h / 2 - 6, 50, 12, 6, 0x306AD48A);
-            Draw.centered(g, "In use", x + w - 33, y + h / 2 - 4, 0xFF6AD48A);
-        } else if (hov) Draw.text(g, "›", x + w - 12, y + h / 2 - 4, Theme.accent());
+            Draw.rrect(g, dx - 54, y + h / 2 - 6, 50, 12, 6, 0x306AD48A);
+            Draw.centered(g, "In use", dx - 29, y + h / 2 - 4, 0xFF6AD48A);
+        } else if (hov && a.remove() == null) Draw.text(g, "\u203A", x + w - 12, y + h / 2 - 4, Theme.accent());
         if (vis) {
             int top = Math.max(y, clipY), bottom = Math.min(y + h, clipY + clipH);
             hits.add(new Hit(x, top, w, bottom - top, () -> {
@@ -248,6 +269,24 @@ public class AccountsScreen extends Screen {
     }
 
     private long clickAt;
+    /** Two-step delete: the first click arms it, a second click within 3 s deletes. */
+    private String confirmKey;
+    private long confirmAt;
+
+    private boolean armed(Acc a) { return a.key().equals(confirmKey) && System.currentTimeMillis() - confirmAt < 3000; }
+
+    private void askDelete(Acc a) {
+        if (a.remove() == null) { status = "The launcher account can't be deleted here"; return; }
+        if (armed(a)) {
+            a.remove().run();
+            confirmKey = null;
+            if (a.key().equals(selectedKey)) selectedKey = null;
+            status = "Deleted " + a.name() + (a.kind() == 1 ? " (premium)" : " (cracked)");
+        } else {
+            confirmKey = a.key(); confirmAt = System.currentTimeMillis();
+            status = "Click again to delete " + a.name();
+        }
+    }
 
     private void use(Acc a) {
         a.use().run();
@@ -462,6 +501,11 @@ public class AccountsScreen extends Screen {
     public boolean keyPressed(net.minecraft.client.input.KeyEvent e) {
         int k = e.key();
         if (panel != Panel.NONE && k == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) { closePanel(); return true; }
+        if (panel == Panel.NONE && !name.isFocused() && k == org.lwjgl.glfw.GLFW.GLFW_KEY_DELETE) {   // Delete key: delete the selected account
+            List<Acc> all = accounts();
+            askDelete(selected(all));
+            return true;
+        }
         if (name.isFocused() && (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || k == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER)) { addCracked(); return true; }
         return super.keyPressed(e);
     }
