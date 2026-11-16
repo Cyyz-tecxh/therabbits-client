@@ -484,6 +484,25 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
         return v - Math.floor(v);
     }
 
+    /** Candy Cane aura: each cane appears for a moment at a random spot and angle around the body, then pops elsewhere. */
+    private static void animateCandy(ModelPart root, float t, float k) {
+        float spread = 1f + (k - 1f) * 0.5f;
+        for (int i = 0; root.hasChild("cc" + i); i++) {
+            ModelPart c = root.getChild("cc" + i);
+            double rate = 1.4 + hash01(i, 11) * 1.6;
+            double life = t * rate + hash01(i, 12) * 10;
+            double slot = Math.floor(life), frac = life - slot;
+            c.visible = frac < 0.8 && hash01(i, slot + 13) > 0.3;
+            if (!c.visible) continue;
+            double a = hash01(i, slot + 17) * 6.2832;
+            double rad = (4.8 + hash01(slot + 19, i) * 3.4) * spread;
+            c.x = (float) (Math.sin(a) * rad);
+            c.y = (float) (-8 + hash01(slot, i + 23) * 26);
+            c.z = (float) (Math.cos(a) * rad);
+            c.yRot = (float) Math.toRadians(hash01(i + 29, slot) * 360);
+        }
+    }
+
     private static float smoothf(double x) { x = Math.max(0, Math.min(1, x)); return (float) (x * x * (3 - 2 * x)); }
 
     /** NULL//PROTOCOL glyph state: {visible, x, y, z}. Same maths as tools/cosmetics/null_protocol.py. */
