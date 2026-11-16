@@ -39,6 +39,8 @@ public abstract class GuiSkinRendererMixin extends PictureInPictureRenderer<GuiS
     @Inject(method = "renderToTexture(Lnet/minecraft/client/gui/render/state/pip/GuiSkinRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;)V",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;endBatch()V"))
     private void therabbits$cosmetics(GuiSkinRenderState state, PoseStack pose, CallbackInfo ci) {
+        // only the Cosmetics screen shows them for now (title screen and Accounts show just your skin)
+        if (!(net.minecraft.client.Minecraft.getInstance().screen instanceof com.therabbits.client.gui.CosmeticsScreen)) return;
         try {   // your cape (vanilla previews never draw one)
             net.minecraft.core.ClientAsset.Texture cape = com.therabbits.client.module.cosmetics.CapesModule.ownCape();
             if (cape != null) {
