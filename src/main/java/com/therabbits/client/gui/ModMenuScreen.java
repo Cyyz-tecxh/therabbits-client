@@ -121,8 +121,10 @@ public class ModMenuScreen extends Screen {
 
     @Override
     protected void init() {
-        W = Math.min(600, width - 20);
-        H = Math.min(340, height - 20);
+        W = Math.min(560, Math.max(360, (int) (width * 0.86f)));
+        W = Math.min(W, width - 16);
+        H = Math.min(330, Math.max(220, (int) (height * 0.86f)));
+        H = Math.min(H, height - 16);
         searchBox = new EditBox(font, left() + 22, top() + 33, SIDE - 34, 10, Component.literal("Search"));
         searchBox.setBordered(false);
         searchBox.setMaxLength(32);
@@ -552,18 +554,41 @@ public class ModMenuScreen extends Screen {
 
     private int settingsHeight(Module m) { return m.settings().size() * SETTING_ROW + 8; }
 
+    /** One placed item in the list: a section header (m == null) or a module card. */
+    private record Slot(Module m, String header, int x, int y, int w, int h, int extra) {}
+
     private void renderList(GuiGraphics g, List<Module> mods, int ax, int ay, int aw, int ah, int mx, int my, float dt) {
         float slide = ease((System.currentTimeMillis() - pageChanged) / 180f);
-        int content = 0;
-        int[] extra = new int[mods.size()];
-        for (int i = 0; i < mods.size(); i++) {
-            Module m = mods.get(i);
+        if (page == Page.MODS && filter == null && search.isBlank()) { mods = new ArrayList<>(mods); mods.sort(java.util.Comparator.comparingInt(m -> m.category().ordinal())); }
+        boolean twoCols = aw >= 380;
+        boolean grouped = page == Page.MODS && filter == null && search.isBlank();
+        int colW = twoCols ? (aw - GAP) / 2 : aw;
+
+        // layout: cards flow in two columns; an open card takes the full width; "All mods" is grouped by category
+        List<Slot> slots = new ArrayList<>();
+        int y = 0, col = 0;
+        Category lastCat = null;
+        for (Module m : mods) {
+            if (grouped && m.category() != lastCat) {
+                if (col != 0) { y += ROW + GAP; col = 0; }
+                slots.add(new Slot(null, m.category().label(), 0, y + (lastCat == null ? 0 : 4), aw, 12, 0));
+                y += lastCat == null ? 13 : 17;
+                lastCat = m.category();
+            }
             float e = approach(expandAnim, m, m == expanded ? 1 : 0, dt * 7);
-            extra[i] = Math.round(e * settingsHeight(m));
-            if (m == scrollTo) { scroll = content; scrollTo = null; }
-            content += ROW + extra[i] + GAP;
+            int extra = Math.round(e * settingsHeight(m));
+            if (m == scrollTo) { scroll = Math.max(0, y - 14); scrollTo = null; }
+            if (e > 0.001f || !twoCols) {
+                if (col != 0) { y += ROW + GAP; col = 0; }
+                slots.add(new Slot(m, null, 0, y, aw, ROW, extra));
+                y += ROW + extra + GAP;
+            } else {
+                slots.add(new Slot(m, null, col * (colW + GAP), y, colW, ROW, 0));
+                if (++col == 2) { col = 0; y += ROW + GAP; }
+            }
         }
-        content = Math.max(0, content - GAP);
+        if (col != 0) y += ROW + GAP;
+        int content = Math.max(0, y - GAP);
         scroll = Mth.clamp(scroll, 0, Math.max(0, content - ah));
         if (expanded != null && !mods.contains(expanded)) { expanded = null; settingsFor = null; }
 
@@ -574,13 +599,16 @@ public class ModMenuScreen extends Screen {
                     : "Nothing matches \"" + search + "\"";
             Draw.centered(g, msg, ax + aw / 2, ay + 30, UI.FAINT);
         }
-        int yy = ay - (int) scroll + Math.round((1 - slide) * 8);
+        int oy = ay - (int) scroll + Math.round((1 - slide) * 8);
         boolean inArea = my >= ay && my < ay + ah;
-        for (int i = 0; i < mods.size(); i++) {
-            Module m = mods.get(i);
-            int h = ROW + extra[i];
-            if (yy + h >= ay && yy <= ay + ah) drawRow(g, m, ax, yy, aw, extra[i], mx, my, inArea, ay, ah, dt);
-            yy += h + GAP;
+        for (Slot s : slots) {
+            int sy = oy + s.y();
+            if (sy + s.h() + s.extra() < ay || sy > ay + ah) continue;
+            if (s.m() == null) {
+                UI.label(g, s.header(), ax + s.x() + 1, sy + 2);
+                int lw = Draw.width(s.header().toUpperCase(Locale.ROOT)) + 6;
+                g.fill(ax + s.x() + lw, sy + 5, ax + s.x() + s.w(), sy + 6, UI.LINE);
+            } else drawRow(g, s.m(), ax + s.x(), sy, s.w(), s.extra(), mx, my, inArea, ay, ah, dt);
         }
         g.disableScissor();
         if (content > ah) {
@@ -621,7 +649,7 @@ public class ModMenuScreen extends Screen {
             if (fav || hover) UI.glyph(g, fav ? UI.STAR : UI.STAR_EMPTY, ax, y + 10, fav ? UI.WARN : fh ? UI.TEXT : UI.FAINT);
             if (inArea) hits.add(new Hit(ax - 3, y, 11, ROW, () -> { Favorites.toggle(m.name()); toast(Favorites.is(m.name()) ? "Added to favorites" : "Removed from favorites"); }));
         }
-        Draw.text(g, Draw.trim(m.description(), ax - 8 - tx), tx, y + 15, UI.MUTED);
+        Draw.text(g, Draw.trim(m.description(), ax - 8 - tx), tx, y + 15, Draw.lerp(UI.FAINT, UI.MUTED, Math.max(on, hv)));
         // clicking the row opens its settings (or toggles a mod that has none); right-click also opens settings
         if (inArea) hits.add(new Hit(x, y, w, ROW, m.settings().isEmpty() ? () -> { m.toggle(); touch(m); } : () -> toggleExpand(m),
                 m.settings().isEmpty() ? null : () -> toggleExpand(m)));

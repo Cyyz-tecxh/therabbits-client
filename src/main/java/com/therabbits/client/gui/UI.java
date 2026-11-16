@@ -55,12 +55,12 @@ public final class UI {
     }
 
     // ---- controls ----
-    /** Rectangular switch, 16x8. {@code k} is 0..1 for the slide animation. */
+    /** Rectangular switch, 16x8: dark track with a grey knob when off, ice track with a white knob when on. */
     public static void toggle(GuiGraphics g, int x, int y, float k) {
-        int track = Draw.lerp(0xFF2C3540, accent(), k);
-        box(g, x, y, 16, 8, track);
+        box(g, x, y, 16, 8, Draw.lerp(0xFF2C3540, accent(), k));
         int kx = x + 1 + Math.round(8 * k);
-        g.fill(kx, y + 1, kx + 6, y + 7, Draw.lerp(0xFF8A96A3, ICE_INK, k));
+        box(g, kx, y + 1, 7, 6, Draw.lerp(0xFF7D8894, 0xFFFFFFFF, k));
+        if (k > 0.5f) g.fill(kx + 7, y + 1, kx + 8, y + 7, Draw.shade(accent(), 0.7f));   // knob edge
     }
 
     public static void field(GuiGraphics g, int x, int y, int w, int h, boolean hover, boolean active) {
