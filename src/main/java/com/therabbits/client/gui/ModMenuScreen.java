@@ -104,8 +104,9 @@ public class ModMenuScreen extends Screen {
     }
 
     // ---------- test / external hooks ----------
-    public void showPresets() { page = Page.PROFILES; expanded = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
-    public void selectCategory(Category c) { page = Page.MODS; filter = c; favoritesOnly = false; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    private void closePopups() { openMode = null; openColor = null; editingNum = null; bindingKey = null; }
+    public void showPresets() { closePopups(); page = Page.PROFILES; expanded = null; scroll = 0; pageChanged = System.currentTimeMillis(); }
+    public void selectCategory(Category c) { closePopups(); page = Page.MODS; filter = c; favoritesOnly = false; scroll = 0; pageChanged = System.currentTimeMillis(); }
     /** Opens a module's settings inline (switching to its category so it is on screen). */
     public void openSettings(Module m) {
         if (m == null) return;
@@ -245,8 +246,8 @@ public class ModMenuScreen extends Screen {
 
         // search
         boolean focus = searchBox.isFocused();
-        UI.field(g, ix, y + 30, iw, 15, Draw.inside(mx, my, ix, y + 30, iw, 15), focus);
-        UI.glyph(g, UI.SEARCH, ix + 5, y + 34, focus ? UI.accent() : UI.FAINT);
+        if (page != Page.PROFILES) UI.field(g, ix, y + 30, iw, 15, Draw.inside(mx, my, ix, y + 30, iw, 15), focus);
+        if (page != Page.PROFILES) UI.glyph(g, UI.SEARCH, ix + 5, y + 34, focus ? UI.accent() : UI.FAINT);
         searchBox.setX(ix + 14); searchBox.setY(y + 34); searchBox.setWidth(iw - 18);
         searchBox.visible = page != Page.PROFILES;
         hits.add(new Hit(ix, y + 30, iw, 15, () -> { setFocused(searchBox); searchBox.setFocused(true); }));
@@ -255,8 +256,8 @@ public class ModMenuScreen extends Screen {
         UI.label(g, "Library", ix, navY); navY += 11;
         int all = (int) ModuleManager.all().stream().filter(m -> m.category() != Category.COSMETICS).count();
         nav(g, ix, iw, "All mods", ICON_ALL, String.valueOf(all), page == Page.MODS && filter == null, mx, my, () -> { selectCategory(null); });
-        nav(g, ix, iw, "Favorites", ICON_STAR_SMALL, null, page == Page.FAVORITES, mx, my, () -> { page = Page.FAVORITES; scroll = 0; pageChanged = System.currentTimeMillis(); });
-        nav(g, ix, iw, "Recently used", ICON_CLOCK, null, page == Page.RECENT, mx, my, () -> { page = Page.RECENT; scroll = 0; pageChanged = System.currentTimeMillis(); });
+        nav(g, ix, iw, "Favorites", ICON_STAR_SMALL, null, page == Page.FAVORITES, mx, my, () -> { closePopups(); page = Page.FAVORITES; scroll = 0; pageChanged = System.currentTimeMillis(); });
+        nav(g, ix, iw, "Recently used", ICON_CLOCK, null, page == Page.RECENT, mx, my, () -> { closePopups(); page = Page.RECENT; scroll = 0; pageChanged = System.currentTimeMillis(); });
         navY += 6;
         UI.label(g, "Categories", ix, navY); navY += 11;
         for (Category c : Category.values()) {
@@ -270,7 +271,7 @@ public class ModMenuScreen extends Screen {
         navY = y + H - 72;
         g.fill(ix, navY - 5, ix + iw, navY - 4, UI.LINE);
         nav(g, ix, iw, "Profiles", ICON_LAYERS, null, page == Page.PROFILES, mx, my, this::showPresets);
-        nav(g, ix, iw, "Settings", ICON_GEAR, null, page == Page.SETTINGS, mx, my, () -> { page = Page.SETTINGS; scroll = 0; pageChanged = System.currentTimeMillis(); });
+        nav(g, ix, iw, "Settings", ICON_GEAR, null, page == Page.SETTINGS, mx, my, () -> { closePopups(); page = Page.SETTINGS; scroll = 0; pageChanged = System.currentTimeMillis(); });
         int by = y + H - 26, bw = (iw - 4) / 2;
         boolean h1 = Draw.inside(mx, my, ix, by, bw, 17), h2 = Draw.inside(mx, my, ix + bw + 4, by, bw, 17);
         UI.button(g, ix, by, bw, 17, "Edit HUD", h1, false);
