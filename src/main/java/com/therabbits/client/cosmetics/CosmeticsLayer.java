@@ -517,14 +517,14 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
             if (!c.visible) continue;
             int dir = i % 2 == 1 ? 1 : -1;
             double a = hash01(i, 1) * 6.2832 + t * (0.10 + hash01(i, 2) * 0.22) * dir;
-            double r = (4.4 + hash01(i, 3) * 4.6 + Math.sin(t * (0.25 + hash01(i, 5) * 0.3) + i * 1.7) * 1.4) * spread;
+            double r = (3.4 + hash01(i, 3) * 4.2 + Math.sin(t * (0.25 + hash01(i, 5) * 0.3) + i * 1.7) * 1.4) * spread;
             c.x = (float) (Math.sin(a) * r);
             c.y = (float) (-12 + hash01(i, 4) * 36 + Math.sin(t * (0.5 + hash01(i, 6) * 0.6) + i * 2.1) * 1.6);
             c.z = (float) (Math.cos(a) * r);
-            c.xRot = (float) (hash01(i, 8) * 6.2832 + t * (0.2 + hash01(i, 7) * 0.5));
-            c.yRot = (float) (hash01(i, 10) * 6.2832 + t * (0.15 + hash01(i, 9) * 0.4) * dir);
-            c.zRot = (float) (Math.sin(t * 0.3 + i) * 0.6 * hash01(i, 11));
-            c.xScale = c.yScale = c.zScale = (float) (0.6 + hash01(i, 12) * 0.75);
+            c.xRot = (float) (Math.sin(t * (0.3 + hash01(i, 7) * 0.4) + hash01(i, 8) * 6.2832) * 0.45);   // gentle tilt
+            c.yRot = (float) (hash01(i, 10) * 6.2832 + t * (0.15 + hash01(i, 9) * 0.3) * dir);
+            c.zRot = (float) (Math.sin(t * 0.25 + i) * 0.35 * hash01(i, 11));
+            c.xScale = c.yScale = c.zScale = (float) (0.7 + hash01(i, 12) * 0.6);
         }
     }
 
