@@ -66,7 +66,10 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
                 if (chain) pose.scale(k, k, k); else pose.scale(k, 1f, k);
                 pose.translate(0, -12f / 16f, 0);
             }
-            if (root.hasChild("f0") || root.hasChild("ring0") || root.hasChild("p0")) {
+            if (root.hasChild("g0")) {   // Glyph Aura: flickering glyphs, flat white/grey (no glow)
+                animateGlyphs(root, now, cardFacing(p), k);
+                draw(pose, out, FULL_BRIGHT, aura, root);
+            } else if (root.hasChild("f0") || root.hasChild("ring0") || root.hasChild("p0")) {
                 if (root.hasChild("f0")) { drawAuraSpread(pose, out, aura, k, cardFacing(p)); }
                 else drawAura(pose, out, aura);
             } else {
@@ -473,6 +476,47 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     }
 
     /** Snow Aura: each flake drifts slowly around you, bobs, turns, and fades in and out on its own timer. */
+    private static double hash01(double a, double b) {
+        double v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+        return v - Math.floor(v);
+    }
+
+    /**
+     * Glyph Aura: each glyph lives a fraction of a second at a random spot around the body, then jumps elsewhere,
+     * always facing the viewer. Two white sparks flash for single frames near the lower right.
+     */
+    private static void animateGlyphs(ModelPart root, float t, float facing, float k) {
+        float spread = 1f + (k - 1f) * 0.5f;
+        float face = (float) Math.toRadians(facing);
+        for (int i = 0; root.hasChild("g" + i); i++) {
+            ModelPart g = root.getChild("g" + i);
+            double rate = 2.5 + hash01(i, 1) * 3.5;
+            double life = t * rate + hash01(i, 2) * 10;
+            double slot = Math.floor(life), frac = life - slot;
+            g.visible = frac < 0.72 && hash01(i, slot + 3) > 0.12;
+            if (!g.visible) continue;
+            double a = hash01(i, slot) * 6.2832;
+            boolean near = hash01(i + 5, slot) < 0.25;
+            double rad = ((near ? 2.6 : 4.6) + hash01(slot + 2, i) * (near ? 1.0 : 3.6)) * (near ? 1 : spread);
+            g.x = (float) (Math.sin(a) * rad);
+            g.y = (float) (-11 + hash01(slot, i + 7) * 36);
+            g.z = (float) (Math.cos(a) * rad);
+            g.yRot = face;
+        }
+        double slot = Math.floor(t * 30);
+        for (int i = 0; root.hasChild("k" + i); i++) {
+            ModelPart sp = root.getChild("k" + i);
+            int idx = i + 60;
+            sp.visible = hash01(idx + 40, slot) < 0.05;
+            if (!sp.visible) continue;
+            double lx = 5.2 + hash01(slot, idx + 50) * 2.4, ly = 13 + hash01(slot + 3, idx) * 9, lz = -2.5;
+            sp.x = (float) (lx * Math.cos(face) + lz * Math.sin(face));
+            sp.y = (float) ly;
+            sp.z = (float) (-lx * Math.sin(face) + lz * Math.cos(face));
+            sp.yRot = face;
+        }
+    }
+
     private static void animateSnow(ModelPart root, float t, float facing) {
         float face = facing * (float) (Math.PI / 180);
         for (int i = 0; root.hasChild("f" + i); i++) {
