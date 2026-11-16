@@ -66,7 +66,10 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
                 if (chain) pose.scale(k, k, k); else pose.scale(k, 1f, k);
                 pose.translate(0, -12f / 16f, 0);
             }
-            if (root.hasChild("cc0")) {   // Candy Cane aura: canes pop up at random spots
+            if (root.hasChild("vc0")) {   // Voxel Drift: translucent cyan cubes float, tumble and orbit
+                animateCubes(root, now, k);
+                out.part(root, pose, RenderTypes.entityTranslucent(aura.currentTexture()), FULL_BRIGHT);
+            } else if (root.hasChild("cc0")) {   // Candy Cane aura: canes pop up at random spots
                 animateCandy(root, now, k);
                 draw(pose, out, light, aura, root);
             } else if (root.hasChild("g0")) {   // Glyph Aura: flickering glyphs, flat white/grey (no glow)
@@ -504,6 +507,26 @@ public class CosmeticsLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
     }
 
     private static float smoothf(double x) { x = Math.max(0, Math.min(1, x)); return (float) (x * x * (3 - 2 * x)); }
+
+    /** Voxel Drift (voxel_aura): same maths as tools/cosmetics/voxel_aura.py. */
+    private static void animateCubes(ModelPart root, float t, float k) {
+        double spread = 1f + (k - 1f) * 0.5f, density = WearablesModule.auraDensity();
+        for (int i = 0; root.hasChild("vc" + i); i++) {
+            ModelPart c = root.getChild("vc" + i);
+            c.visible = hash01(i, 99) <= density;
+            if (!c.visible) continue;
+            int dir = i % 2 == 1 ? 1 : -1;
+            double a = hash01(i, 1) * 6.2832 + t * (0.10 + hash01(i, 2) * 0.22) * dir;
+            double r = (4.4 + hash01(i, 3) * 4.6 + Math.sin(t * (0.25 + hash01(i, 5) * 0.3) + i * 1.7) * 1.4) * spread;
+            c.x = (float) (Math.sin(a) * r);
+            c.y = (float) (-12 + hash01(i, 4) * 36 + Math.sin(t * (0.5 + hash01(i, 6) * 0.6) + i * 2.1) * 1.6);
+            c.z = (float) (Math.cos(a) * r);
+            c.xRot = (float) (hash01(i, 8) * 6.2832 + t * (0.2 + hash01(i, 7) * 0.5));
+            c.yRot = (float) (hash01(i, 10) * 6.2832 + t * (0.15 + hash01(i, 9) * 0.4) * dir);
+            c.zRot = (float) (Math.sin(t * 0.3 + i) * 0.6 * hash01(i, 11));
+            c.xScale = c.yScale = c.zScale = (float) (0.6 + hash01(i, 12) * 0.75);
+        }
+    }
 
     /** NULL//PROTOCOL glyph state: {visible, x, y, z, u}. Same maths as tools/cosmetics/null_protocol.py. */
     private static final float[] GLYPH = new float[5];

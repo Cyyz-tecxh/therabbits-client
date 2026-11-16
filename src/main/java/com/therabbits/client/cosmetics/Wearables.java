@@ -12,10 +12,10 @@ public final class Wearables {
     public static final String[] SHIELD_IDS = {"none", "neon_shield", "blood_moon_shield", "decoding_shield"};
     public static final String[] SHIELD_NAMES = {"None", "Neon Royal Shield", "Blood Moon Shield", "Decoding Shield"};
 
-    public static final String[] AURA_IDS = {"none", "aura", "snow_aura", "glyph_aura", "candy_aura", "clockwork_aura", "petal_aura", "koi_aura",
+    public static final String[] AURA_IDS = {"none", "aura", "snow_aura", "glyph_aura", "voxel_aura", "candy_aura", "clockwork_aura", "petal_aura", "koi_aura",
         "cards_blood", "cards_royal", "cards_frost", "cards_heartbreaker", "cards_void", "cards_emerald",
         "dragon_eternal", "dragon_shadow", "dragon_frost", "dragon_infernal", "dragon_celestial"};
-    public static final String[] AURA_NAMES = {"None", "Electric Aura", "Snow Aura", "NULL//PROTOCOL", "Candy Canes", "Clockwork Orbit", "Petal Storm", "Koi Spirits",
+    public static final String[] AURA_NAMES = {"None", "Electric Aura", "Snow Aura", "NULL//PROTOCOL", "Voxel Drift", "Candy Canes", "Clockwork Orbit", "Petal Storm", "Koi Spirits",
         "Card Master: Blood", "Card Master: Royal", "Card Master: Frost", "Card Master: Heartbreaker", "Card Master: Void", "Card Master: Emerald",
         "Eternal Dragon Aura", "Shadow Dragon Aura", "Frost Dragon Aura", "Infernal Dragon Aura", "Celestial Dragon Aura"};
 
