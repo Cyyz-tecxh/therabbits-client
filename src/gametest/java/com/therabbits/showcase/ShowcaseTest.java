@@ -131,6 +131,16 @@ public class ShowcaseTest implements FabricClientGameTest {
         } catch (Throwable t) {
             System.out.println("[showcase] menu capture failed: " + t);
         }
+        try {   // HUD editor (title screen) and the branded loading screen (a resource reload shows it)
+            ctx.runOnClient(mc -> mc.setScreen(new com.therabbits.client.gui.HudEditorScreen(null)));
+            frames(ctx, "g13hudeditor", 2);
+            ctx.runOnClient(mc -> { mc.setScreen(null); mc.reloadResourcePacks(); });
+            ctx.waitTicks(3);
+            frames(ctx, "g14loading", 3);
+            ctx.waitTicks(200);
+        } catch (Throwable t) {
+            System.out.println("[showcase] editor/loading capture failed: " + t);
+        }
 
         // ================= In-game features (world first: it loads faster in a small window) =================
         // Superflat: the CI machine kept stalling while generating normal terrain ("Preparing spawn area").
