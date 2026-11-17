@@ -25,7 +25,7 @@
 // KV binding name: CAPES.
 
 const CAPES = ["none", "black_nebula", "lightning_cape"];
-const HATS = ["none", "oni_mask", "kitsune_mask", "oni_menpo"];
+const HATS = ["none", "oni_mask", "kitsune_mask", "oni_menpo", "straw_hat"];
 const ARMS = ["none", "claws"];
 const SHIELDS = ["none", "neon_shield", "blood_moon_shield", "decoding_shield", "shift_shield"];
 const AURAS = ["none", "aura", "snow_aura", "glyph_aura", "voxel_aura", "candy_aura", "clockwork_aura", "petal_aura", "koi_aura",
